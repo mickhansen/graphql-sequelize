@@ -13,7 +13,7 @@ Should be used with [ssacl](https://github.com/pumpupapp/ssacl) for just a minim
 ```js
 var query = require('graphsql-sequelize')(sequelize);
 
-return query(graphsql`
+return query(graphql`
   post(2) {
     title,
     category,
