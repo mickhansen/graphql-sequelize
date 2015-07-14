@@ -52,10 +52,6 @@
     "block-scoped-var": 0,
     "complexity": 0,
     "consistent-return": 0,
-    "curly": [
-      2,
-      "multi"
-    ],
     "default-case": 0,
     "dot-notation": 0,
     "eqeqeq": 2,

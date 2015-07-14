@@ -13,7 +13,7 @@ module.exports = function (target) {
   }
 
   if (target instanceof require('sequelize/lib/associations/base')) {
-    return (source, args, root, ast, type) => {
+    return (source) => {
       return source[target.accessors.get]();
     };
   }

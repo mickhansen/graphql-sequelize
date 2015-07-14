@@ -7,7 +7,8 @@
     "mocha": "--require scripts/mocha-bootload test/*.test.js"
   },
   "scripts": {
-    "prepublish": "npm run lint && npm test && npm run build",
+    "prepublish": "npm run check && npm run build",
+    "check": "npm run lint && npm test",
     "lint": "eslint src",
     "build": "rm -rf lib/* && babel src --ignore test --optional runtime --out-dir lib",
     "test": "mocha $npm_package_options_mocha"
