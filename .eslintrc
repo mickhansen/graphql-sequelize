@@ -54,7 +54,7 @@
     "consistent-return": 0,
     "curly": [
       2,
-      "all"
+      "multi"
     ],
     "default-case": 0,
     "dot-notation": 0,
