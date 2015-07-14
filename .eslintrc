@@ -254,6 +254,6 @@
     ],
     "wrap-regex": 0,
     "no-var": 0,
-    "max-len": [2, 80, 4]
+    "max-len": [2, 90, 4]
   }
 }
