@@ -8,16 +8,18 @@ module.exports = function (target) {
   return (source, args, root, ast, type) => {
     let attributes = ast.selectionSet.selections
                      .map(selection => selection.name.value)
-                     .filter(attribute => attribute in targetAttributes);
+                     .filter(attribute => ~targetAttributes.indexOf(attribute));
 
-    var list = type instanceof GraphQLList;
+    let list = type instanceof GraphQLList;
     let findOptions = {
       where: args,
       attributes: attributes
     };
-
     return target[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
-      return list ? result.map(item => item.toJSON()) : result.toJSON();
+      if (list) return result.map(item => item.toJSON());
+      return result.toJSON();
+    }).then(function (result) {
+      return result;
     });
   };
 };
