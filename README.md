@@ -10,11 +10,34 @@ graphql-sequelize assumes you have graphql and sequelize installed.
 
 A helper for resolving graphql queries targeted at Sequelize models or associations.
 
+Please take a look at [the tests](https://github.com/mickhansen/graphql-sequelize/blob/master/test/resolver.test.js) to everything supported. 
+
 ```js
 import resolver from 'graphql-sequelize';
 
 let User = sequelize.define('user', {
   name: Sequelize.STRING
+});
+
+let Task = sequelize.define('user', {
+  title: Sequelize.STRING
+});
+
+User.Tasks = User.hasMany(Task, {as: 'tasks'});
+
+let taskType = new GraphQLObjectType({
+  name: 'Task',
+  description: 'A task',
+  fields: {
+    id: {
+      type: new GraphQLNonNull(GraphQLInt),
+      description: 'The id of the task.',
+    },
+    title: {
+      type: GraphQLString,
+      description: 'The title of the task.',
+    }
+  }
 });
 
 let userType = new GraphQLObjectType({
@@ -28,6 +51,10 @@ let userType = new GraphQLObjectType({
     name: {
       type: GraphQLString,
       description: 'The name of the user.',
+    },
+    tasks: {
+      type: GraphQLList(taskType),
+      resolve: resolver(User.Tasks)
     }
   }
 });

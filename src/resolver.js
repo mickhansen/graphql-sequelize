@@ -1,25 +1,20 @@
+import Sequelize from 'sequelize';
 import {
   GraphQLList
 } from 'graphql';
 
 module.exports = function (target) {
-  var targetAttributes = Object.keys(target.rawAttributes);
-
-  return (source, args, root, ast, type) => {
-    let attributes = ast.selectionSet.selections
-                     .map(selection => selection.name.value)
-                     .filter(attribute => ~targetAttributes.indexOf(attribute));
-
-    let list = type instanceof GraphQLList;
-    let findOptions = {
-      where: args,
-      attributes: attributes
+  if (target instanceof Sequelize.Model) {
+    return (source, args, root, ast, type) => {
+      return target[type instanceof GraphQLList ? 'findAll' : 'findOne']({
+        where: args
+      });
     };
-    return target[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
-      if (list) return result.map(item => item.toJSON());
-      return result.toJSON();
-    }).then(function (result) {
-      return result;
-    });
-  };
+  }
+
+  if (target instanceof require('sequelize/lib/associations/base')) {
+    return (source, args, root, ast, type) => {
+      return source[target.accessors.get]();
+    };
+  }
 };
