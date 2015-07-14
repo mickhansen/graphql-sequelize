@@ -267,12 +267,15 @@ describe('resolver', function () {
           name: nameA,
           tasks: [
             {
+              id: 1,
               title: titleC
             },
             {
+              id: 2,
               title: titleD
             },
             {
+              id: 3,
               title: titleE
             }
           ]
@@ -284,9 +287,11 @@ describe('resolver', function () {
           name: nameB,
           tasks: [
             {
+              id: 4,
               title: titleA
             },
             {
+              id: 5,
               title: titleB
             }
           ]
