@@ -78,6 +78,7 @@ module.exports = function (target, options) {
 
       findOptions.include = include;
       findOptions.attributes = attributes;
+      
 
       return target[list ? 'findAll' : 'findOne'](findOptions);
     };
