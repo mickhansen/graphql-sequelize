@@ -39,9 +39,9 @@ module.exports = function (target, options) {
 
   options = options || {};
   if (options.include === undefined) options.include = true;
+  if (options.before === undefined) options.before = (options) => options;
 
   if (target instanceof Sequelize.Model) {
-
     resolver = function (source, args, root, ast, type) {
       var selections
         , attributes
@@ -106,15 +106,22 @@ module.exports = function (target, options) {
 
       findOptions.include = include;
       findOptions.attributes = attributes;
+      findOptions.root = root;
 
-      return target[list ? 'findAll' : 'findOne'](findOptions);
+      return target[list ? 'findAll' : 'findOne'](options.before(findOptions, root));
     };
   }
 
   if (target instanceof require('sequelize/lib/associations/base')) {
-    resolver = function (source, args) {
-      return source.get(target.as) ||
-             source[target.accessors.get](argsToFindOptions(args));
+    resolver = function (source, args, root) {
+      if (source.get(target.as)) {
+        return source.get(target.as);
+      }
+
+      var findOptions = argsToFindOptions(args);
+      findOptions.root = root;
+
+      return source[target.accessors.get](options.before(findOptions, root));
     };
 
     resolver.$association = target;

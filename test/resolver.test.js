@@ -204,6 +204,52 @@ describe('resolver', function () {
     });
   });
 
+  it('should allow ammending the find for a array result with a single model', function () {
+    var user = this.userA
+      , schema;
+
+    schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'RootQueryType',
+        fields: {
+          users: {
+            type: new GraphQLList(userType),
+            args: {
+              limit: {
+                type: GraphQLInt
+              },
+              order: {
+                type: GraphQLString
+              }
+            },
+            resolve: resolver(User, {
+              before: function(options, root) {
+                options.where = options.where || {};
+                options.where.name = root.name;
+                return options;
+              }
+            })
+          }
+        }
+      })
+    });
+
+    return graphql(schema, `
+      {
+        users {
+          name
+        }
+      }
+    `, {
+      name: user.name
+    }).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users).to.have.length(1);
+      expect(result.data.users[0].name).to.equal(user.name);
+    });
+  });
+
   it('should resolve an array result with a single model and limit', function () {
     var users = this.users;
 
@@ -232,7 +278,9 @@ describe('resolver', function () {
           }
         }
       }
-    `).then(function (result) {
+    `, {
+      yolo: 'swag'
+    }).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].message);
 
       expect(result.data.user.tasks).to.have.length.above(0);
