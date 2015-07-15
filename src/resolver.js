@@ -1,4 +1,3 @@
-import Sequelize from 'sequelize';
 import { GraphQLList } from 'graphql';
 import _ from 'lodash';
 
@@ -7,7 +6,7 @@ module.exports = function (target, options) {
     , targetAttributes
     , argsToFindOptions;
 
-  targetAttributes = target instanceof Sequelize.Model ?
+  targetAttributes = target.getTableName ?
                      Object.keys(target.rawAttributes) :
                      Object.keys(target.target.rawAttributes);
 
@@ -41,7 +40,7 @@ module.exports = function (target, options) {
   if (options.include === undefined) options.include = true;
   if (options.before === undefined) options.before = (options) => options;
 
-  if (target instanceof Sequelize.Model) {
+  if (target.getTableName) {
     resolver = function (source, args, root, ast, type) {
       var selections
         , attributes
@@ -112,7 +111,7 @@ module.exports = function (target, options) {
     };
   }
 
-  if (target instanceof require('sequelize/lib/associations/base')) {
+  if (target.associationType) {
     resolver = function (source, args, root) {
       if (source.get(target.as)) {
         return source.get(target.as);

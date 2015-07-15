@@ -1,15 +1,14 @@
-import Sequelize from 'sequelize';
 import { GraphQLInt, GraphQLString, GraphQLBoolean } from 'graphql';
 
-export function toGraphQL(sequelizeType) {
-  if (sequelizeType instanceof Sequelize.BOOLEAN) {
+export function toGraphQL(sequelizeType, sequelizeTypes) {
+  if (sequelizeType instanceof sequelizeTypes.BOOLEAN) {
     return GraphQLBoolean;
-  } else if (sequelizeType instanceof Sequelize.INTEGER) {
+  } else if (sequelizeType instanceof sequelizeTypes.INTEGER) {
     return GraphQLInt;
   } else if (
-    sequelizeType instanceof Sequelize.STRING ||
-    sequelizeType instanceof Sequelize.UUID ||
-    sequelizeType instanceof Sequelize.DATE
+    sequelizeType instanceof sequelizeTypes.STRING ||
+    sequelizeType instanceof sequelizeTypes.UUID ||
+    sequelizeType instanceof sequelizeTypes.DATE
   ) {
     return GraphQLString;
   } else {

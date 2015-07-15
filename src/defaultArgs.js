@@ -7,7 +7,7 @@ module.exports = function (Model) {
     , attribute = Model.rawAttributes[key]
     , type;
 
-  type = new GraphQLNonNull(typeMapper.toGraphQL(attribute.type));
+  type = new GraphQLNonNull(typeMapper.toGraphQL(attribute.type, Model.sequelize.constructor));
 
   result[key] = {
     type: type

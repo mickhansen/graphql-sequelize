@@ -7,7 +7,7 @@ module.exports = function (Model) {
       , type = attribute.type;
 
     memo[key] = {
-      type: typeMapper.toGraphQL(type)
+      type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
     };
 
     if (attribute.allowNull === false || attribute.primaryKey === true) {
