@@ -15,6 +15,8 @@ module.exports = function (target, options) {
         , attributes = selections
         , include = []
         , list = type instanceof GraphQLList
+        , where
+        , limit
         , findOptions;
 
       type = type.ofType || type;
@@ -40,8 +42,22 @@ module.exports = function (target, options) {
 
       attributes = attributes.filter(attribute => ~targetAttributes.indexOf(attribute));
 
+      if (args) {
+        Object.keys(args).forEach(function (key) {
+          if (~targetAttributes.indexOf(key)) {
+            where = where || {};
+            where[key] = args[key];
+          }
+
+          if (key === 'limit') {
+            limit = args[key];
+          }
+        });
+      }
+
       findOptions = {
-        where: args,
+        where: where,
+        limit: limit,
         include: include,
         attributes: attributes
       };

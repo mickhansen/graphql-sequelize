@@ -11,10 +11,12 @@ graphql-sequelize assumes you have graphql and sequelize installed.
 A helper for resolving graphql queries targeted at Sequelize models or associations.
 Please take a look at [the tests](https://github.com/mickhansen/graphql-sequelize/blob/master/test/resolver.test.js) to best get an idea of implementation.
 
-### Supports
+### Features
 
+- Automatically converts args to where if arg keys matches model attributes
+- Automatically converts a integer arg named 'limit' to a sequelize limit
 - Only loads the attributes defined in the query (automatically adds primary key and foreign keys)
-- Prefetching nested resolves with includes/joins
+- Prefetching nested resolvers with includes/joins
 
 ### Examples 
 

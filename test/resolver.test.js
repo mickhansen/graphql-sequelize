@@ -27,10 +27,19 @@ describe('resolver', function () {
 
   User = sequelize.define('user', {
     name: Sequelize.STRING
+  }, {
+    timestamps: false
   });
 
   Task = sequelize.define('task', {
-    title: Sequelize.STRING
+    title: Sequelize.STRING,
+    createdAt: {
+      type: Sequelize.DATE,
+      field: 'created_at',
+      defaultValue: Sequelize.NOW
+    }
+  }, {
+    timestamps: false
   });
 
   User.Tasks = User.hasMany(Task, {as: 'tasks', foreignKey: 'userId'});
@@ -81,12 +90,18 @@ describe('resolver', function () {
             id: {
               description: 'id of the user',
               type: new GraphQLNonNull(GraphQLInt)
-            }
+            },
           },
           resolve: resolver(User)
         },
         users: {
           type: new GraphQLList(userType),
+          args: {
+            limit: {
+              description: 'limit the result set',
+              type: GraphQLInt
+            },
+          },
           resolve: resolver(User)
         }
       }
@@ -98,24 +113,28 @@ describe('resolver', function () {
       return Promise.join(
         User.create({
           id: 1,
-          name: Math.random().toString(),
+          name: 'b'+Math.random().toString(),
           tasks: [
             {
-              title: Math.random().toString()
+              title: Math.random().toString(),
+              createdAt: new Date(Date.UTC(2014, 5, 11))
             },
             {
-              title: Math.random().toString()
+              title: Math.random().toString(),
+              createdAt: new Date(Date.UTC(2014, 5, 16))
             },
             {
-              title: Math.random().toString()
+              title: Math.random().toString(),
+              createdAt: new Date(Date.UTC(2014, 5, 20))
             }
           ]
         }, {
+          logging: console.log,
           include: [User.Tasks]
         }),
         User.create({
           id: 2,
-          name: Math.random().toString(),
+          name: 'a'+Math.random().toString(),
           tasks: [
             {
               title: Math.random().toString()
@@ -132,7 +151,7 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a plain result from a simple model', function () {
+  it('should resolve a plain result with a single model', function () {
     var user = this.userB;
 
     return graphql(schema, `
@@ -152,7 +171,7 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve an array result from a simple model', function () {
+  it('should resolve an array result with a single model', function () {
     var users = this.users;
 
     return graphql(schema, `
@@ -171,7 +190,23 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a plain result with associations', function () {
+  it('should resolve an array result with a single model and limit', function () {
+    var users = this.users;
+
+    return graphql(schema, `
+      {
+        users(limit: 1) {
+          name
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users).to.have.length(1);
+    });
+  });
+
+  it('should resolve a plain result with a single hasMany association', function () {
     var user = this.userB;
 
     return graphql(schema, `
@@ -196,7 +231,7 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a array result with associations', function () {
+  it('should resolve a array result with a single hasMany association', function () {
     var users = this.users;
 
     return graphql(schema, `
