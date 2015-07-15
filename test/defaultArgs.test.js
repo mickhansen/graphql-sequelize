@@ -9,7 +9,8 @@ var chai = require('chai')
 
 import {
   GraphQLString,
-  GraphQLInt
+  GraphQLInt,
+  GraphQLNonNull
 } from 'graphql';
 
 describe('defaultArgs', function () {
@@ -22,7 +23,8 @@ describe('defaultArgs', function () {
     args = defaultArgs(Model);
 
     expect(args).to.have.ownProperty('id');
-    expect(args.id.type).to.equal(GraphQLInt);
+    expect(args.id.type).to.be.an.instanceOf(GraphQLNonNull);
+    expect(args.id.type.ofType).to.equal(GraphQLInt);
   });
 
   it('should return a key for a string primary key', function () {
@@ -38,8 +40,8 @@ describe('defaultArgs', function () {
 
     args = defaultArgs(Model);
 
-    expect(args).to.have.ownProperty('modelId');
-    expect(args.modelId.type).to.equal(GraphQLString);
+    expect(args.modelId.type).to.be.an.instanceOf(GraphQLNonNull);
+    expect(args.modelId.type.ofType).to.equal(GraphQLString);
   });
 
   it('should return a key for a string primary key', function () {
@@ -55,7 +57,7 @@ describe('defaultArgs', function () {
 
     args = defaultArgs(Model);
 
-    expect(args).to.have.ownProperty('uuid');
-    expect(args.uuid.type).to.equal(GraphQLString);
+    expect(args.uuid.type).to.be.an.instanceOf(GraphQLNonNull);
+    expect(args.uuid.type.ofType).to.equal(GraphQLString);
   });
 });

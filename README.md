@@ -131,7 +131,7 @@ defaultArgs(Model);
 /*
 {
   id: {
-    type: GraphQLInt
+    type: new GraphQLNonNull(GraphQLInt)
   }
 }
 */
@@ -147,7 +147,7 @@ defaultArgs(Model);
 /*
 {
   project_id: {
-    type: GraphQLString
+    type: new GraphQLNonNull(GraphQLString)
   }
 }
 */

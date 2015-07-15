@@ -1,4 +1,4 @@
-import { GraphQLInt, GraphQLString } from 'graphql';
+import { GraphQLInt, GraphQLString, GraphQLNonNull } from 'graphql';
 import Sequelize from 'sequelize';
 
 module.exports = function (Model) {
@@ -8,9 +8,9 @@ module.exports = function (Model) {
     , type;
 
   if (attribute.type instanceof Sequelize.INTEGER) {
-    type = GraphQLInt;
+    type = new GraphQLNonNull(GraphQLInt);
   } else if (attribute.type instanceof Sequelize.STRING || attribute.type instanceof Sequelize.UUID) {
-    type = GraphQLString;
+    type = new GraphQLNonNull(GraphQLString);
   } else {
     throw new Error(`Unable to convert ${attribute.type.toSql()} to a GraphQL type`);
   }
