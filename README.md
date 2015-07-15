@@ -117,6 +117,42 @@ let schema = new GraphQLSchema({
 
 ## args helpers
 
+### defaultArgs
+
+`defaultArgs(Model)` will return an object containing an arg with a key and type matching your models primary key.
+
+```js
+var Model = sequelize.define('User', {
+  
+});
+
+defaultArgs(Model);
+
+/*
+{
+  id: {
+    type: GraphQLInt
+  }
+}
+*/
+
+var Model = sequelize.define('Project', {
+  project_id: {
+    type: Sequelize.UUID
+  }
+});
+
+defaultArgs(Model);
+
+/*
+{
+  project_id: {
+    type: GraphQLString
+  }
+}
+*/
+```
+
 ### defaultListArgs
 
 `defaultListArgs` will return an object like:
@@ -133,6 +169,7 @@ let schema = new GraphQLSchema({
 ```
 
 Which when added to args will let the resolver automatically support limit and ordering in args for graphql queries.
+Should be be used with fields of type `GraphQLList`
 
 ```js
 import defaultListArgs from 'graphql-sequelize'

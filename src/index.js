@@ -1,4 +1,5 @@
 module.exports = {
   resolver: require('./resolver'),
-  defaultListArgs: require('./defaultListArgs')
+  defaultListArgs: require('./defaultListArgs'),
+  defaultArgs: require('./defaultArgs')
 };
