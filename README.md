@@ -94,9 +94,48 @@ let schema = new GraphQLSchema({
       users: {
         // The resolver will use `findOne` or `findAll` depending on whether the field it's used in is a `GraphQLList` or not.
         type: new GraphQLList(userType),
+        args: {
+          // An arg with the key limit will automatically be converted to a limit on the target
+          limit: {
+            type: GraphQLInt
+          },
+          // An arg with the key order will automatically be converted to a order on the target
+          order: {
+            type: GraphQLString
+          }
+        },
         resolve: resolver(User)
       }
     }
   })
 });
+```
+
+## `args` helpers
+
+### defaultListArgs
+
+`defaultListArgs` will return an object like:
+
+```js
+{
+  limit: {
+    type: GraphQLInt
+  },
+  order: {
+    type: GraphQLString
+  }
+}
+```
+
+Which when added to args will let the resolver automatically support limit and ordering in args for graphql queries.
+
+```js
+import defaultListArgs from 'graphql-sequelize'
+
+args: {
+  _.assign(defaultListArgs(), {
+    // ... additional args
+  })
+}
 ```
