@@ -14,7 +14,8 @@ module.exports = function (target, options) {
       var selections = ast.selectionSet.selections.map(selection => selection.name.value)
         , attributes = selections
         , include = []
-        , list = type instanceof GraphQLList;
+        , list = type instanceof GraphQLList
+        , findOptions;
 
       type = type.ofType || type;
 
@@ -39,7 +40,7 @@ module.exports = function (target, options) {
 
       attributes = attributes.filter(attribute => ~targetAttributes.indexOf(attribute));
 
-      let findOptions = {
+      findOptions = {
         where: args,
         include: include,
         attributes: attributes
