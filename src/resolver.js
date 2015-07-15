@@ -23,13 +23,15 @@ module.exports = function (target, options) {
       }
 
       selections.forEach(function (selection) {
-        let association = $type._fields[selection] && $type._fields[selection].resolve && $type._fields[selection].resolve.$association;
+        let association = $type._fields[selection].resolve && $type._fields[selection].resolve.$association;
 
         if (association) {
           if (options.include) {
             include.push(association);
           } else if (association.associationType === 'BelongsTo') {
-            attributes.push(association.foreignKey);
+            if (!~attributes.indexOf(association.foreignKey)) {
+              attributes.push(association.foreignKey);
+            }
           }
         }
       });

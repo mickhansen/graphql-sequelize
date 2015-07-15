@@ -125,7 +125,8 @@ describe('resolver', function () {
       title: Sequelize.STRING
     });
 
-    User.Tasks = User.hasMany(Task, {as: 'tasks'});
+    User.Tasks = User.hasMany(Task, {as: 'tasks', foreignKey: 'userId'});
+    Task.User = Task.belongsTo(User, {as: 'user', foreignKey: 'userId'});
 
     let taskType = new GraphQLObjectType({
       name: 'Task',
