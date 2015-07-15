@@ -4,25 +4,38 @@ import _ from 'lodash';
 
 module.exports = function (target, options) {
   var resolver
-    , targetAttributes = target instanceof Sequelize.Model ? Object.keys(target.rawAttributes) : Object.keys(target.target.rawAttributes)
-    , argsToFindOptions = function(args) {
-        var result = {};
+    , targetAttributes
+    , argsToFindOptions;
 
-        if (args) {
-          Object.keys(args).forEach(function (key) {
-            if (~targetAttributes.indexOf(key)) {
-              result.where = result.where || {};
-              result.where[key] = args[key];
-            }
+  targetAttributes = target instanceof Sequelize.Model ?
+                     Object.keys(target.rawAttributes) :
+                     Object.keys(target.target.rawAttributes);
 
-            if (key === 'limit') {
-              result.limit = args[key];
-            }
-          });
+  argsToFindOptions = function (args) {
+    var result = {};
+
+    if (args) {
+      Object.keys(args).forEach(function (key) {
+        if (~targetAttributes.indexOf(key)) {
+          result.where = result.where || {};
+          result.where[key] = args[key];
         }
 
-        return result;
-      };
+        if (key === 'limit' && args[key]) {
+          result.limit = args[key];
+        }
+
+        if (key === 'order' && args[key]) {
+          result.order = [
+            [args[key]]
+          ];
+        }
+      });
+    }
+
+    result.logging = options.logging;
+    return result;
+  };
 
   options = options || {};
   if (options.include === undefined) options.include = true;
@@ -67,6 +80,21 @@ module.exports = function (target, options) {
           includeOptions = argsToFindOptions(args);
 
           if (options.include && !includeOptions.limit) {
+            if (includeOptions.order) {
+              includeOptions.order.map(function (order) {
+                order.unshift({
+                  model: association.target,
+                  as: association.options.as
+                });
+
+                return order;
+              });
+
+              findOptions.order = (findOptions.order || []).concat(includeOptions.order);
+
+              delete includeOptions.order;
+            }
+
             include.push(_.assign({association: association}, includeOptions));
           } else if (association.associationType === 'BelongsTo') {
             if (!~attributes.indexOf(association.foreignKey)) {
@@ -78,15 +106,15 @@ module.exports = function (target, options) {
 
       findOptions.include = include;
       findOptions.attributes = attributes;
-      
 
       return target[list ? 'findAll' : 'findOne'](findOptions);
     };
   }
 
   if (target instanceof require('sequelize/lib/associations/base')) {
-    resolver = function (source, args, root, ast, type) {
-      return source.get(target.as) || source[target.accessors.get](argsToFindOptions(args));
+    resolver = function (source, args) {
+      return source.get(target.as) ||
+             source[target.accessors.get](argsToFindOptions(args));
     };
 
     resolver.$association = target;

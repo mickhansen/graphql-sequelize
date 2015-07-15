@@ -50,12 +50,10 @@ describe('resolver', function () {
     description: 'A task',
     fields: {
       id: {
-        type: new GraphQLNonNull(GraphQLInt),
-        description: 'The id of the task.',
+        type: new GraphQLNonNull(GraphQLInt)
       },
       title: {
-        type: GraphQLString,
-        description: 'The title of the task.',
+        type: GraphQLString
       }
     }
   });
@@ -66,19 +64,18 @@ describe('resolver', function () {
     fields: {
       id: {
         type: new GraphQLNonNull(GraphQLInt),
-        description: 'The id of the user.',
       },
       name: {
         type: GraphQLString,
-        description: 'The name of the user.',
       },
       tasks: {
         type: new GraphQLList(taskType),
-        description: 'The tasks of the user, or an empty list if they have none.',
         args: {
           limit: {
-            description: 'limit the result set',
             type: GraphQLInt
+          },
+          order: {
+            type: GraphQLString
           }
         },
         resolve: resolver(User.Tasks)
@@ -94,7 +91,6 @@ describe('resolver', function () {
           type: userType,
           args: {
             id: {
-              description: 'id of the user',
               type: new GraphQLNonNull(GraphQLInt)
             },
           },
@@ -104,8 +100,10 @@ describe('resolver', function () {
           type: new GraphQLList(userType),
           args: {
             limit: {
-              description: 'limit the result set',
               type: GraphQLInt
+            },
+            order: {
+              type: GraphQLString
             }
           },
           resolve: resolver(User)
@@ -115,6 +113,9 @@ describe('resolver', function () {
   });
 
   before(function () {
+    var userId = 0
+      , taskId = 0;
+
     return this.sequelize.sync({force: true}).bind(this).then(function () {
       return Promise.join(
         User.create({
@@ -122,14 +123,17 @@ describe('resolver', function () {
           name: 'b'+Math.random().toString(),
           tasks: [
             {
+              id: ++taskId,
               title: Math.random().toString(),
               createdAt: new Date(Date.UTC(2014, 5, 11))
             },
             {
+              id: ++taskId,
               title: Math.random().toString(),
               createdAt: new Date(Date.UTC(2014, 5, 16))
             },
             {
+              id: ++taskId,
               title: Math.random().toString(),
               createdAt: new Date(Date.UTC(2014, 5, 20))
             }
@@ -142,9 +146,11 @@ describe('resolver', function () {
           name: 'a'+Math.random().toString(),
           tasks: [
             {
+              id: ++taskId,
               title: Math.random().toString()
             },
             {
+              id: ++taskId,
               title: Math.random().toString()
             }
           ]
@@ -263,9 +269,9 @@ describe('resolver', function () {
 
     return graphql(schema, `
       {
-        users { 
+        users(order: "id") { 
           name
-          tasks {
+          tasks(order: "id") {
             title
           }
         }
