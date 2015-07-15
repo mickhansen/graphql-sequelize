@@ -75,6 +75,12 @@ describe('resolver', function () {
       tasks: {
         type: new GraphQLList(taskType),
         description: 'The tasks of the user, or an empty list if they have none.',
+        args: {
+          limit: {
+            description: 'limit the result set',
+            type: GraphQLInt
+          }
+        },
         resolve: resolver(User.Tasks)
       }
     }
@@ -100,7 +106,7 @@ describe('resolver', function () {
             limit: {
               description: 'limit the result set',
               type: GraphQLInt
-            },
+            }
           },
           resolve: resolver(User)
         }
@@ -129,13 +135,15 @@ describe('resolver', function () {
             }
           ]
         }, {
-          logging: console.log,
           include: [User.Tasks]
         }),
         User.create({
           id: 2,
           name: 'a'+Math.random().toString(),
           tasks: [
+            {
+              title: Math.random().toString()
+            },
             {
               title: Math.random().toString()
             }
@@ -231,6 +239,25 @@ describe('resolver', function () {
     });
   });
 
+  it('should resolve a plain result with a single limited hasMany association', function () {
+    var user = this.userB;
+
+    return graphql(schema, `
+      { 
+        user(id: ${user.id}) {
+          name
+          tasks(limit: 1) {
+            title
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.user.tasks).to.have.length(1);
+    });
+  });
+
   it('should resolve a array result with a single hasMany association', function () {
     var users = this.users;
 
@@ -258,6 +285,28 @@ describe('resolver', function () {
             tasks: user.tasks.map(task => ({title: task.title}))
           }
         })
+      });
+    });
+  });
+
+  it('should resolve a array result with a single limited hasMany association', function () {
+    var users = this.users;
+
+    return graphql(schema, `
+      {
+        users { 
+          name
+          tasks(limit: 1) {
+            title
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users.length).to.equal(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.tasks).length.to.be(1);
       });
     });
   });
