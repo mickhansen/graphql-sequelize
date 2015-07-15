@@ -6,3 +6,6 @@ node_js:
 
 script:
   - "npm run check"
+
+notifications:
+  email: false
