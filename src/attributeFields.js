@@ -1,8 +1,12 @@
 import * as typeMapper from './typeMapper';
 import { GraphQLNonNull } from 'graphql';
 
-module.exports = function (Model) {
+module.exports = function (Model, options) {
+  options = options || {};
+
   var result = Object.keys(Model.rawAttributes).reduce(function (memo, key) {
+    if (options.exclude && ~options.exclude.indexOf(key)) return memo;
+
     var attribute = Model.rawAttributes[key]
       , type = attribute.type;
 

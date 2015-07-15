@@ -14,22 +14,22 @@ import {
 } from 'graphql';
 
 describe('attributeFields', function () {
-  it('should return fields for a simple model', function () {
-    var Model = sequelize.define(Math.random().toString(), {
-      email: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      firstName: {
-        type: Sequelize.STRING
-      },
-      lastName: {
-        type: Sequelize.STRING
-      }
-    }, {
-      timestamps: false
-    });
+  var Model = sequelize.define(Math.random().toString(), {
+    email: {
+      type: Sequelize.STRING,
+      allowNull: false
+    },
+    firstName: {
+      type: Sequelize.STRING
+    },
+    lastName: {
+      type: Sequelize.STRING
+    }
+  }, {
+    timestamps: false
+  });
 
+  it('should return fields for a simple model', function () {
     var fields = attributeFields(Model);
 
     expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName']);
@@ -43,5 +43,13 @@ describe('attributeFields', function () {
     expect(fields.firstName.type).to.equal(GraphQLString);
 
     expect(fields.lastName.type).to.equal(GraphQLString);
+  });
+
+  it('should be possible to exclude fields', function () {
+    var fields = attributeFields(Model, {
+      exclude: ['id', 'email']
+    });
+
+    expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
   });
 });

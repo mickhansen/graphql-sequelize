@@ -7,6 +7,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     return GraphQLInt;
   } else if (
     sequelizeType instanceof sequelizeTypes.STRING ||
+    sequelizeType instanceof sequelizeTypes.TEXT ||
     sequelizeType instanceof sequelizeTypes.UUID ||
     sequelizeType instanceof sequelizeTypes.DATE
   ) {
