@@ -10,7 +10,7 @@ module.exports = function (Model) {
       type: typeMapper.toGraphQL(type)
     };
 
-    if (attribute.allowNull === false) {
+    if (attribute.allowNull === false || attribute.primaryKey === true) {
       memo[key].type = new GraphQLNonNull(memo[key].type);
     }
 
