@@ -223,7 +223,7 @@ describe('resolver', function () {
               }
             },
             resolve: resolver(User, {
-              before: function(options, root) {
+              before: function(options, args, root) {
                 options.where = options.where || {};
                 options.where.name = root.name;
                 return options;

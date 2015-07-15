@@ -107,7 +107,7 @@ module.exports = function (target, options) {
       findOptions.attributes = attributes;
       findOptions.root = root;
 
-      return target[list ? 'findAll' : 'findOne'](options.before(findOptions, root));
+      return target[list ? 'findAll' : 'findOne'](options.before(findOptions, args, root));
     };
   }
 
@@ -120,7 +120,7 @@ module.exports = function (target, options) {
       var findOptions = argsToFindOptions(args);
       findOptions.root = root;
 
-      return source[target.accessors.get](options.before(findOptions, root));
+      return source[target.accessors.get](options.before(findOptions, args, root));
     };
 
     resolver.$association = target;
