@@ -13,17 +13,19 @@ module.exports = function (target, options) {
     let targetAttributes = Object.keys(target.rawAttributes);
 
     resolver = function(source, args, root, ast, type) {
-      let selections = ast.selectionSet.selections.map(selection => selection.name.value);
-      let attributes = selections;
-      let include = [];
-      let $type = type.ofType || type;
+      var selections = ast.selectionSet.selections.map(selection => selection.name.value)
+        , attributes = selections
+        , include = []
+        , list = type instanceof GraphQLList;
+
+      type = type.ofType || type;
 
       if (!~attributes.indexOf(target.primaryKeyAttribute)) {
         attributes.push(target.primaryKeyAttribute);
       }
 
       selections.forEach(function (selection) {
-        let association = $type._fields[selection].resolve && $type._fields[selection].resolve.$association;
+        var association = type._fields[selection].resolve && type._fields[selection].resolve.$association;
 
         if (association) {
           if (options.include) {
@@ -44,7 +46,7 @@ module.exports = function (target, options) {
         attributes: attributes
       };
 
-      return target[type instanceof GraphQLList ? 'findAll' : 'findOne'](findOptions);
+      return target[list ? 'findAll' : 'findOne'](findOptions);
     };
   }
 

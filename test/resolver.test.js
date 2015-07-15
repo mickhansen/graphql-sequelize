@@ -19,177 +19,82 @@ import {
 } from 'graphql';
 
 describe('resolver', function () {
-  let User = sequelize.define('user', {
+  var User
+    , Task
+    , taskType
+    , userType
+    , schema
+
+  User = sequelize.define('user', {
     name: Sequelize.STRING
   });
 
-  describe('model', function () {
-    let userType = new GraphQLObjectType({
-      name: 'User',
-      description: 'A user',
-      fields: {
-        id: {
-          type: new GraphQLNonNull(GraphQLInt),
-          description: 'The id of the user.',
-        },
-        name: {
-          type: GraphQLString,
-          description: 'The name of the user.',
-        }
-      }
-    });
-
-    beforeEach(function () {
-      return sequelize.sync({force: true});
-    });
-
-    it('should resolve a plain result from a simple model', function () {
-      let schema = new GraphQLSchema({
-        query: new GraphQLObjectType({
-          name: 'RootQueryType',
-          fields: {
-            user: {
-              type: userType,
-              args: {
-                id: {
-                  description: 'id of the user',
-                  type: new GraphQLNonNull(GraphQLInt)
-                }
-              },
-              resolve: resolver(User)
-            }
-          }
-        })
-      });
-
-      let name = Math.random().toString();
-
-      return User.bulkCreate([{
-        id: 1,
-        name: Math.random().toString()
-      }, {
-        id: 2,
-        name: name
-      }]).then(function () {
-        return graphql(schema, '{ user(id: 2) { name } }').then(function (result) {
-          expect(result.data).to.deep.equal({
-            user: {
-              name: name
-            }
-          });
-        });
-      });
-    });
-
-    it('should resolve an array result from a simple model', function () {
-      let schema = new GraphQLSchema({
-        query: new GraphQLObjectType({
-          name: 'RootQueryType',
-          fields: {
-            users: {
-              type: new GraphQLList(userType),
-              resolve: resolver(User)
-            }
-          }
-        })
-      });
-
-      let nameA = Math.random().toString();
-      let nameB = Math.random().toString();
-
-      return User.bulkCreate([{
-        id: 1,
-        name: nameA
-      }, {
-        id: 2,
-        name: nameB
-      }]).then(function () {
-        return graphql(schema, '{ users { name } }').then(function (result) {
-          expect(result.data).to.deep.equal({
-            users: [
-              {
-                name: nameA
-              },
-              {
-                name: nameB
-              }
-            ]
-          });
-        });
-      });
-    });
+  Task = sequelize.define('task', {
+    title: Sequelize.STRING
   });
 
-  describe('associations', function () {
-    let Task = sequelize.define('task', {
-      title: Sequelize.STRING
-    });
+  User.Tasks = User.hasMany(Task, {as: 'tasks', foreignKey: 'userId'});
+  Task.User = Task.belongsTo(User, {as: 'user', foreignKey: 'userId'});
 
-    User.Tasks = User.hasMany(Task, {as: 'tasks', foreignKey: 'userId'});
-    Task.User = Task.belongsTo(User, {as: 'user', foreignKey: 'userId'});
-
-    let taskType = new GraphQLObjectType({
-      name: 'Task',
-      description: 'A task',
-      fields: {
-        id: {
-          type: new GraphQLNonNull(GraphQLInt),
-          description: 'The id of the task.',
-        },
-        title: {
-          type: GraphQLString,
-          description: 'The title of the task.',
-        }
+  taskType = new GraphQLObjectType({
+    name: 'Task',
+    description: 'A task',
+    fields: {
+      id: {
+        type: new GraphQLNonNull(GraphQLInt),
+        description: 'The id of the task.',
+      },
+      title: {
+        type: GraphQLString,
+        description: 'The title of the task.',
       }
-    });
+    }
+  });
 
-    let userType = new GraphQLObjectType({
-      name: 'User',
-      description: 'A user',
-      fields: {
-        id: {
-          type: new GraphQLNonNull(GraphQLInt),
-          description: 'The id of the user.',
-        },
-        name: {
-          type: GraphQLString,
-          description: 'The name of the user.',
-        },
-        tasks: {
-          type: new GraphQLList(taskType),
-          description: 'The tasks of the user, or an empty list if they have none.',
-          resolve: resolver(User.Tasks)
-        }
+  userType = new GraphQLObjectType({
+    name: 'User',
+    description: 'A user',
+    fields: {
+      id: {
+        type: new GraphQLNonNull(GraphQLInt),
+        description: 'The id of the user.',
+      },
+      name: {
+        type: GraphQLString,
+        description: 'The name of the user.',
+      },
+      tasks: {
+        type: new GraphQLList(taskType),
+        description: 'The tasks of the user, or an empty list if they have none.',
+        resolve: resolver(User.Tasks)
       }
-    });
+    }
+  });
 
-    beforeEach(function () {
-      return sequelize.sync({force: true});
-    });
-
-    it('should resolve a plain result with associations', function () {
-      let schema = new GraphQLSchema({
-        query: new GraphQLObjectType({
-          name: 'RootQueryType',
-          fields: {
-            user: {
-              type: userType,
-              args: {
-                id: {
-                  description: 'id of the user',
-                  type: new GraphQLNonNull(GraphQLInt)
-                }
-              },
-              resolve: resolver(User)
+  schema = new GraphQLSchema({
+    query: new GraphQLObjectType({
+      name: 'RootQueryType',
+      fields: {
+        user: {
+          type: userType,
+          args: {
+            id: {
+              description: 'id of the user',
+              type: new GraphQLNonNull(GraphQLInt)
             }
-          }
-        })
-      });
+          },
+          resolve: resolver(User)
+        },
+        users: {
+          type: new GraphQLList(userType),
+          resolve: resolver(User)
+        }
+      }
+    })
+  });
 
-      let name = Math.random().toString();
-      let titleA = Math.random().toString();
-      let titleB = Math.random().toString();
-
+  before(function () {
+    return this.sequelize.sync({force: true}).bind(this).then(function () {
       return Promise.join(
         User.create({
           id: 1,
@@ -210,127 +115,114 @@ describe('resolver', function () {
         }),
         User.create({
           id: 2,
-          name: name,
+          name: Math.random().toString(),
           tasks: [
             {
-              title: titleA
-            },
-            {
-              title: titleB
+              title: Math.random().toString()
             }
           ]
         }, {
           include: [User.Tasks]
         })
-      ).then(function () {
-        return graphql(schema, '{ user(id: 2) { name, tasks { title } } }').then(function (result) {
-          expect(result.data).to.deep.equal({
-            user: {
-              name: name,
-              tasks: [
-                {
-                  title: titleA
-                },
-                {
-                  title: titleB
-                }
-              ]
-            }
-          });
-        });
+      ).bind(this).spread(function (userA, userB) {
+        this.userA = userA;
+        this.userB = userB;
+        this.users = [userA, userB];
       });
     });
+  });
 
-    it('should resolve a array result with associations', function () {
-      let schema = new GraphQLSchema({
-        query: new GraphQLObjectType({
-          name: 'RootQueryType',
-          fields: {
-            users: {
-              type: new GraphQLList(userType),
-              resolve: resolver(User)
-            }
+  it('should resolve a plain result from a simple model', function () {
+    var user = this.userB;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data).to.deep.equal({
+        user: {
+          name: user.name
+        }
+      });
+    });
+  });
+
+  it('should resolve an array result from a simple model', function () {
+    var users = this.users;
+
+    return graphql(schema, `
+      {
+        users {
+          name
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users).to.have.length.above(0);
+      expect(result.data).to.deep.equal({
+        users: users.map(user => ({name: user.name}))
+      });
+    });
+  });
+
+  it('should resolve a plain result with associations', function () {
+    var user = this.userB;
+
+    return graphql(schema, `
+      { 
+        user(id: ${user.id}) {
+          name
+          tasks {
+            title
           }
-        })
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.user.tasks).to.have.length.above(0);
+      expect(result.data).to.deep.equal({
+        user: {
+          name: user.name,
+          tasks: user.tasks.map(task => ({title: task.title}))
+        }
+      });
+    });
+  });
+
+  it('should resolve a array result with associations', function () {
+    var users = this.users;
+
+    return graphql(schema, `
+      {
+        users { 
+          name
+          tasks {
+            title
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users.length).to.equal(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.tasks).length.to.be.above(0);
       });
 
-      let nameA = Math.random().toString();
-      let nameB = Math.random().toString();
-      let titleA = Math.random().toString();
-      let titleB = Math.random().toString();
-      let titleC = Math.random().toString();
-      let titleD = Math.random().toString();
-      let titleE = Math.random().toString();
-
-      return Promise.join(
-        User.create({
-          id: 1,
-          name: nameA,
-          tasks: [
-            {
-              id: 1,
-              title: titleC
-            },
-            {
-              id: 2,
-              title: titleD
-            },
-            {
-              id: 3,
-              title: titleE
-            }
-          ]
-        }, {
-          include: [User.Tasks]
-        }),
-        User.create({
-          id: 2,
-          name: nameB,
-          tasks: [
-            {
-              id: 4,
-              title: titleA
-            },
-            {
-              id: 5,
-              title: titleB
-            }
-          ]
-        }, {
-          include: [User.Tasks]
+      expect(result.data).to.deep.equal({
+        users: users.map(function (user) {
+          return {
+            name: user.name,
+            tasks: user.tasks.map(task => ({title: task.title}))
+          }
         })
-      ).then(function () {
-        return graphql(schema, '{ users { name, tasks { title } } }').then(function (result) {
-          expect(result.data).to.deep.equal({
-            users: [
-              {
-                name: nameA,
-                tasks: [
-                  {
-                    title: titleC
-                  },
-                  {
-                    title: titleD
-                  },
-                  {
-                    title: titleE
-                  }
-                ]
-              },
-              {
-                name: nameB,
-                tasks: [
-                  {
-                    title: titleA
-                  },
-                  {
-                    title: titleB
-                  }
-                ]
-              }
-            ]
-          });
-        });
       });
     });
   });

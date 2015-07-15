@@ -8,7 +8,7 @@ Helper.sequelize = new Sequelize(null, null, null, {
   logging: false
 });
 
-beforeEach(function () {
+before(function () {
   this.sequelize = Helper.sequelize;
 });
 
