@@ -23,7 +23,7 @@ describe('resolver', function () {
     , Task
     , taskType
     , userType
-    , schema
+    , schema;
 
   User = sequelize.define('user', {
     name: Sequelize.STRING
@@ -92,7 +92,7 @@ describe('resolver', function () {
           args: {
             id: {
               type: new GraphQLNonNull(GraphQLInt)
-            },
+            }
           },
           resolve: resolver(User)
         },

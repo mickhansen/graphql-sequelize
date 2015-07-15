@@ -2,6 +2,7 @@
 
 - [Installation](#installation)
 - [Resolve helpers](#resolve-helpers)
+- [field helpers](#field-helpers)
 - [args helpers](#args-helpers)
 
 ## Installation
@@ -111,6 +112,54 @@ let schema = new GraphQLSchema({
         resolve: resolver(User)
       }
     }
+  })
+});
+```
+
+## field helpers
+
+field helpers help you automatically define a models attributes as fields for a GraphQL object type.
+
+```js
+var Model = sequelize.define('User', {
+  email: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  firstName: {
+    type: Sequelize.STRING
+  },
+  lastName: {
+    type: Sequelize.STRING
+  }
+});
+
+import attributeFields from 'graphql-sequelize';
+
+attributeFields(Model);
+
+/*
+{
+  id: {
+    type: new GraphQLNonNull(GraphQLInt)
+  },
+  email: {
+    type: new GraphQLNonNull(GraphQLString)
+  },
+  firstName: {
+    type: GraphQLString
+  },
+  lastName: {
+    type: GraphQLString
+  }
+}
+*/
+
+userType = new GraphQLObjectType({
+  name: 'User',
+  description: 'A user',
+  fields: _.assign(attributeFields(Model), {
+    // ... extra fields
   })
 });
 ```
