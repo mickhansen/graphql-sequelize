@@ -1,5 +1,9 @@
 # graphql-sequelize
 
+- [Installation](#installation)
+- [Resolve helpers](#resolve-helpers)
+- [args helpers](#args-helpers)
+
 ## Installation
 
 `$ npm install --save-dev graphql-sequelize`
@@ -111,7 +115,7 @@ let schema = new GraphQLSchema({
 });
 ```
 
-## `args` helpers
+## args helpers
 
 ### defaultListArgs
 
