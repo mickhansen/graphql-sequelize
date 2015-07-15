@@ -79,7 +79,7 @@
     "no-new-wrappers": 2,
     "no-octal": 2,
     "no-octal-escape": 2,
-    "no-param-reassign": 2,
+    "no-param-reassign": 0,
     "no-process-env": 0,
     "no-proto": 2,
     "no-redeclare": 2,
@@ -131,6 +131,7 @@
     "no-path-concat": 2,
     "no-process-exit": 0,
     "no-restricted-modules": 0,
+    "curly": 0,
     "no-sync": 2,
     "indent": [
       2,
@@ -153,10 +154,7 @@
       }
     ],
     "comma-spacing": 0,
-    "comma-style": [
-      2,
-      "last"
-    ],
+    "comma-style": 0,
     "consistent-this": 0,
     "eol-last": 2,
     "func-names": 0,
@@ -184,10 +182,7 @@
     "no-trailing-spaces": 2,
     "no-underscore-dangle": 0,
     "no-wrap-func": 2,
-    "one-var": [
-      2,
-      "never"
-    ],
+    "one-var": 0,
     "operator-assignment": [
       2,
       "always"

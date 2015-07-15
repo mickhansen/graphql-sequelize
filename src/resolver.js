@@ -1,7 +1,5 @@
 import Sequelize from 'sequelize';
-import {
-  GraphQLList
-} from 'graphql';
+import { GraphQLList } from 'graphql';
 
 module.exports = function (target, options) {
   var resolver;
@@ -12,7 +10,7 @@ module.exports = function (target, options) {
   if (target instanceof Sequelize.Model) {
     let targetAttributes = Object.keys(target.rawAttributes);
 
-    resolver = function(source, args, root, ast, type) {
+    resolver = function (source, args, root, ast, type) {
       var selections = ast.selectionSet.selections.map(selection => selection.name.value)
         , attributes = selections
         , include = []
@@ -25,7 +23,8 @@ module.exports = function (target, options) {
       }
 
       selections.forEach(function (selection) {
-        var association = type._fields[selection].resolve && type._fields[selection].resolve.$association;
+        var association = type._fields[selection].resolve &&
+                          type._fields[selection].resolve.$association;
 
         if (association) {
           if (options.include) {
@@ -51,7 +50,7 @@ module.exports = function (target, options) {
   }
 
   if (target instanceof require('sequelize/lib/associations/base')) {
-    resolver = function(source) {
+    resolver = function (source) {
       return source.get(target.as) || source[target.accessors.get]({
 
       });
