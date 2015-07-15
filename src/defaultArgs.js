@@ -10,7 +10,7 @@ module.exports = function (Model) {
   if (attribute.type instanceof Sequelize.INTEGER) {
     type = GraphQLInt;
   } else if (attribute.type instanceof Sequelize.STRING || attribute.type instanceof Sequelize.UUID) {
-    type = GraphQLString
+    type = GraphQLString;
   } else {
     throw new Error(`Unable to convert ${attribute.type.toSql()} to a GraphQL type`);
   }
