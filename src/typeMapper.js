@@ -1,8 +1,10 @@
-import { GraphQLInt, GraphQLString, GraphQLBoolean } from 'graphql';
+import { GraphQLInt, GraphQLString, GraphQLBoolean, GraphQLFloat } from 'graphql';
 
 export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof sequelizeTypes.BOOLEAN) {
     return GraphQLBoolean;
+  } else if (sequelizeType instanceof sequelizeTypes.FLOAT) {
+    return GraphQLFloat;
   } else if (sequelizeType instanceof sequelizeTypes.INTEGER) {
     return GraphQLInt;
   } else if (

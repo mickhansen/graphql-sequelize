@@ -10,6 +10,7 @@ var chai = require('chai')
 import {
   GraphQLString,
   GraphQLInt,
+  GraphQLFloat,
   GraphQLNonNull
 } from 'graphql';
 
@@ -24,6 +25,9 @@ describe('attributeFields', function () {
     },
     lastName: {
       type: Sequelize.STRING
+    },
+    float: {
+      type: Sequelize.FLOAT
     }
   }, {
     timestamps: false
@@ -32,7 +36,7 @@ describe('attributeFields', function () {
   it('should return fields for a simple model', function () {
     var fields = attributeFields(Model);
 
-    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName']);
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'float']);
 
     expect(fields.id.type).to.be.an.instanceOf(GraphQLNonNull);
     expect(fields.id.type.ofType).to.equal(GraphQLInt);
@@ -43,11 +47,13 @@ describe('attributeFields', function () {
     expect(fields.firstName.type).to.equal(GraphQLString);
 
     expect(fields.lastName.type).to.equal(GraphQLString);
+
+    expect(fields.float.type).to.equal(GraphQLFloat);
   });
 
   it('should be possible to exclude fields', function () {
     var fields = attributeFields(Model, {
-      exclude: ['id', 'email']
+      exclude: ['id', 'email', 'float']
     });
 
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
