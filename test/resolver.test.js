@@ -22,8 +22,10 @@ import {
 describe('resolver', function () {
   var User
     , Task
+    , Project
     , taskType
     , userType
+    , projectType
     , schema;
 
   User = sequelize.define('user', {
@@ -43,8 +45,28 @@ describe('resolver', function () {
     timestamps: false
   });
 
+  Project = sequelize.define('project', {
+    name: Sequelize.STRING
+  }, {
+    timestamps: false
+  });
+
   User.Tasks = User.hasMany(Task, {as: 'tasks', foreignKey: 'userId'});
   Task.User = Task.belongsTo(User, {as: 'user', foreignKey: 'userId'});
+
+  Task.Project = Task.belongsTo(Project, {as: 'project', foreignKey: 'projectId'});
+
+  projectType = new GraphQLObjectType({
+    name: 'Project',
+    fields: {
+      id: {
+        type: new GraphQLNonNull(GraphQLInt)
+      },
+      name: {
+        type: GraphQLString
+      }
+    }
+  })
 
   taskType = new GraphQLObjectType({
     name: 'Task',
@@ -55,6 +77,10 @@ describe('resolver', function () {
       },
       title: {
         type: GraphQLString
+      },
+      project: {
+        type: projectType,
+        resolve: resolver(Task.Project)
       }
     }
   });
@@ -131,53 +157,73 @@ describe('resolver', function () {
 
   before(function () {
     var userId = 0
-      , taskId = 0;
+      , taskId = 0
+      , projectId = 0;
 
     return this.sequelize.sync({force: true}).bind(this).then(function () {
       return Promise.join(
-        User.create({
-          id: 1,
-          name: 'b'+Math.random().toString(),
-          tasks: [
-            {
-              id: ++taskId,
-              title: Math.random().toString(),
-              createdAt: new Date(Date.UTC(2014, 5, 11))
-            },
-            {
-              id: ++taskId,
-              title: Math.random().toString(),
-              createdAt: new Date(Date.UTC(2014, 5, 16))
-            },
-            {
-              id: ++taskId,
-              title: Math.random().toString(),
-              createdAt: new Date(Date.UTC(2014, 5, 20))
-            }
-          ]
-        }, {
-          include: [User.Tasks]
+        Project.create({
+          id: ++projectId,
+          name: 'b'+Math.random().toString()
         }),
-        User.create({
-          id: 2,
-          name: 'a'+Math.random().toString(),
-          tasks: [
-            {
-              id: ++taskId,
-              title: Math.random().toString()
-            },
-            {
-              id: ++taskId,
-              title: Math.random().toString()
-            }
-          ]
-        }, {
-          include: [User.Tasks]
+        Project.create({
+          id: ++projectId,
+          name: 'a'+Math.random().toString()
         })
-      ).bind(this).spread(function (userA, userB) {
-        this.userA = userA;
-        this.userB = userB;
-        this.users = [userA, userB];
+      ).bind(this).spread(function (projectA, projectB) {
+        this.projectA = projectA;
+        this.projectB = projectB;
+      }).bind(this).then(function () {
+        return Promise.join(
+          User.create({
+            id: 1,
+            name: 'b'+Math.random().toString(),
+            tasks: [
+              {
+                id: ++taskId,
+                title: Math.random().toString(),
+                createdAt: new Date(Date.UTC(2014, 5, 11)),
+                projectId: this.projectA.id
+              },
+              {
+                id: ++taskId,
+                title: Math.random().toString(),
+                createdAt: new Date(Date.UTC(2014, 5, 16)),
+                projectId: this.projectB.id
+              },
+              {
+                id: ++taskId,
+                title: Math.random().toString(),
+                createdAt: new Date(Date.UTC(2014, 5, 20)),
+                projectId: this.projectA.id
+              }
+            ]
+          }, {
+            include: [User.Tasks]
+          }),
+          User.create({
+            id: 2,
+            name: 'a'+Math.random().toString(),
+            tasks: [
+              {
+                id: ++taskId,
+                title: Math.random().toString(),
+                projectId: this.projectB.id
+              },
+              {
+                id: ++taskId,
+                title: Math.random().toString(),
+                projectId: this.projectB.id
+              }
+            ]
+          }, {
+            include: [User.Tasks]
+          })
+        ).bind(this).spread(function (userA, userB) {
+          this.userA = userA;
+          this.userB = userB;
+          this.users = [userA, userB];
+        });
       });
     });
   });
@@ -469,6 +515,38 @@ describe('resolver', function () {
       result.data.users.forEach(function (user) {
         expect(user.tasks).length.to.be(1);
       });
+    });
+  });
+
+  it('should resolve a array result with a single limited hasMany association with a nested belongsTo relation', function () {
+    var users = this.users
+      , sqlSpy = sinon.spy()
+
+    return graphql(schema, `
+      {
+        users { 
+          tasks(limit: 2) {
+            title
+            project {
+              name
+            }
+          }
+        }
+      }
+    `, {
+      logging: sqlSpy
+    }).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users.length).to.equal(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.tasks).length.to.be(2);
+        user.tasks.forEach(function (task) {
+          expect(task.project.name).to.be.ok;
+        });
+      });
+
+      expect(sqlSpy.callCount).to.equal(1 + users.length);
     });
   });
 

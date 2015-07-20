@@ -4,11 +4,13 @@ import _ from 'lodash';
 module.exports = function (target, options) {
   var resolver
     , targetAttributes
-    , argsToFindOptions;
+    , argsToFindOptions
+    , isModel = !!target.getTableName
+    , isAssociation = !!target.associationType
+    , association = isAssociation && target
+    , model = isAssociation && target.target || isModel && target;
 
-  targetAttributes = target.getTableName ?
-                     Object.keys(target.rawAttributes) :
-                     Object.keys(target.target.rawAttributes);
+  targetAttributes = Object.keys(model.rawAttributes);
 
   argsToFindOptions = function (args) {
     var result = {};
@@ -40,106 +42,97 @@ module.exports = function (target, options) {
   if (options.include === undefined) options.include = true;
   if (options.before === undefined) options.before = (options) => options;
 
-  if (target.getTableName) {
-    resolver = function (source, args, root, ast, type) {
-      var selections
-        , attributes
-        , include = []
-        , list = type instanceof GraphQLList
-        , findOptions = argsToFindOptions(args);
+  resolver = function (source, args, root, ast, type) {
+    if (association && source.get(association.as)) {
+      return source.get(association.as);
+    }
 
-      root = root || {};
-      type = type.ofType || type;
+    var selections
+      , attributes
+      , include = []
+      , list = type instanceof GraphQLList
+      , findOptions = argsToFindOptions(args);
 
-      selections = ast.selectionSet.selections.reduce(function (memo, selection) {
-        memo[selection.name.value] = selection;
-        return memo;
-      }, {});
+    root = root || {};
+    type = type.ofType || type;
 
-      attributes = Object.keys(selections)
-                         .filter(attribute => ~targetAttributes.indexOf(attribute));
+    selections = ast.selectionSet.selections.reduce(function (memo, selection) {
+      memo[selection.name.value] = selection;
+      return memo;
+    }, {});
 
-      if (!~attributes.indexOf(target.primaryKeyAttribute)) {
-        attributes.push(target.primaryKeyAttribute);
+    attributes = Object.keys(selections)
+                       .filter(attribute => ~targetAttributes.indexOf(attribute));
+
+    if (!~attributes.indexOf(model.primaryKeyAttribute)) {
+      attributes.push(model.primaryKeyAttribute);
+    }
+
+    Object.keys(selections).forEach(function (key) {
+      var association
+        , includeOptions
+        , args
+        , includeResolver = type._fields[key].resolve;
+
+      if (includeResolver && includeResolver.$proxy) {
+        while (includeResolver.$proxy) {
+          includeResolver = includeResolver.$proxy;
+        }
       }
 
-      Object.keys(selections).forEach(function (key) {
-        var association
-          , includeOptions
-          , args
-          , includeResolver = type._fields[key].resolve;
+      association = includeResolver &&
+                    includeResolver.$association;
 
-        if (includeResolver && includeResolver.$proxy) {
-          while (includeResolver.$proxy) {
-            includeResolver = includeResolver.$proxy;
-          }
+      if (association) {
+        args = selections[key].arguments.reduce(function (memo, arg) {
+          memo[arg.name.value] = arg.value.value;
+          return memo;
+        }, {});
+
+        includeOptions = argsToFindOptions(args);
+
+        if (includeResolver.$before) {
+          includeOptions = includeResolver.$before(includeOptions, args, root);
         }
 
-        association = includeResolver &&
-                      includeResolver.$association;
-
-        if (association) {
-          args = selections[key].arguments.reduce(function (memo, arg) {
-            memo[arg.name.value] = arg.value.value;
-            return memo;
-          }, {});
-
-          includeOptions = argsToFindOptions(args);
-
-          if (includeResolver.$before) {
-            includeOptions = includeResolver.$before(includeOptions, args, root);
-          }
-
-          if (options.include && !includeOptions.limit) {
-            if (includeOptions.order) {
-              includeOptions.order.map(function (order) {
-                order.unshift({
-                  model: association.target,
-                  as: association.options.as
-                });
-
-                return order;
+        if (options.include && !includeOptions.limit) {
+          if (includeOptions.order) {
+            includeOptions.order.map(function (order) {
+              order.unshift({
+                model: association.target,
+                as: association.options.as
               });
 
-              findOptions.order = (findOptions.order || []).concat(includeOptions.order);
+              return order;
+            });
 
-              delete includeOptions.order;
-            }
+            findOptions.order = (findOptions.order || []).concat(includeOptions.order);
 
-            include.push(_.assign({association: association}, includeOptions));
-          } else if (association.associationType === 'BelongsTo') {
-            if (!~attributes.indexOf(association.foreignKey)) {
-              attributes.push(association.foreignKey);
-            }
+            delete includeOptions.order;
+          }
+
+          include.push(_.assign({association: association}, includeOptions));
+        } else if (association.associationType === 'BelongsTo') {
+          if (!~attributes.indexOf(association.foreignKey)) {
+            attributes.push(association.foreignKey);
           }
         }
-      });
-
-      findOptions.include = include;
-      findOptions.attributes = attributes;
-      findOptions.root = root;
-      findOptions.logging = findOptions.logging || root.logging;
-
-      return target[list ? 'findAll' : 'findOne'](options.before(findOptions, args, root));
-    };
-  }
-
-  if (target.associationType) {
-    resolver = function (source, args, root) {
-      if (source.get(target.as)) {
-        return source.get(target.as);
       }
+    });
 
-      root = root || {};
+    findOptions.include = include;
+    findOptions.attributes = attributes;
+    findOptions.root = root;
+    findOptions.logging = findOptions.logging || root.logging;
 
-      var findOptions = argsToFindOptions(args);
-      findOptions.root = root;
-      findOptions.logging = findOptions.logging || root.logging;
+    if (association) {
+      return source[association.accessors.get](options.before(findOptions, args, root));
+    }
+    return model[list ? 'findAll' : 'findOne'](options.before(findOptions, args, root));
+  };
 
-      return source[target.accessors.get](options.before(findOptions, args, root));
-    };
-
-    resolver.$association = target;
+  if (association) {
+    resolver.$association = association;
   }
 
   resolver.$before = options.before;
