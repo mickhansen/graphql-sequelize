@@ -4,5 +4,5 @@ require('babel/register')({
 
 var chai = require('chai');
 
-var chaiAsPromised = require('chai-as-promised');
-chai.use(chaiAsPromised);
+chai.use(require('chai-as-promised'));
+chai.use(require('sinon-chai'));

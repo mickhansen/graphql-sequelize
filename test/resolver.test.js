@@ -5,6 +5,7 @@ var chai = require('chai')
   , resolver = require('../src/resolver')
   , helper = require('./helper')
   , Sequelize = require('sequelize')
+  , sinon = require('sinon')
   , sequelize = helper.sequelize
   , Promise = helper.Promise;
 
@@ -76,9 +77,25 @@ describe('resolver', function () {
           },
           order: {
             type: GraphQLString
+          },
+          first: {
+            type: GraphQLInt
           }
         },
-        resolve: resolver(User.Tasks)
+        resolve: resolver(User.Tasks, {
+          before: function(options, args) {
+            if (args.first) {
+              options.order = options.order || [];
+              options.order.push(['created_at', 'ASC']);
+
+              if (args.first !== 0) {
+                options.limit = args.first;
+              }
+            }
+
+            return options;
+          }
+        })
       }
     }
   });
@@ -250,6 +267,96 @@ describe('resolver', function () {
     });
   });
 
+  it('should work with a resolver through a proxy', function () {
+    var users = this.users
+      , schema
+      , userType
+      , taskType
+      , spy = sinon.spy();
+
+    taskType = new GraphQLObjectType({
+      name: 'Task',
+      description: 'A task',
+      fields: {
+        id: {
+          type: new GraphQLNonNull(GraphQLInt)
+        },
+        title: {
+          type: GraphQLString
+        }
+      }
+    });
+
+    userType = new GraphQLObjectType({
+      name: 'User',
+      description: 'A user',
+      fields: {
+        id: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+        name: {
+          type: GraphQLString,
+        },
+        tasks: {
+          type: new GraphQLList(taskType),
+          resolve: (function () {
+            var $resolver = resolver(User.Tasks)
+              , $proxy;
+
+            $proxy = function() {
+              return $resolver.apply(null, Array.prototype.slice.call(arguments))
+            };
+
+            $proxy.$proxy = $resolver;
+            return $proxy;
+          })()
+        }
+      }
+    });
+
+    schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'RootQueryType',
+        fields: {
+          users: {
+            type: new GraphQLList(userType),
+            args: {
+              limit: {
+                type: GraphQLInt
+              },
+              order: {
+                type: GraphQLString
+              }
+            },
+            resolve: resolver(User)
+          }
+        }
+      })
+    });
+
+    return graphql(schema, `
+      {
+        users {
+          name,
+          tasks {
+            title
+          }
+        }
+      }
+    `, {
+      logging: spy
+    }).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users).to.have.length(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.tasks).to.have.length.above(0);
+      });
+
+      expect(spy).to.have.been.calledOnce;
+    });
+  });
+
   it('should resolve an array result with a single model and limit', function () {
     var users = this.users;
 
@@ -361,6 +468,27 @@ describe('resolver', function () {
       expect(result.data.users.length).to.equal(users.length);
       result.data.users.forEach(function (user) {
         expect(user.tasks).length.to.be(1);
+      });
+    });
+  });
+
+  it('should resolve a array result with a single limited hasMany association with a before filter', function () {
+    var users = this.users;
+
+    return graphql(schema, `
+      {
+        users {
+          tasks(first: 2) {
+            title
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users.length).to.equal(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.tasks).length.to.be(2);
       });
     });
   });

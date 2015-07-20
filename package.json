@@ -38,6 +38,8 @@
     "istanbul": "^0.3.17",
     "mocha": "^2.2.5",
     "sequelize": "^3.3.2",
+    "sinon": "^1.15.4",
+    "sinon-chai": "^2.8.0",
     "sqlite3": "^3.0.9"
   },
   "dependencies": {

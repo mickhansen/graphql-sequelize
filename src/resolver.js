@@ -48,6 +48,7 @@ module.exports = function (target, options) {
         , list = type instanceof GraphQLList
         , findOptions = argsToFindOptions(args);
 
+      root = root || {};
       type = type.ofType || type;
 
       selections = ast.selectionSet.selections.reduce(function (memo, selection) {
@@ -65,10 +66,17 @@ module.exports = function (target, options) {
       Object.keys(selections).forEach(function (key) {
         var association
           , includeOptions
-          , args;
+          , args
+          , includeResolver = type._fields[key].resolve;
 
-        association = type._fields[key].resolve &&
-                      type._fields[key].resolve.$association;
+        if (includeResolver && includeResolver.$proxy) {
+          while (includeResolver.$proxy) {
+            includeResolver = includeResolver.$proxy;
+          }
+        }
+
+        association = includeResolver &&
+                      includeResolver.$association;
 
         if (association) {
           args = selections[key].arguments.reduce(function (memo, arg) {
@@ -77,6 +85,10 @@ module.exports = function (target, options) {
           }, {});
 
           includeOptions = argsToFindOptions(args);
+
+          if (includeResolver.$before) {
+            includeOptions = includeResolver.$before(includeOptions, args, root);
+          }
 
           if (options.include && !includeOptions.limit) {
             if (includeOptions.order) {
@@ -106,6 +118,7 @@ module.exports = function (target, options) {
       findOptions.include = include;
       findOptions.attributes = attributes;
       findOptions.root = root;
+      findOptions.logging = findOptions.logging || root.logging;
 
       return target[list ? 'findAll' : 'findOne'](options.before(findOptions, args, root));
     };
@@ -117,14 +130,19 @@ module.exports = function (target, options) {
         return source.get(target.as);
       }
 
+      root = root || {};
+
       var findOptions = argsToFindOptions(args);
       findOptions.root = root;
+      findOptions.logging = findOptions.logging || root.logging;
 
       return source[target.accessors.get](options.before(findOptions, args, root));
     };
 
     resolver.$association = target;
   }
+
+  resolver.$before = options.before;
 
   return resolver;
 };
