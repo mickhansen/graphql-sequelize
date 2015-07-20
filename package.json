@@ -1,6 +1,6 @@
 {
   "name": "graphql-sequelize",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Sequelize helpers for GraphQL",
   "main": "lib/index.js",
   "options": {
