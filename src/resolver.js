@@ -65,14 +65,25 @@ module.exports = function (target, options) {
         , nestedResult
         , allowedAttributes;
 
-      if (includeResolver && includeResolver.$proxy) {
+      if (!includeResolver) return;
+
+      if (includeResolver.$proxy) {
         while (includeResolver.$proxy) {
           includeResolver = includeResolver.$proxy;
         }
       }
 
-      association = includeResolver &&
-                    includeResolver.$association;
+      if (includeResolver.$passthrough) {
+        var dummyResult = generateIncludes(
+          parseSelectionSet(selections[key].selectionSet),
+          type._fields[key].type,
+          root
+        );
+        result.include = result.include.concat(dummyResult.include);
+        return;
+      }
+
+      association = includeResolver.$association;
 
       if (association) {
         args = selections[key].arguments.reduce(function (memo, arg) {
@@ -105,6 +116,8 @@ module.exports = function (target, options) {
           includeSelections = parseSelectionSet(selections[key].selectionSet);
           includeOptions.attributes = Object.keys(includeSelections)
                                       .filter(attribute => ~allowedAttributes.indexOf(attribute));
+
+          includeOptions.attributes.push(association.target.primaryKeyAttribute);
 
           nestedResult = generateIncludes(
             includeSelections,
@@ -144,6 +157,8 @@ module.exports = function (target, options) {
 
     findOptions.attributes = Object.keys(selections)
                              .filter(attribute => ~targetAttributes.indexOf(attribute));
+
+    findOptions.attributes.push(model.primaryKeyAttribute);
 
     includeResult = generateIncludes(selections, type, root);
 

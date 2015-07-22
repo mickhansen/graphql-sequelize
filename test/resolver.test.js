@@ -444,6 +444,188 @@ describe('resolver', function () {
     });
   });
 
+  it('should work with a resolver with include: false', function () {
+    var users = this.users
+      , schema
+      , userType
+      , taskType
+      , spy = sinon.spy();
+
+    taskType = new GraphQLObjectType({
+      name: 'Task',
+      description: 'A task',
+      fields: {
+        id: {
+          type: new GraphQLNonNull(GraphQLInt)
+        },
+        title: {
+          type: GraphQLString
+        }
+      }
+    });
+
+    userType = new GraphQLObjectType({
+      name: 'User',
+      description: 'A user',
+      fields: {
+        id: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+        name: {
+          type: GraphQLString,
+        },
+        tasks: {
+          type: new GraphQLList(taskType),
+          resolve: resolver(User.Tasks)
+        }
+      }
+    });
+
+    schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'RootQueryType',
+        fields: {
+          users: {
+            type: new GraphQLList(userType),
+            args: {
+              limit: {
+                type: GraphQLInt
+              },
+              order: {
+                type: GraphQLString
+              }
+            },
+            resolve: resolver(User, {
+              include: false
+            })
+          }
+        }
+      })
+    });
+
+    return graphql(schema, `
+      {
+        users {
+          name,
+          tasks {
+            title
+          }
+        }
+      }
+    `, {
+      logging: spy
+    }).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users).to.have.length(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.tasks).to.have.length.above(0);
+      });
+
+      expect(spy.callCount).to.equal(1 + users.length);
+    });
+  });
+
+  it('should work with a passthrough resolver', function () {
+    var users = this.users
+      , schema
+      , userType
+      , taskType
+      , spy = sinon.spy();
+
+    taskType = new GraphQLObjectType({
+      name: 'Task',
+      description: 'A task',
+      fields: {
+        id: {
+          type: new GraphQLNonNull(GraphQLInt)
+        },
+        title: {
+          type: GraphQLString
+        }
+      }
+    });
+
+    userType = new GraphQLObjectType({
+      name: 'User',
+      description: 'A user',
+      fields: {
+        id: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+        name: {
+          type: GraphQLString,
+        },
+        tasks: {
+          type: new GraphQLObjectType({
+            name: 'Tasks',
+            fields: {
+              nodes: {
+                type: new GraphQLList(taskType),
+                resolve: resolver(User.Tasks)
+              }
+            }
+          }),
+          resolve: (function() {
+            var $resolver;
+
+            $resolver = function(source) {
+              return source;
+            };
+
+            $resolver.$passthrough = true;
+
+            return $resolver;
+          })()
+        }
+      }
+    });
+
+    schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'RootQueryType',
+        fields: {
+          users: {
+            type: new GraphQLList(userType),
+            args: {
+              limit: {
+                type: GraphQLInt
+              },
+              order: {
+                type: GraphQLString
+              }
+            },
+            resolve: resolver(User)
+          }
+        }
+      })
+    });
+
+    return graphql(schema, `
+      {
+        users {
+          name,
+          tasks {
+            nodes {
+              title
+            }
+          }
+        }
+      }
+    `, {
+      logging: spy
+    }).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users).to.have.length(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.tasks.nodes).to.have.length.above(0);
+      });
+
+      expect(spy).to.have.been.calledOnce;
+    });
+  });
+
   it('should resolve an array result with a single model and limit', function () {
     var users = this.users;
 
