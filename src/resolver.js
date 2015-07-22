@@ -17,6 +17,7 @@ module.exports = function (target, options) {
   options = options || {};
   if (options.include === undefined) options.include = true;
   if (options.before === undefined) options.before = (options) => options;
+  if (options.after === undefined) options.after = (result) => result;
 
   argsToFindOptions = function (args) {
     var result = {};
@@ -156,10 +157,16 @@ module.exports = function (target, options) {
       findOptions.order = (findOptions.order || []).concat(includeResult.order);
     }
 
+    findOptions = options.before(findOptions, args, root);
+
     if (association) {
-      return source[association.accessors.get](options.before(findOptions, args, root));
+      return source[association.accessors.get](findOptions).then(function (result) {
+        return options.after(result, args, root);
+      });
     }
-    return model[list ? 'findAll' : 'findOne'](options.before(findOptions, args, root));
+    return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
+      return options.after(result, args, root);
+    });
   };
 
   if (association) {

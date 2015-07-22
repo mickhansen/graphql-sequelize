@@ -354,6 +354,54 @@ describe('resolver', function () {
     });
   });
 
+  it('should allow parsing the find for a array result with a single model', function () {
+    var users = this.users
+      , schema;
+
+    schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'RootQueryType',
+        fields: {
+          users: {
+            type: new GraphQLList(userType),
+            args: {
+              limit: {
+                type: GraphQLInt
+              },
+              order: {
+                type: GraphQLString
+              }
+            },
+            resolve: resolver(User, {
+              after: function(result, args, root) {
+                return result.map(function () {
+                  return {
+                    name: '11!!'
+                  }
+                });
+              }
+            })
+          }
+        }
+      })
+    });
+
+    return graphql(schema, `
+      {
+        users {
+          name
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users).to.have.length(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.name).to.equal('11!!')
+      })
+    });
+  });
+
   it('should work with a resolver through a proxy', function () {
     var users = this.users
       , schema
