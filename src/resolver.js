@@ -161,11 +161,11 @@ module.exports = function (target, options) {
 
     if (association) {
       return source[association.accessors.get](findOptions).then(function (result) {
-        return options.after(result, args, root);
+        return options.after(result, args, root, simpleAST);
       });
     }
     return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
-      return options.after(result, args, root);
+      return options.after(result, args, root, simpleAST);
     });
   };
 
