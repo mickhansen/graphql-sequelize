@@ -1,11 +1,11 @@
 import { GraphQLList } from 'graphql';
 import _ from 'lodash';
+import simplifyAST from './simplifyAST';
 
 module.exports = function (target, options) {
   var resolver
     , targetAttributes
     , argsToFindOptions
-    , parseSelectionSet
     , generateIncludes
     , isModel = !!target.getTableName
     , isAssociation = !!target.associationType
@@ -44,24 +44,16 @@ module.exports = function (target, options) {
     return result;
   };
 
-  parseSelectionSet = function (selectionSet) {
-    return selectionSet.selections.reduce(function (memo, selection) {
-      memo[selection.name.value] = selection;
-      return memo;
-    }, {});
-  };
-
-  generateIncludes = function (selections, type, root) {
+  generateIncludes = function (simpleAST, type, root) {
     var result = {include: [], attributes: []};
 
     type = type.ofType || type;
 
-    Object.keys(selections).forEach(function (key) {
+    Object.keys(simpleAST).forEach(function (key) {
       var association
         , includeOptions
-        , args
+        , args = simpleAST[key].args
         , includeResolver = type._fields[key].resolve
-        , includeSelections
         , nestedResult
         , allowedAttributes;
 
@@ -75,7 +67,7 @@ module.exports = function (target, options) {
 
       if (includeResolver.$passthrough) {
         var dummyResult = generateIncludes(
-          parseSelectionSet(selections[key].selectionSet),
+          simpleAST[key].fields,
           type._fields[key].type,
           root
         );
@@ -86,11 +78,6 @@ module.exports = function (target, options) {
       association = includeResolver.$association;
 
       if (association) {
-        args = selections[key].arguments.reduce(function (memo, arg) {
-          memo[arg.name.value] = arg.value.value;
-          return memo;
-        }, {});
-
         includeOptions = argsToFindOptions(args);
         allowedAttributes = Object.keys(association.target.rawAttributes);
 
@@ -113,14 +100,13 @@ module.exports = function (target, options) {
             delete includeOptions.order;
           }
 
-          includeSelections = parseSelectionSet(selections[key].selectionSet);
-          includeOptions.attributes = Object.keys(includeSelections)
+          includeOptions.attributes = Object.keys(simpleAST[key].fields)
                                       .filter(attribute => ~allowedAttributes.indexOf(attribute));
 
           includeOptions.attributes.push(association.target.primaryKeyAttribute);
 
           nestedResult = generateIncludes(
-            includeSelections,
+            simpleAST[key].fields,
             type._fields[key].type,
             root
           );
@@ -145,22 +131,21 @@ module.exports = function (target, options) {
       return source.get(association.as);
     }
 
-    var selections
-      , list = type instanceof GraphQLList
+    var list = type instanceof GraphQLList
       , includeResult
+      , simpleAST
       , findOptions = argsToFindOptions(args);
 
+    simpleAST = simplifyAST(ast);
     root = root || {};
     type = type.ofType || type;
 
-    selections = parseSelectionSet(ast.selectionSet);
-
-    findOptions.attributes = Object.keys(selections)
+    findOptions.attributes = Object.keys(simpleAST)
                              .filter(attribute => ~targetAttributes.indexOf(attribute));
 
     findOptions.attributes.push(model.primaryKeyAttribute);
 
-    includeResult = generateIncludes(selections, type, root);
+    includeResult = generateIncludes(simpleAST, type, root);
 
     findOptions.include = includeResult.include;
     findOptions.root = root;
