@@ -526,7 +526,7 @@ describe('resolver', function () {
     });
   });
 
-  it('should work with a passthrough resolver', function () {
+  it('should work with a passthrough resolver and a duplicated query', function () {
     var users = this.users
       , schema
       , userType
@@ -609,6 +609,9 @@ describe('resolver', function () {
             nodes {
               title
             }
+            nodes {
+              id
+            }
           }
         }
       }
@@ -620,6 +623,10 @@ describe('resolver', function () {
       expect(result.data.users).to.have.length(users.length);
       result.data.users.forEach(function (user) {
         expect(user.tasks.nodes).to.have.length.above(0);
+        user.tasks.nodes.forEach(function (task) {
+          expect(task.title).to.be.ok;
+          expect(task.id).to.be.ok;
+        });
       });
 
       expect(spy).to.have.been.calledOnce;
