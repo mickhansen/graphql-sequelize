@@ -157,7 +157,7 @@ module.exports = function (target, options) {
       findOptions.order = (findOptions.order || []).concat(includeResult.order);
     }
 
-    findOptions = options.before(findOptions, args, root);
+    findOptions = options.before(findOptions, args, root, simpleAST);
 
     if (association) {
       return source[association.accessors.get](findOptions).then(function (result) {
