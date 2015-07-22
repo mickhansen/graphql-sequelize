@@ -23,9 +23,11 @@ describe('resolver', function () {
   var User
     , Task
     , Project
+    , Label
     , taskType
     , userType
     , projectType
+    , labelType
     , schema;
 
   User = sequelize.define('user', {
@@ -51,10 +53,29 @@ describe('resolver', function () {
     timestamps: false
   });
 
+  Label = sequelize.define('label', {
+    name: Sequelize.STRING
+  }, {
+    timestamps: false
+  });
+
   User.Tasks = User.hasMany(Task, {as: 'tasks', foreignKey: 'userId'});
   Task.User = Task.belongsTo(User, {as: 'user', foreignKey: 'userId'});
 
   Task.Project = Task.belongsTo(Project, {as: 'project', foreignKey: 'projectId'});
+  Project.Labels = Project.hasMany(Label, {as: 'labels'});
+
+  labelType = new GraphQLObjectType({
+    name: 'Label',
+    fields: {
+      id: {
+        type: new GraphQLNonNull(GraphQLInt)
+      },
+      name: {
+        type: GraphQLString
+      }
+    }
+  });
 
   projectType = new GraphQLObjectType({
     name: 'Project',
@@ -64,9 +85,13 @@ describe('resolver', function () {
       },
       name: {
         type: GraphQLString
+      },
+      labels: {
+        type: new GraphQLList(labelType),
+        resolve: resolver(Project.Labels)
       }
     }
-  })
+  });
 
   taskType = new GraphQLObjectType({
     name: 'Task',
@@ -164,11 +189,27 @@ describe('resolver', function () {
       return Promise.join(
         Project.create({
           id: ++projectId,
-          name: 'b'+Math.random().toString()
+          name: 'b'+Math.random().toString(),
+          labels: [
+            {name: Math.random().toString()},
+            {name: Math.random().toString()}
+          ]
+        }, {
+          include: [
+            Project.Labels
+          ]
         }),
         Project.create({
           id: ++projectId,
-          name: 'a'+Math.random().toString()
+          name: 'a'+Math.random().toString(),
+          labels: [
+            {name: Math.random().toString()},
+            {name: Math.random().toString()}
+          ]
+        }, {
+          include: [
+            Project.Labels
+          ]
         })
       ).bind(this).spread(function (projectA, projectB) {
         this.projectA = projectA;
@@ -547,6 +588,78 @@ describe('resolver', function () {
       });
 
       expect(sqlSpy.callCount).to.equal(1 + users.length);
+    });
+  });
+
+  it('should resolve a array result with a single hasMany association with a nested belongsTo relation', function () {
+    var users = this.users
+      , sqlSpy = sinon.spy()
+
+    return graphql(schema, `
+      {
+        users { 
+          tasks {
+            title
+            project {
+              name
+            }
+          }
+        }
+      }
+    `, {
+      logging: sqlSpy
+    }).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users.length).to.equal(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.tasks).length.to.be.above(0);
+        user.tasks.forEach(function (task) {
+          expect(task.project.name).to.be.ok;
+        });
+      });
+
+      expect(sqlSpy.callCount).to.equal(1);
+    });
+  });
+
+  it('should resolve a array result with a single hasMany association with a nested belongsTo relation with a nested hasMany relation', function () {
+    var users = this.users
+      , sqlSpy = sinon.spy()
+
+    return graphql(schema, `
+      {
+        users { 
+          tasks {
+            title
+            project {
+              name
+              labels {
+                name
+              }
+            }
+          }
+        }
+      }
+    `, {
+      logging: sqlSpy
+    }).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].message);
+
+      expect(result.data.users.length).to.equal(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.tasks).length.to.be.above(0);
+        user.tasks.forEach(function (task) {
+          expect(task.project.name).to.be.ok;
+
+          expect(task.project.labels).length.to.be.above(0);
+          task.project.labels.forEach(function (label) {
+            expect(label.name).to.be.ok;
+          });
+        });
+      });
+
+      expect(sqlSpy.callCount).to.equal(1);
     });
   });
 

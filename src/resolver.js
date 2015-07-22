@@ -5,12 +5,18 @@ module.exports = function (target, options) {
   var resolver
     , targetAttributes
     , argsToFindOptions
+    , parseSelectionSet
+    , generateIncludes
     , isModel = !!target.getTableName
     , isAssociation = !!target.associationType
     , association = isAssociation && target
     , model = isAssociation && target.target || isModel && target;
 
   targetAttributes = Object.keys(model.rawAttributes);
+
+  options = options || {};
+  if (options.include === undefined) options.include = true;
+  if (options.before === undefined) options.before = (options) => options;
 
   argsToFindOptions = function (args) {
     var result = {};
@@ -38,41 +44,26 @@ module.exports = function (target, options) {
     return result;
   };
 
-  options = options || {};
-  if (options.include === undefined) options.include = true;
-  if (options.before === undefined) options.before = (options) => options;
-
-  resolver = function (source, args, root, ast, type) {
-    if (association && source.get(association.as)) {
-      return source.get(association.as);
-    }
-
-    var selections
-      , attributes
-      , include = []
-      , list = type instanceof GraphQLList
-      , findOptions = argsToFindOptions(args);
-
-    root = root || {};
-    type = type.ofType || type;
-
-    selections = ast.selectionSet.selections.reduce(function (memo, selection) {
+  parseSelectionSet = function (selectionSet) {
+    return selectionSet.selections.reduce(function (memo, selection) {
       memo[selection.name.value] = selection;
       return memo;
     }, {});
+  };
 
-    attributes = Object.keys(selections)
-                       .filter(attribute => ~targetAttributes.indexOf(attribute));
+  generateIncludes = function (selections, type, root) {
+    var result = {include: [], attributes: []};
 
-    if (!~attributes.indexOf(model.primaryKeyAttribute)) {
-      attributes.push(model.primaryKeyAttribute);
-    }
+    type = type.ofType || type;
 
     Object.keys(selections).forEach(function (key) {
       var association
         , includeOptions
         , args
-        , includeResolver = type._fields[key].resolve;
+        , includeResolver = type._fields[key].resolve
+        , includeSelections
+        , nestedResult
+        , allowedAttributes;
 
       if (includeResolver && includeResolver.$proxy) {
         while (includeResolver.$proxy) {
@@ -90,6 +81,7 @@ module.exports = function (target, options) {
         }, {});
 
         includeOptions = argsToFindOptions(args);
+        allowedAttributes = Object.keys(association.target.rawAttributes);
 
         if (includeResolver.$before) {
           includeOptions = includeResolver.$before(includeOptions, args, root);
@@ -106,24 +98,63 @@ module.exports = function (target, options) {
               return order;
             });
 
-            findOptions.order = (findOptions.order || []).concat(includeOptions.order);
-
+            result.order = (result.order || []).concat(includeOptions.order);
             delete includeOptions.order;
           }
 
-          include.push(_.assign({association: association}, includeOptions));
+          includeSelections = parseSelectionSet(selections[key].selectionSet);
+          includeOptions.attributes = Object.keys(includeSelections)
+                                      .filter(attribute => ~allowedAttributes.indexOf(attribute));
+
+          nestedResult = generateIncludes(
+            includeSelections,
+            type._fields[key].type,
+            root
+          );
+
+          includeOptions.include = (includeOptions.include || []).concat(nestedResult.include);
+          includeOptions.attributes = _.unique(includeOptions.attributes.concat(nestedResult.attributes));
+
+          result.include.push(_.assign({association: association}, includeOptions));
         } else if (association.associationType === 'BelongsTo') {
-          if (!~attributes.indexOf(association.foreignKey)) {
-            attributes.push(association.foreignKey);
-          }
+          result.attributes.push(association.foreignKey);
+        } else {
+          result.attributes.push(model.primaryKeyAttribute);
         }
       }
     });
 
-    findOptions.include = include;
-    findOptions.attributes = attributes;
+    return result;
+  };
+
+  resolver = function (source, args, root, ast, type) {
+    if (association && source.get(association.as)) {
+      return source.get(association.as);
+    }
+
+    var selections
+      , list = type instanceof GraphQLList
+      , includeResult
+      , findOptions = argsToFindOptions(args);
+
+    root = root || {};
+    type = type.ofType || type;
+
+    selections = parseSelectionSet(ast.selectionSet);
+
+    findOptions.attributes = Object.keys(selections)
+                             .filter(attribute => ~targetAttributes.indexOf(attribute));
+
+    includeResult = generateIncludes(selections, type, root);
+
+    findOptions.include = includeResult.include;
     findOptions.root = root;
+    findOptions.attributes = _.unique(findOptions.attributes.concat(includeResult.attributes));
     findOptions.logging = findOptions.logging || root.logging;
+
+    if (includeResult.order) {
+      findOptions.order = (findOptions.order || []).concat(includeResult.order);
+    }
 
     if (association) {
       return source[association.accessors.get](options.before(findOptions, args, root));
