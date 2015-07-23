@@ -2,7 +2,7 @@ import argsToFindOptions from './argsToFindOptions';
 import _ from 'lodash';
 
 export default function generateIncludes(simpleAST, type, root, options) {
-  var result = {include: [], attributes: []};
+  var result = {include: [], attributes: [], order: []};
 
   type = type.ofType || type;
   options = options || {};
@@ -31,6 +31,8 @@ export default function generateIncludes(simpleAST, type, root, options) {
         root
       );
       result.include = result.include.concat(dummyResult.include);
+      result.attributes = result.attributes.concat(dummyResult.attributes);
+      result.order = result.order.concat(dummyResult.order);
       return;
     }
 
