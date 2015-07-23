@@ -1,12 +1,12 @@
 import { GraphQLList } from 'graphql';
 import _ from 'lodash';
 import simplifyAST from './simplifyAST';
+import generateIncludes from './generateIncludes';
+import argsToFindOptions from './argsToFindOptions';
 
 module.exports = function (target, options) {
   var resolver
     , targetAttributes
-    , argsToFindOptions
-    , generateIncludes
     , isModel = !!target.getTableName
     , isAssociation = !!target.associationType
     , association = isAssociation && target
@@ -19,114 +19,6 @@ module.exports = function (target, options) {
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
 
-  argsToFindOptions = function (args) {
-    var result = {};
-
-    if (args) {
-      Object.keys(args).forEach(function (key) {
-        if (~targetAttributes.indexOf(key)) {
-          result.where = result.where || {};
-          result.where[key] = args[key];
-        }
-
-        if (key === 'limit' && args[key]) {
-          result.limit = args[key];
-        }
-
-        if (key === 'order' && args[key]) {
-          result.order = [
-            [args[key]]
-          ];
-        }
-      });
-    }
-
-    result.logging = options.logging;
-    return result;
-  };
-
-  generateIncludes = function (simpleAST, type, root) {
-    var result = {include: [], attributes: []};
-
-    type = type.ofType || type;
-
-    Object.keys(simpleAST).forEach(function (key) {
-      var association
-        , includeOptions
-        , args = simpleAST[key].args
-        , includeResolver = type._fields[key].resolve
-        , nestedResult
-        , allowedAttributes;
-
-      if (!includeResolver) return;
-
-      if (includeResolver.$proxy) {
-        while (includeResolver.$proxy) {
-          includeResolver = includeResolver.$proxy;
-        }
-      }
-
-      if (includeResolver.$passthrough) {
-        var dummyResult = generateIncludes(
-          simpleAST[key].fields,
-          type._fields[key].type,
-          root
-        );
-        result.include = result.include.concat(dummyResult.include);
-        return;
-      }
-
-      association = includeResolver.$association;
-
-      if (association) {
-        includeOptions = argsToFindOptions(args);
-        allowedAttributes = Object.keys(association.target.rawAttributes);
-
-        if (includeResolver.$before) {
-          includeOptions = includeResolver.$before(includeOptions, args, root);
-        }
-
-        if (options.include && !includeOptions.limit) {
-          if (includeOptions.order) {
-            includeOptions.order.map(function (order) {
-              order.unshift({
-                model: association.target,
-                as: association.options.as
-              });
-
-              return order;
-            });
-
-            result.order = (result.order || []).concat(includeOptions.order);
-            delete includeOptions.order;
-          }
-
-          includeOptions.attributes = Object.keys(simpleAST[key].fields)
-                                      .filter(attribute => ~allowedAttributes.indexOf(attribute));
-
-          includeOptions.attributes.push(association.target.primaryKeyAttribute);
-
-          nestedResult = generateIncludes(
-            simpleAST[key].fields,
-            type._fields[key].type,
-            root
-          );
-
-          includeOptions.include = (includeOptions.include || []).concat(nestedResult.include);
-          includeOptions.attributes = _.unique(includeOptions.attributes.concat(nestedResult.attributes));
-
-          result.include.push(_.assign({association: association}, includeOptions));
-        } else if (association.associationType === 'BelongsTo') {
-          result.attributes.push(association.foreignKey);
-        } else {
-          result.attributes.push(model.primaryKeyAttribute);
-        }
-      }
-    });
-
-    return result;
-  };
-
   resolver = function (source, args, root, ast, type) {
     if (association && source.get(association.as)) {
       return source.get(association.as);
@@ -135,7 +27,7 @@ module.exports = function (target, options) {
     var list = type instanceof GraphQLList
       , includeResult
       , simpleAST
-      , findOptions = argsToFindOptions(args);
+      , findOptions = argsToFindOptions(args, model);
 
     simpleAST = simplifyAST(ast);
     root = root || {};
@@ -146,7 +38,7 @@ module.exports = function (target, options) {
 
     findOptions.attributes.push(model.primaryKeyAttribute);
 
-    includeResult = generateIncludes(simpleAST, type, root);
+    includeResult = generateIncludes(simpleAST, type, root, options);
 
     findOptions.include = includeResult.include;
     findOptions.root = root;
@@ -157,15 +49,24 @@ module.exports = function (target, options) {
       findOptions.order = (findOptions.order || []).concat(includeResult.order);
     }
 
-    findOptions = options.before(findOptions, args, root, simpleAST);
+    findOptions = options.before(findOptions, args, root, {
+      ast: simpleAST,
+      type: type
+    });
 
     if (association) {
       return source[association.accessors.get](findOptions).then(function (result) {
-        return options.after(result, args, root, simpleAST);
+        return options.after(result, args, root, {
+          ast: simpleAST,
+          type: type
+        });
       });
     }
     return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
-      return options.after(result, args, root, simpleAST);
+      return options.after(result, args, root, {
+        ast: simpleAST,
+        type: type
+      });
     });
   };
 
@@ -174,6 +75,8 @@ module.exports = function (target, options) {
   }
 
   resolver.$before = options.before;
+  resolver.$after = options.after;
+  resolver.$options = options;
 
   return resolver;
 };
