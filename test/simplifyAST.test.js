@@ -57,6 +57,26 @@ describe('simplifyAST', function () {
     });
   });
 
+  it('should expose a $parent', function () {
+    var ast = simplifyAST(parse(`
+      {
+        users {
+          name
+          projects(first: 1) {
+            nodes {
+              name
+            }
+          }
+        }
+      }
+    `));
+
+    expect(ast.users.fields.projects.fields.nodes.$parent).to.be.ok;
+    expect(ast.users.fields.projects.fields.nodes.$parent.args).to.deep.equal({
+      first: '1'
+    });
+  });
+
   it('should simplify a nested structure at the lowest level', function () {
     expect(simplifyAST(parse(`
       {
@@ -94,7 +114,7 @@ describe('simplifyAST', function () {
     });
   });
 
-  it('should simplify a nested structure at a high level level', function () {
+  it('should simplify a nested structure duplicated at a high level', function () {
     expect(simplifyAST(parse(`
       {
         users {

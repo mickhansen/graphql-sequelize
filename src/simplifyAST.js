@@ -6,17 +6,19 @@ function deepMerge(a, b) {
       a.fields = deepMerge(a.fields, b.fields);
       return a;
     }
+    return a && a.fields && a || b && b.fields && b;
   });
 }
 
-module.exports = function simplyAST(ast) {
+module.exports = function simplyAST(ast, parent) {
   if (!ast.selectionSet) return undefined;
 
   return ast.selectionSet.selections.reduce(function (memo, selection) {
     var key = selection.name.value
-      , fields = simplyAST(selection);
+      , fields;
 
     memo[key] = memo[key] || {};
+    fields = simplyAST(selection, memo[key]);
 
     if (fields) {
       memo[key].args = selection.arguments.reduce(function (memo, arg) {
@@ -27,6 +29,10 @@ module.exports = function simplyAST(ast) {
 
     if (fields) {
       memo[key].fields = deepMerge(memo[key].fields || {}, fields);
+    }
+
+    if (parent) {
+      Object.defineProperty(memo[key], '$parent', { value: parent, enumerable: false });
     }
 
     return memo;
