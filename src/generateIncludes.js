@@ -8,10 +8,10 @@ export default function generateIncludes(simpleAST, type, root, options) {
   options = options || {};
   if (options.include === undefined) options.include = true;
 
-  Object.keys(simpleAST).forEach(function (key) {
+  Object.keys(simpleAST.fields).forEach(function (key) {
     var association
       , includeOptions
-      , args = simpleAST[key].args
+      , args = simpleAST.fields[key].args
       , includeResolver = type._fields[key].resolve
       , nestedResult
       , allowedAttributes;
@@ -26,7 +26,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
 
     if (includeResolver.$passthrough) {
       var dummyResult = generateIncludes(
-        simpleAST[key].fields,
+        simpleAST.fields[key],
         type._fields[key].type,
         root
       );
@@ -42,7 +42,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
 
       if (includeResolver.$before) {
         includeOptions = includeResolver.$before(includeOptions, args, root, {
-          ast: simpleAST,
+          ast: simpleAST[key],
           type: type
         });
       }
@@ -62,13 +62,13 @@ export default function generateIncludes(simpleAST, type, root, options) {
           delete includeOptions.order;
         }
 
-        includeOptions.attributes = Object.keys(simpleAST[key].fields)
+        includeOptions.attributes = Object.keys(simpleAST.fields[key].fields)
                                     .filter(attribute => ~allowedAttributes.indexOf(attribute));
 
         includeOptions.attributes.push(association.target.primaryKeyAttribute);
 
         nestedResult = generateIncludes(
-          simpleAST[key].fields,
+          simpleAST.fields[key],
           type._fields[key].type,
           root,
           includeResolver.$options

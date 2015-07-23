@@ -23,14 +23,23 @@ describe('simplifyAST', function () {
         }
       }
     `))).to.deep.equal({
-      users: {
-        args: {},
-        fields: {
-          name: {},
-          projects: {
-            args: {},
-            fields: {
-              name: {}
+      args: {},
+      fields: {
+        users: {
+          args: {},
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            },
+            projects: {
+              args: {},
+              fields: {
+                name: {
+                  args: {},
+                  fields: {}
+                }
+              }
             }
           }
         }
@@ -46,12 +55,18 @@ describe('simplifyAST', function () {
         }
       }
     `))).to.deep.equal({
-      user: {
-        args: {
-          id: "1"
-        },
-        fields: {
-          name: {}
+      args: {},
+      fields: {
+        user: {
+          args: {
+            id: "1"
+          },
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            }
+          }
         }
       }
     });
@@ -71,8 +86,8 @@ describe('simplifyAST', function () {
       }
     `));
 
-    expect(ast.users.fields.projects.fields.nodes.$parent).to.be.ok;
-    expect(ast.users.fields.projects.fields.nodes.$parent.args).to.deep.equal({
+    expect(ast.fields.users.fields.projects.fields.nodes.$parent).to.be.ok;
+    expect(ast.fields.users.fields.projects.fields.nodes.$parent.args).to.deep.equal({
       first: '1'
     });
   });
@@ -93,18 +108,30 @@ describe('simplifyAST', function () {
         }
       }
     `))).to.deep.equal({
-      users: {
-        args: {},
-        fields: {
-          name: {},
-          projects: {
-            args: {},
-            fields: {
-              node: {
-                args: {},
-                fields: {
-                  name: {},
-                  id: {}
+      args: {},
+      fields: {
+        users: {
+          args: {},
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            },
+            projects: {
+              args: {},
+              fields: {
+                node: {
+                  args: {},
+                  fields: {
+                    name: {
+                      args: {},
+                      fields: {}
+                    },
+                    id: {
+                      args: {},
+                      fields: {}
+                    }
+                  }
                 }
               }
             }
@@ -132,18 +159,30 @@ describe('simplifyAST', function () {
         }
       }
     `))).to.deep.equal({
-      users: {
-        args: {},
-        fields: {
-          name: {},
-          projects: {
-            args: {},
-            fields: {
-              node: {
-                args: {},
-                fields: {
-                  name: {},
-                  id: {}
+      args: {},
+      fields: {
+        users: {
+          args: {},
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            },
+            projects: {
+              args: {},
+              fields: {
+                node: {
+                  args: {},
+                  fields: {
+                    name: {
+                      args: {},
+                      fields: {}
+                    },
+                    id: {
+                      args: {},
+                      fields: {}
+                    }
+                  }
                 }
               }
             }

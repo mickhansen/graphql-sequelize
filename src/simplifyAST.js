@@ -11,30 +11,32 @@ function deepMerge(a, b) {
 }
 
 module.exports = function simplyAST(ast, parent) {
-  if (!ast.selectionSet) return undefined;
+  if (!ast.selectionSet) return {
+    fields: {},
+    args: {}
+  };
 
-  return ast.selectionSet.selections.reduce(function (memo, selection) {
-    var key = selection.name.value
-      , fields;
+  return ast.selectionSet.selections.reduce(function (simpleAST, selection) {
+    var key = selection.name.value;
 
-    memo[key] = memo[key] || {};
-    fields = simplyAST(selection, memo[key]);
+    simpleAST.fields[key] = simpleAST.fields[key] || {};
+    simpleAST.fields[key] = deepMerge(
+      simpleAST.fields[key],
+      simplyAST(selection, simpleAST.fields[key])
+    );
 
-    if (fields) {
-      memo[key].args = selection.arguments.reduce(function (memo, arg) {
-        memo[arg.name.value] = arg.value.value;
-        return memo;
-      }, {});
-    }
-
-    if (fields) {
-      memo[key].fields = deepMerge(memo[key].fields || {}, fields);
-    }
+    simpleAST.fields[key].args = selection.arguments.reduce(function (args, arg) {
+      args[arg.name.value] = arg.value.value;
+      return args;
+    }, {});
 
     if (parent) {
-      Object.defineProperty(memo[key], '$parent', { value: parent, enumerable: false });
+      Object.defineProperty(simpleAST.fields[key], '$parent', { value: parent, enumerable: false });
     }
 
-    return memo;
-  }, {});
+    return simpleAST;
+  }, {
+    fields: {},
+    args: {}
+  });
 };

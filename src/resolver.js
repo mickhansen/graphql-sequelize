@@ -33,12 +33,17 @@ module.exports = function (target, options) {
     root = root || {};
     type = type.ofType || type;
 
-    findOptions.attributes = Object.keys(simpleAST)
+    findOptions.attributes = Object.keys(simpleAST.fields)
                              .filter(attribute => ~targetAttributes.indexOf(attribute));
 
     findOptions.attributes.push(model.primaryKeyAttribute);
 
-    includeResult = generateIncludes(simpleAST, type, root, options);
+    includeResult = generateIncludes(
+      simpleAST,
+      type,
+      root,
+      options
+    );
 
     findOptions.include = includeResult.include;
     findOptions.root = root;
