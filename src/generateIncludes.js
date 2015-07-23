@@ -42,7 +42,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
 
       if (includeResolver.$before) {
         includeOptions = includeResolver.$before(includeOptions, args, root, {
-          ast: simpleAST[key],
+          ast: simpleAST.fields[key],
           type: type
         });
       }
