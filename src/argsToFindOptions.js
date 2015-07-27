@@ -13,6 +13,10 @@ export default function argsToFindOptions(args, target) {
         result.limit = args[key];
       }
 
+      if (key === 'offset' && args[key]) {
+        result.offset = args[key];
+      }
+
       if (key === 'order' && args[key]) {
         result.order = [
           [args[key]]

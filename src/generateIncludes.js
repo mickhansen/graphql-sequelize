@@ -49,6 +49,12 @@ export default function generateIncludes(simpleAST, type, root, options) {
         });
       }
 
+      if (association.associationType === 'BelongsTo') {
+        result.attributes.push(association.foreignKey);
+      } else {
+        result.attributes.push(association.source.primaryKeyAttribute);
+      }
+
       if (options.include && !includeOptions.limit) {
         if (includeOptions.order) {
           includeOptions.order.map(function (order) {
@@ -80,10 +86,6 @@ export default function generateIncludes(simpleAST, type, root, options) {
         includeOptions.attributes = _.unique(includeOptions.attributes.concat(nestedResult.attributes));
 
         result.include.push(_.assign({association: association}, includeOptions));
-      } else if (association.associationType === 'BelongsTo') {
-        result.attributes.push(association.foreignKey);
-      } else {
-        result.attributes.push(association.source.primaryKeyAttribute);
       }
     }
   });
