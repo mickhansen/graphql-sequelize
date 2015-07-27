@@ -7,7 +7,7 @@
 
 ## Installation
 
-`$ npm install --save-dev graphql-sequelize`
+`$ npm install --save graphql-sequelize`
 
 graphql-sequelize assumes you have graphql and sequelize installed.
 
@@ -27,7 +27,7 @@ Please take a look at [the tests](https://github.com/mickhansen/graphql-sequeliz
 ### Examples 
 
 ```js
-import resolver from 'graphql-sequelize';
+import {resolver} from 'graphql-sequelize';
 
 let User = sequelize.define('user', {
   name: Sequelize.STRING
@@ -134,7 +134,7 @@ var Model = sequelize.define('User', {
   }
 });
 
-import attributeFields from 'graphql-sequelize';
+import {attributeFields} from 'graphql-sequelize';
 
 attributeFields(Model);
 
@@ -221,7 +221,7 @@ Which when added to args will let the resolver automatically support limit and o
 Should be be used with fields of type `GraphQLList`
 
 ```js
-import defaultListArgs from 'graphql-sequelize'
+import {defaultListArgs} from 'graphql-sequelize'
 
 args: {
   _.assign(defaultListArgs(), {
