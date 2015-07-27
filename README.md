@@ -7,7 +7,7 @@
 
 ## Installation
 
-`$ npm install --save-dev graphql-sequelize`
+`$ npm install --save graphql-sequelize`
 
 graphql-sequelize assumes you have graphql and sequelize installed.
 
