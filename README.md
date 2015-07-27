@@ -134,7 +134,7 @@ var Model = sequelize.define('User', {
   }
 });
 
-import attributeFields from 'graphql-sequelize';
+import {attributeFields} from 'graphql-sequelize';
 
 attributeFields(Model);
 
@@ -221,7 +221,7 @@ Which when added to args will let the resolver automatically support limit and o
 Should be be used with fields of type `GraphQLList`
 
 ```js
-import defaultListArgs from 'graphql-sequelize'
+import {defaultListArgs} from 'graphql-sequelize'
 
 args: {
   _.assign(defaultListArgs(), {
