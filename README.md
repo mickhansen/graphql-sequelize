@@ -27,7 +27,7 @@ Please take a look at [the tests](https://github.com/mickhansen/graphql-sequeliz
 ### Examples 
 
 ```js
-import resolver from 'graphql-sequelize';
+import {resolver} from 'graphql-sequelize';
 
 let User = sequelize.define('user', {
   name: Sequelize.STRING
