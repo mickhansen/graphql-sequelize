@@ -4,13 +4,22 @@ import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
 import argsToFindOptions from './argsToFindOptions';
 
+function inList(list, attribute) {
+  return ~list.indexOf(attribute);
+}
+
+function notType(type, model, attribute) {
+  return !(model.rawAttributes[attribute].type instanceof type);
+}
+
 module.exports = function (target, options) {
   var resolver
     , targetAttributes
     , isModel = !!target.getTableName
     , isAssociation = !!target.associationType
     , association = isAssociation && target
-    , model = isAssociation && target.target || isModel && target;
+    , model = isAssociation && target.target || isModel && target
+    , Sequelize = model.sequelize.constructor;
 
   targetAttributes = Object.keys(model.rawAttributes);
 
@@ -34,7 +43,8 @@ module.exports = function (target, options) {
     type = type.ofType || type;
 
     findOptions.attributes = Object.keys(simpleAST.fields)
-                             .filter(attribute => ~targetAttributes.indexOf(attribute));
+                             .filter(inList.bind(null, targetAttributes))
+                             .filter(notType.bind(null, Sequelize.VIRTUAL, model));
 
     findOptions.attributes.push(model.primaryKeyAttribute);
 

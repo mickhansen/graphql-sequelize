@@ -1,6 +1,14 @@
 import argsToFindOptions from './argsToFindOptions';
 import _ from 'lodash';
 
+function inList(list, attribute) {
+  return ~list.indexOf(attribute);
+}
+
+function notType(type, model, attribute) {
+  return !(model.rawAttributes[attribute].type instanceof type);
+}
+
 export default function generateIncludes(simpleAST, type, root, options) {
   var result = {include: [], attributes: [], order: []};
 
@@ -14,7 +22,8 @@ export default function generateIncludes(simpleAST, type, root, options) {
       , args = simpleAST.fields[key].args
       , includeResolver = type._fields[key].resolve
       , nestedResult
-      , allowedAttributes;
+      , allowedAttributes
+      , Sequelize;
 
     if (!includeResolver) return;
 
@@ -70,8 +79,10 @@ export default function generateIncludes(simpleAST, type, root, options) {
           delete includeOptions.order;
         }
 
+        Sequelize = association.target.sequelize.constructor;
         includeOptions.attributes = Object.keys(simpleAST.fields[key].fields)
-                                    .filter(attribute => ~allowedAttributes.indexOf(attribute));
+                                    .filter(inList.bind(null, allowedAttributes))
+                                    .filter(notType.bind(null, Sequelize.VIRTUAL, association.target));
 
         includeOptions.attributes.push(association.target.primaryKeyAttribute);
 

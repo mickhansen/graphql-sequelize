@@ -31,7 +31,13 @@ describe('resolver', function () {
     , schema;
 
   User = sequelize.define('user', {
-    name: Sequelize.STRING
+    name: Sequelize.STRING,
+    myVirtual: {
+      type: Sequelize.VIRTUAL,
+      get: function() {
+        return 'lol';
+      }
+    }
   }, {
     timestamps: false
   });
@@ -42,6 +48,12 @@ describe('resolver', function () {
       type: Sequelize.DATE,
       field: 'created_at',
       defaultValue: Sequelize.NOW
+    },
+    taskVirtual: {
+      type: Sequelize.VIRTUAL,
+      get: function() {
+        return 'tasktask';
+      }
     }
   }, {
     timestamps: false
@@ -103,6 +115,9 @@ describe('resolver', function () {
       title: {
         type: GraphQLString
       },
+      taskVirtual: {
+        type: GraphQLString
+      },
       project: {
         type: projectType,
         resolve: resolver(Task.Project)
@@ -119,6 +134,9 @@ describe('resolver', function () {
       },
       name: {
         type: GraphQLString,
+      },
+      myVirtual: {
+        type: GraphQLString
       },
       tasks: {
         type: new GraphQLList(taskType),
@@ -276,6 +294,7 @@ describe('resolver', function () {
       {
         user(id: ${user.id}) {
           name
+          myVirtual
         }
       }
     `).then(function (result) {
@@ -283,7 +302,8 @@ describe('resolver', function () {
 
       expect(result.data).to.deep.equal({
         user: {
-          name: user.name
+          name: user.name,
+          myVirtual: 'lol'
         }
       });
     });
@@ -706,6 +726,7 @@ describe('resolver', function () {
           name
           tasks {
             title
+            taskVirtual
           }
         }
       }
@@ -718,7 +739,7 @@ describe('resolver', function () {
       expect(result.data).to.deep.equal({
         user: {
           name: user.name,
-          tasks: user.tasks.map(task => ({title: task.title}))
+          tasks: user.tasks.map(task => ({title: task.title, taskVirtual: 'tasktask'}))
         }
       });
     });
