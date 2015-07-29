@@ -11,7 +11,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     sequelizeType instanceof sequelizeTypes.STRING ||
     sequelizeType instanceof sequelizeTypes.TEXT ||
     sequelizeType instanceof sequelizeTypes.UUID ||
-    sequelizeType instanceof sequelizeTypes.DATE
+    sequelizeType instanceof sequelizeTypes.DATE ||
+    sequelizeType instanceof sequelizeTypes.VIRTUAL
   ) {
     return GraphQLString;
   } else {
