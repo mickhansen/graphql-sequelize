@@ -20,7 +20,7 @@ module.exports = function (target, options) {
   if (options.after === undefined) options.after = (result) => result;
 
   resolver = function (source, args, root, ast, type) {
-    if (association && source.get(association.as)) {
+    if (association && source.get(association.as) !== undefined) {
       return source.get(association.as);
     }
 
