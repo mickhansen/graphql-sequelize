@@ -80,7 +80,8 @@ export default function generateIncludes(simpleAST, type, root, options) {
         }
 
         Sequelize = association.target.sequelize.constructor;
-        includeOptions.attributes = Object.keys(simpleAST.fields[key].fields)
+        includeOptions.attributes = (includeOptions.attributes || [])
+                                    .concat(Object.keys(simpleAST.fields[key].fields))
                                     .filter(inList.bind(null, allowedAttributes))
                                     .filter(notType.bind(null, Sequelize.VIRTUAL, association.target));
 
