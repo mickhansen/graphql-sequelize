@@ -5,7 +5,7 @@ var chai = require('chai')
   , helper = require('./helper')
   , sequelize = helper.sequelize
   , Sequelize = require('sequelize')
-  , parser = parse = require('graphql/lib/language/parser').parse
+  , parser = require('graphql/language/parser').parse
   , parse = function (query) {
       return parser(query).definitions[0];
     }

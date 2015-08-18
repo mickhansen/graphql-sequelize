@@ -298,7 +298,7 @@ describe('resolver', function () {
         }
       }
     `).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data).to.deep.equal({
         user: {
@@ -319,7 +319,7 @@ describe('resolver', function () {
         }
       }
     `).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length.above(0);
       expect(result.data).to.deep.equal({
@@ -367,7 +367,7 @@ describe('resolver', function () {
     `, {
       name: user.name
     }).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(1);
       expect(result.data.users[0].name).to.equal(user.name);
@@ -413,7 +413,7 @@ describe('resolver', function () {
         }
       }
     `).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(users.length);
       result.data.users.forEach(function (user) {
@@ -501,7 +501,7 @@ describe('resolver', function () {
     `, {
       logging: spy
     }).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(users.length);
       result.data.users.forEach(function (user) {
@@ -583,7 +583,7 @@ describe('resolver', function () {
     `, {
       logging: spy
     }).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(users.length);
       result.data.users.forEach(function (user) {
@@ -686,7 +686,7 @@ describe('resolver', function () {
     `, {
       logging: spy
     }).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(users.length);
       result.data.users.forEach(function (user) {
@@ -711,7 +711,7 @@ describe('resolver', function () {
         }
       }
     `).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(1);
     });
@@ -733,7 +733,7 @@ describe('resolver', function () {
     `, {
       yolo: 'swag'
     }).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.user.tasks).to.have.length.above(0);
       expect(result.data).to.deep.equal({
@@ -758,7 +758,7 @@ describe('resolver', function () {
         }
       }
     `).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.user.tasks).to.have.length(1);
     });
@@ -777,7 +777,7 @@ describe('resolver', function () {
         }
       }
     `).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
       result.data.users.forEach(function (user) {
@@ -808,7 +808,7 @@ describe('resolver', function () {
         }
       }
     `).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
       result.data.users.forEach(function (user) {
@@ -835,7 +835,7 @@ describe('resolver', function () {
     `, {
       logging: sqlSpy
     }).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
       result.data.users.forEach(function (user) {
@@ -867,7 +867,7 @@ describe('resolver', function () {
     `, {
       logging: sqlSpy
     }).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
       result.data.users.forEach(function (user) {
@@ -902,7 +902,7 @@ describe('resolver', function () {
     `, {
       logging: sqlSpy
     }).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
       result.data.users.forEach(function (user) {
@@ -933,7 +933,7 @@ describe('resolver', function () {
         }
       }
     `).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].message);
+      if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
       result.data.users.forEach(function (user) {

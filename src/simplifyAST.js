@@ -11,12 +11,17 @@ function deepMerge(a, b) {
 }
 
 module.exports = function simplyAST(ast, parent) {
-  if (!ast.selectionSet) return {
+  var selections;
+
+  if (ast.selectionSet) selections = ast.selectionSet.selections;
+  if (Array.isArray(ast)) selections = ast;
+
+  if (!selections) return {
     fields: {},
     args: {}
   };
 
-  return ast.selectionSet.selections.reduce(function (simpleAST, selection) {
+  return selections.reduce(function (simpleAST, selection) {
     var key = selection.name.value;
 
     simpleAST.fields[key] = simpleAST.fields[key] || {};

@@ -28,18 +28,19 @@ module.exports = function (target, options) {
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
 
-  resolver = function (source, args, root, ast, type) {
+  resolver = function (source, args, info) {
     if (association && source.get(association.as) !== undefined) {
       return source.get(association.as);
     }
 
-    var list = type instanceof GraphQLList
+    var root = info.rootValue || {}
+      , ast = info.fieldASTs
+      , type = info.returnType
+      , list = type instanceof GraphQLList
       , includeResult
-      , simpleAST
+      , simpleAST = simplifyAST(ast[0])
       , findOptions = argsToFindOptions(args, model);
 
-    simpleAST = simplifyAST(ast);
-    root = root || {};
     type = type.ofType || type;
 
     findOptions.attributes = Object.keys(simpleAST.fields)
