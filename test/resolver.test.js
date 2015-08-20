@@ -144,6 +144,9 @@ describe('resolver', function () {
           limit: {
             type: GraphQLInt
           },
+          offset: {
+            type: GraphQLInt
+          },
           order: {
             type: GraphQLString
           },
@@ -305,6 +308,62 @@ describe('resolver', function () {
           name: user.name,
           myVirtual: 'lol'
         }
+      });
+    });
+  });
+
+  it('should resolve a plain result with a single model and aliases', function () {
+    var userA = this.userA
+      , userB = this.userB;
+
+    return graphql(schema, `
+      {
+        userA: user(id: ${userA.id}) {
+          name
+          myVirtual
+        }
+        userB: user(id: ${userB.id}) {
+          name
+          myVirtual
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data).to.deep.equal({
+        userA: {
+          name: userA.name,
+          myVirtual: 'lol'
+        },
+        userB: {
+          name: userB.name,
+          myVirtual: 'lol'
+        }
+      });
+    });
+  });
+
+  it('should resolve a array result with a model and aliased includes', function () {
+    return graphql(schema, `
+      {
+        users {
+          name
+
+          first: tasks(limit: 1) {
+            title
+          }
+
+          rest: tasks(offset: 1, limit: 99) {
+            title     
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      result.data.users.forEach(function (user) {
+        expect(user.first).to.be.ok;
+        expect(user.rest).to.be.ok;
       });
     });
   });

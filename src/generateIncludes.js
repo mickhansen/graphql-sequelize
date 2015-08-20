@@ -18,9 +18,10 @@ export default function generateIncludes(simpleAST, type, root, options) {
 
   Object.keys(simpleAST.fields).forEach(function (key) {
     var association
+      , name = simpleAST.fields[key].key || key
       , includeOptions
       , args = simpleAST.fields[key].args
-      , includeResolver = type._fields[key].resolve
+      , includeResolver = type._fields[name].resolve
       , nestedResult
       , allowedAttributes
       , Sequelize;

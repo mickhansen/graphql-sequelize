@@ -22,13 +22,19 @@ module.exports = function simplyAST(ast, parent) {
   };
 
   return selections.reduce(function (simpleAST, selection) {
-    var key = selection.name.value;
+    var name = selection.name.value
+      , alias = selection.alias && selection.alias.value
+      , key = alias || name;
 
     simpleAST.fields[key] = simpleAST.fields[key] || {};
     simpleAST.fields[key] = deepMerge(
       simpleAST.fields[key],
       simplyAST(selection, simpleAST.fields[key])
     );
+
+    if (alias) {
+      simpleAST.fields[key].key = name;
+    }
 
     simpleAST.fields[key].args = selection.arguments.reduce(function (args, arg) {
       args[arg.name.value] = arg.value.value;

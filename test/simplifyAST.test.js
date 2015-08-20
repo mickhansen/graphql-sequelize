@@ -191,4 +191,45 @@ describe('simplifyAST', function () {
       }
     });
   });
+
+  it('should simplify a structure with aliases', function () {
+    expect(simplifyAST(parse(`
+      {
+        luke: human(id: "1000") {
+          name
+        }
+        leia: human(id: "1003") {
+          name
+        }
+      }
+    `))).to.deep.equal({
+      args: {},
+      fields: {
+        luke: {
+          key: "human",
+          args: {
+            id: "1000"
+          },
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            }
+          }
+        },
+        leia: {
+          key: "human",
+          args: {
+            id: "1003"
+          },
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            }
+          }
+        }
+      }
+    })
+  });
 });
