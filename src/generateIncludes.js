@@ -5,10 +5,6 @@ function inList(list, attribute) {
   return ~list.indexOf(attribute);
 }
 
-function notType(type, model, attribute) {
-  return !(model.rawAttributes[attribute].type instanceof type);
-}
-
 export default function generateIncludes(simpleAST, type, root, options) {
   var result = {include: [], attributes: [], order: []};
 
@@ -23,8 +19,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
       , args = simpleAST.fields[key].args
       , includeResolver = type._fields[name].resolve
       , nestedResult
-      , allowedAttributes
-      , Sequelize;
+      , allowedAttributes;
 
     if (!includeResolver) return;
 
@@ -80,11 +75,9 @@ export default function generateIncludes(simpleAST, type, root, options) {
           delete includeOptions.order;
         }
 
-        Sequelize = association.target.sequelize.constructor;
         includeOptions.attributes = (includeOptions.attributes || [])
                                     .concat(Object.keys(simpleAST.fields[key].fields))
-                                    .filter(inList.bind(null, allowedAttributes))
-                                    .filter(notType.bind(null, Sequelize.VIRTUAL, association.target));
+                                    .filter(inList.bind(null, allowedAttributes));
 
         includeOptions.attributes.push(association.target.primaryKeyAttribute);
 
