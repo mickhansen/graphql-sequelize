@@ -11,9 +11,14 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     sequelizeType instanceof sequelizeTypes.STRING ||
     sequelizeType instanceof sequelizeTypes.TEXT ||
     sequelizeType instanceof sequelizeTypes.UUID ||
-    sequelizeType instanceof sequelizeTypes.DATE ||
-    sequelizeType instanceof sequelizeTypes.VIRTUAL
+    sequelizeType instanceof sequelizeTypes.DATE
   ) {
+    return GraphQLString;
+  } else if (sequelizeType instanceof sequelizeTypes.VIRTUAL) {
+    if (sequelizeType.returnType) {
+      return toGraphQL(sequelizeType.returnType, sequelizeTypes);
+    }
+
     return GraphQLString;
   } else {
     throw new Error(`Unable to convert ${sequelizeType.key || sequelizeType.toSql()} to a GraphQL type`);

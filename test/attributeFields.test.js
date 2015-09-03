@@ -11,7 +11,8 @@ import {
   GraphQLString,
   GraphQLInt,
   GraphQLFloat,
-  GraphQLNonNull
+  GraphQLNonNull,
+  GraphQLBoolean
 } from 'graphql';
 
 describe('attributeFields', function () {
@@ -28,6 +29,12 @@ describe('attributeFields', function () {
     },
     float: {
       type: Sequelize.FLOAT
+    },
+    virtualInteger: {
+      type: new Sequelize.VIRTUAL(Sequelize.INTEGER)
+    },
+    virtualBoolean: {
+      type: new Sequelize.VIRTUAL(Sequelize.BOOLEAN)
     }
   }, {
     timestamps: false
@@ -36,7 +43,7 @@ describe('attributeFields', function () {
   it('should return fields for a simple model', function () {
     var fields = attributeFields(Model);
 
-    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'float']);
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'float', 'virtualInteger', 'virtualBoolean']);
 
     expect(fields.id.type).to.be.an.instanceOf(GraphQLNonNull);
     expect(fields.id.type.ofType).to.equal(GraphQLInt);
@@ -49,11 +56,15 @@ describe('attributeFields', function () {
     expect(fields.lastName.type).to.equal(GraphQLString);
 
     expect(fields.float.type).to.equal(GraphQLFloat);
+
+    expect(fields.virtualInteger.type).to.equal(GraphQLInt);
+
+    expect(fields.virtualBoolean.type).to.equal(GraphQLBoolean);
   });
 
   it('should be possible to exclude fields', function () {
     var fields = attributeFields(Model, {
-      exclude: ['id', 'email', 'float']
+      exclude: ['id', 'email', 'float', 'virtualInteger', 'virtualBoolean']
     });
 
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
