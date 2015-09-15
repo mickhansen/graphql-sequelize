@@ -30,175 +30,180 @@ describe('resolver', function () {
     , labelType
     , schema;
 
-  User = sequelize.define('user', {
-    name: Sequelize.STRING,
-    myVirtual: {
-      type: Sequelize.VIRTUAL,
-      get: function() {
-        return 'lol';
+  before(function () {
+    sequelize.modelManager.models = [];
+    sequelize.models = {};
+
+    User = sequelize.define('user', {
+      name: Sequelize.STRING,
+      myVirtual: {
+        type: Sequelize.VIRTUAL,
+        get: function() {
+          return 'lol';
+        }
       }
-    }
-  }, {
-    timestamps: false
-  });
+    }, {
+      timestamps: false
+    });
 
-  Task = sequelize.define('task', {
-    title: Sequelize.STRING,
-    createdAt: {
-      type: Sequelize.DATE,
-      field: 'created_at',
-      defaultValue: Sequelize.NOW
-    },
-    taskVirtual: {
-      type: Sequelize.VIRTUAL,
-      get: function() {
-        return 'tasktask';
-      }
-    }
-  }, {
-    timestamps: false
-  });
-
-  Project = sequelize.define('project', {
-    name: Sequelize.STRING
-  }, {
-    timestamps: false
-  });
-
-  Label = sequelize.define('label', {
-    name: Sequelize.STRING
-  }, {
-    timestamps: false
-  });
-
-  User.Tasks = User.hasMany(Task, {as: 'tasks', foreignKey: 'userId'});
-  Task.User = Task.belongsTo(User, {as: 'user', foreignKey: 'userId'});
-
-  Task.Project = Task.belongsTo(Project, {as: 'project', foreignKey: 'projectId'});
-  Project.Labels = Project.hasMany(Label, {as: 'labels'});
-
-  labelType = new GraphQLObjectType({
-    name: 'Label',
-    fields: {
-      id: {
-        type: new GraphQLNonNull(GraphQLInt)
-      },
-      name: {
-        type: GraphQLString
-      }
-    }
-  });
-
-  projectType = new GraphQLObjectType({
-    name: 'Project',
-    fields: {
-      id: {
-        type: new GraphQLNonNull(GraphQLInt)
-      },
-      name: {
-        type: GraphQLString
-      },
-      labels: {
-        type: new GraphQLList(labelType),
-        resolve: resolver(Project.Labels)
-      }
-    }
-  });
-
-  taskType = new GraphQLObjectType({
-    name: 'Task',
-    description: 'A task',
-    fields: {
-      id: {
-        type: new GraphQLNonNull(GraphQLInt)
-      },
-      title: {
-        type: GraphQLString
+    Task = sequelize.define('task', {
+      title: Sequelize.STRING,
+      createdAt: {
+        type: Sequelize.DATE,
+        field: 'created_at',
+        defaultValue: Sequelize.NOW
       },
       taskVirtual: {
-        type: GraphQLString
-      },
-      project: {
-        type: projectType,
-        resolve: resolver(Task.Project)
+        type: Sequelize.VIRTUAL,
+        get: function() {
+          return 'tasktask';
+        }
       }
-    }
-  });
+    }, {
+      timestamps: false
+    });
 
-  userType = new GraphQLObjectType({
-    name: 'User',
-    description: 'A user',
-    fields: {
-      id: {
-        type: new GraphQLNonNull(GraphQLInt),
-      },
-      name: {
-        type: GraphQLString,
-      },
-      myVirtual: {
-        type: GraphQLString
-      },
-      tasks: {
-        type: new GraphQLList(taskType),
-        args: {
-          limit: {
-            type: GraphQLInt
-          },
-          offset: {
-            type: GraphQLInt
-          },
-          order: {
-            type: GraphQLString
-          },
-          first: {
-            type: GraphQLInt
-          }
-        },
-        resolve: resolver(User.Tasks, {
-          before: function(options, args) {
-            if (args.first) {
-              options.order = options.order || [];
-              options.order.push(['created_at', 'ASC']);
+    Project = sequelize.define('project', {
+      name: Sequelize.STRING
+    }, {
+      timestamps: false
+    });
 
-              if (args.first !== 0) {
-                options.limit = args.first;
-              }
-            }
+    Label = sequelize.define('label', {
+      name: Sequelize.STRING
+    }, {
+      timestamps: false
+    });
 
-            return options;
-          }
-        })
-      }
-    }
-  });
+    User.Tasks = User.hasMany(Task, {as: 'tasks', foreignKey: 'userId'});
+    Task.User = Task.belongsTo(User, {as: 'user', foreignKey: 'userId'});
 
-  schema = new GraphQLSchema({
-    query: new GraphQLObjectType({
-      name: 'RootQueryType',
+    Task.Project = Task.belongsTo(Project, {as: 'project', foreignKey: 'projectId'});
+    Project.Labels = Project.hasMany(Label, {as: 'labels'});
+
+    labelType = new GraphQLObjectType({
+      name: 'Label',
       fields: {
-        user: {
-          type: userType,
-          args: {
-            id: {
-              type: new GraphQLNonNull(GraphQLInt)
-            }
-          },
-          resolve: resolver(User)
+        id: {
+          type: new GraphQLNonNull(GraphQLInt)
         },
-        users: {
-          type: new GraphQLList(userType),
+        name: {
+          type: GraphQLString
+        }
+      }
+    });
+
+    projectType = new GraphQLObjectType({
+      name: 'Project',
+      fields: {
+        id: {
+          type: new GraphQLNonNull(GraphQLInt)
+        },
+        name: {
+          type: GraphQLString
+        },
+        labels: {
+          type: new GraphQLList(labelType),
+          resolve: resolver(Project.Labels)
+        }
+      }
+    });
+
+    taskType = new GraphQLObjectType({
+      name: 'Task',
+      description: 'A task',
+      fields: {
+        id: {
+          type: new GraphQLNonNull(GraphQLInt)
+        },
+        title: {
+          type: GraphQLString
+        },
+        taskVirtual: {
+          type: GraphQLString
+        },
+        project: {
+          type: projectType,
+          resolve: resolver(Task.Project)
+        }
+      }
+    });
+
+    userType = new GraphQLObjectType({
+      name: 'User',
+      description: 'A user',
+      fields: {
+        id: {
+          type: new GraphQLNonNull(GraphQLInt),
+        },
+        name: {
+          type: GraphQLString,
+        },
+        myVirtual: {
+          type: GraphQLString
+        },
+        tasks: {
+          type: new GraphQLList(taskType),
           args: {
             limit: {
               type: GraphQLInt
             },
+            offset: {
+              type: GraphQLInt
+            },
             order: {
               type: GraphQLString
+            },
+            first: {
+              type: GraphQLInt
             }
           },
-          resolve: resolver(User)
+          resolve: resolver(User.Tasks, {
+            before: function(options, args) {
+              if (args.first) {
+                options.order = options.order || [];
+                options.order.push(['created_at', 'ASC']);
+
+                if (args.first !== 0) {
+                  options.limit = args.first;
+                }
+              }
+
+              return options;
+            }
+          })
         }
       }
-    })
+    });
+
+    schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'RootQueryType',
+        fields: {
+          user: {
+            type: userType,
+            args: {
+              id: {
+                type: new GraphQLNonNull(GraphQLInt)
+              }
+            },
+            resolve: resolver(User)
+          },
+          users: {
+            type: new GraphQLList(userType),
+            args: {
+              limit: {
+                type: GraphQLInt
+              },
+              order: {
+                type: GraphQLString
+              }
+            },
+            resolve: resolver(User)
+          }
+        }
+      })
+    });
   });
 
   before(function () {

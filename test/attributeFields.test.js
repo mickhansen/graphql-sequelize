@@ -18,34 +18,38 @@ import {
 } from 'graphql';
 
 describe('attributeFields', function () {
-  var Model = sequelize.define(Math.random().toString(), {
-    email: {
-      type: Sequelize.STRING,
-      allowNull: false
-    },
-    firstName: {
-      type: Sequelize.STRING
-    },
-    lastName: {
-      type: Sequelize.STRING
-    },
-    float: {
-      type: Sequelize.FLOAT
-    },
-    enum: {
-      type: Sequelize.ENUM('first', 'second')
-    },
-    list: {
-      type: Sequelize.ARRAY(Sequelize.STRING)
-    },
-    virtualInteger: {
-      type: new Sequelize.VIRTUAL(Sequelize.INTEGER)
-    },
-    virtualBoolean: {
-      type: new Sequelize.VIRTUAL(Sequelize.BOOLEAN)
-    }
-  }, {
-    timestamps: false
+  var Model;
+
+  before(function () {
+    Model = sequelize.define(Math.random().toString(), {
+      email: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
+      firstName: {
+        type: Sequelize.STRING
+      },
+      lastName: {
+        type: Sequelize.STRING
+      },
+      float: {
+        type: Sequelize.FLOAT
+      },
+      enum: {
+        type: Sequelize.ENUM('first', 'second')
+      },
+      list: {
+        type: Sequelize.ARRAY(Sequelize.STRING)
+      },
+      virtualInteger: {
+        type: new Sequelize.VIRTUAL(Sequelize.INTEGER)
+      },
+      virtualBoolean: {
+        type: new Sequelize.VIRTUAL(Sequelize.BOOLEAN)
+      }
+    }, {
+      timestamps: false
+    });
   });
 
   it('should return fields for a simple model', function () {
