@@ -1,26 +1,66 @@
-import { GraphQLInt, GraphQLString, GraphQLBoolean, GraphQLFloat } from 'graphql';
+import {
+  GraphQLInt,
+  GraphQLString,
+   GraphQLBoolean,
+   GraphQLFloat,
+   GraphQLEnumType,
+   GraphQLList
+ } from 'graphql';
 
+/**
+ * Checks the type of the sequelize data type and
+ * returns the corresponding type in GraphQL
+ * @param  {Object} sequelizeType
+ * @param  {Object} sequelizeTypes
+ * @return {Function} GraphQL type declaration
+ */
 export function toGraphQL(sequelizeType, sequelizeTypes) {
-  if (sequelizeType instanceof sequelizeTypes.BOOLEAN) {
-    return GraphQLBoolean;
-  } else if (sequelizeType instanceof sequelizeTypes.FLOAT) {
-    return GraphQLFloat;
-  } else if (sequelizeType instanceof sequelizeTypes.INTEGER) {
-    return GraphQLInt;
-  } else if (
-    sequelizeType instanceof sequelizeTypes.STRING ||
-    sequelizeType instanceof sequelizeTypes.TEXT ||
-    sequelizeType instanceof sequelizeTypes.UUID ||
-    sequelizeType instanceof sequelizeTypes.DATE
-  ) {
-    return GraphQLString;
-  } else if (sequelizeType instanceof sequelizeTypes.VIRTUAL) {
-    if (sequelizeType.returnType) {
-      return toGraphQL(sequelizeType.returnType, sequelizeTypes);
-    }
 
+  const {
+    BOOLEAN,
+    ENUM,
+    FLOAT,
+    INTEGER,
+    STRING,
+    TEXT,
+    UUID,
+    DATE,
+    ARRAY,
+    VIRTUAL
+  } = sequelizeTypes;
+
+  if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
+  if (sequelizeType instanceof FLOAT) return GraphQLFloat;
+  if (sequelizeType instanceof INTEGER) return GraphQLInt;
+
+  if (sequelizeType instanceof STRING ||
+      sequelizeType instanceof TEXT ||
+      sequelizeType instanceof UUID ||
+      sequelizeType instanceof DATE) {
     return GraphQLString;
-  } else {
-    throw new Error(`Unable to convert ${sequelizeType.key || sequelizeType.toSql()} to a GraphQL type`);
   }
+
+  if (sequelizeType instanceof ARRAY) {
+    let elementType = toGraphQL(sequelizeType.type, sequelizeTypes);
+    return new GraphQLList(elementType);
+  }
+
+  if (sequelizeType instanceof ENUM) {
+    return new GraphQLEnumType({
+      values: sequelizeType.values.reduce((obj, value) => {
+        obj[value] = {value};
+        return obj;
+      }, {})
+    });
+  }
+
+  if (sequelizeType instanceof VIRTUAL) {
+    let returnType = sequelizeType.returnType
+        ? toGraphQL(sequelizeType.returnType, sequelizeTypes)
+        : GraphQLString;
+    return returnType;
+  }
+
+  throw new Error(`Unable to convert ${sequelizeType.key || sequelizeType.toSql()} to a GraphQL type`);
+
 }
