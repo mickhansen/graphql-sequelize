@@ -36,24 +36,29 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof STRING ||
       sequelizeType instanceof TEXT ||
       sequelizeType instanceof UUID ||
-      sequelizeType instanceof DATE
-  ) return GraphQLString;
+      sequelizeType instanceof DATE) {
+        return GraphQLString
+      }
 
   if (sequelizeType instanceof ARRAY) {
     let elementType = toGraphQL(sequelizeType.type, sequelizeTypes);
-    return GraphQLList(elementType);
+    return new GraphQLList(elementType);
   }
 
   if (sequelizeType instanceof ENUM) {
     return new GraphQLEnumType({
-    values: sequelizeType.values.reduce((obj, value) => {
-      obj[value] = {value};
-      return obj;
-    }, {})});
+      values: sequelizeType.values.reduce((obj, value) => {
+        obj[value] = {value};
+        return obj;
+      }, {})
+    });
   }
 
   if (sequelizeType instanceof VIRTUAL) {
-    return toGraphQL(sequelizeType.returnType, sequelizeTypes);
+    let returnType = sequelizeType.returnType
+        ? toGraphQL(sequelizeType.returnType, sequelizeTypes)
+        : GraphQLString;
+    return returnType;
   }
 
   throw new Error(`Unable to convert ${sequelizeType.key || sequelizeType.toSql()} to a GraphQL type`);
