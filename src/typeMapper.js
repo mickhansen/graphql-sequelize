@@ -37,8 +37,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
       sequelizeType instanceof TEXT ||
       sequelizeType instanceof UUID ||
       sequelizeType instanceof DATE) {
-        return GraphQLString
-      }
+    return GraphQLString;
+  }
 
   if (sequelizeType instanceof ARRAY) {
     let elementType = toGraphQL(sequelizeType.type, sequelizeTypes);
