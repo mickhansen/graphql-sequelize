@@ -35,7 +35,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
 
   if (sequelizeType instanceof INTEGER ||
       sequelizeType instanceof BIGINT) {
-    return GraphQLString;
+    return GraphQLInt;
   }
 
   if (sequelizeType instanceof STRING ||
