@@ -21,6 +21,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     ENUM,
     FLOAT,
     INTEGER,
+    BIGINT,
     STRING,
     TEXT,
     UUID,
@@ -31,7 +32,11 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
 
   if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
   if (sequelizeType instanceof FLOAT) return GraphQLFloat;
-  if (sequelizeType instanceof INTEGER) return GraphQLInt;
+
+  if (sequelizeType instanceof INTEGER ||
+      sequelizeType instanceof BIGINT) {
+    return GraphQLString;
+  }
 
   if (sequelizeType instanceof STRING ||
       sequelizeType instanceof TEXT ||
