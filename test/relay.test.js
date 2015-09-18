@@ -189,7 +189,21 @@ describe('relay', function () {
 
       expect(result.data).to.deep.equal({
         user: {
-          name: user.name
+          name: user.name,
+          tasks: {
+            edges: [
+              {
+                node: {
+                  name: user.tasks[0].name
+                }
+              },
+              {
+                node: {
+                  name: user.tasks[1].name
+                }
+              }
+            ]
+          }
         }
       });
     });

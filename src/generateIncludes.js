@@ -1,4 +1,5 @@
 import argsToFindOptions from './argsToFindOptions';
+import {isConnection} from './relay';
 import _ from 'lodash';
 
 function inList(list, attribute) {
@@ -96,5 +97,8 @@ export default function generateIncludes(simpleAST, type, root, options) {
     }
   });
 
+  if (isConnection(type)) {
+    result.attributes = result.attributes.concat(Object.keys(simpleAST.fields.edges.fields.node.fields));
+  }
   return result;
 }
