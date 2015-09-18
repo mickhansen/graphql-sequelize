@@ -1,4 +1,4 @@
-import {fromGlobalId, nodeDefinitions} from 'graphql-relay';
+import {fromGlobalId, connectionFromArray, nodeDefinitions} from 'graphql-relay';
 
 export function idFetcher(sequelize) {
   return globalId => {
@@ -17,6 +17,14 @@ export function typeResolver(types) {
   }
 }
 
+export function isConnection(type) {
+  return typeof type.name !== 'undefined' && type.name.endsWith('Connection');
+}
+
+export function handleConnection(values, args) {
+  return connectionFromArray(values, args);
+}
+
 export function sequelizeNodeInterface(sequelize, types) {
-  return nodeDefintions(idFetcher(sequelize), typeResolver(types));
+  return nodeDefinitions(idFetcher(sequelize), typeResolver(types));
 }
