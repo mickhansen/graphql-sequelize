@@ -115,9 +115,6 @@ describe('relay', function () {
             args: {
               id: {
                 type: new GraphQLNonNull(GraphQLInt)
-              },
-              testV: {
-                type: GraphQLBoolean
               }
             },
             resolve: resolver(User)
@@ -173,7 +170,7 @@ describe('relay', function () {
 
     return graphql(schema, `
       {
-        user(id: ${user.id}, testV: true) {
+        user(id: ${user.id}) {
           name
           tasks {
             edges {
