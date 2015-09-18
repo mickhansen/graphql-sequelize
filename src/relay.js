@@ -14,7 +14,7 @@ export function idFetcher(sequelize) {
 export function typeResolver(types) {
   return obj => {
     return types[obj.__options.name.singular];
-  }
+  };
 }
 
 export function isConnection(type) {
