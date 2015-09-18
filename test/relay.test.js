@@ -209,4 +209,31 @@ describe('relay', function () {
     });
   });
 
+  it('should resolve a plain result with a single model', function () {
+    var users = this.users;
+
+    return graphql(schema, `
+      {
+        users {
+          name
+          tasks {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data.users.length).to.equal(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.tasks.edges).to.have.length.above(0);
+      });
+
+    });
+  });
+
 });
