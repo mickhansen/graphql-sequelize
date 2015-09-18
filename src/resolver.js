@@ -25,7 +25,6 @@ module.exports = function (target, options) {
   if (options.after === undefined) options.after = (result) => result;
 
   resolver = function (source, args, info) {
-
     if (association && source.get(association.as) !== undefined) {
       if (isConnection(info.returnType)) {
         return handleConnection(source[info.fieldName], args);
@@ -71,6 +70,9 @@ module.exports = function (target, options) {
 
     if (association) {
       return source[association.accessors.get](findOptions).then(function (result) {
+        if (isConnection(info.returnType)) {
+          result = handleConnection(result, args);
+        }
         return options.after(result, args, root, {
           ast: simpleAST,
           type: type

@@ -47,6 +47,9 @@ describe('relay', function () {
     , taskType
     , taskConnection
     , nodeInterface
+    , Project
+    , projectType
+    , userConnection
     , nodeField
     , schema;
 
@@ -69,9 +72,18 @@ describe('relay', function () {
       timestamps: false
     });
 
-    User.Tasks = User.hasMany(Task, {as: 'tasks'});
+    Project = sequelize.define('name', {
+      name: {
+        type: Sequelize.STRING
+      }
+    }, {
+      timestamps: false
+    });
 
-    var node = sequelizeNodeInterface(sequelize, {User: userType, Task: taskType});
+    User.Tasks = User.hasMany(Task, {as: 'tasks'});
+    Project.Users = Project.hasMany(User, {as: 'users'});
+
+    var node = sequelizeNodeInterface(sequelize, {Project: projectType, User: userType, Task: taskType});
     nodeInterface = node.nodeInterface;
     nodeField = node.nodeField;
 
@@ -86,9 +98,8 @@ describe('relay', function () {
       interfaces: [nodeInterface]
     });
 
-    var connection = connectionDefinitions({name: 'Task', nodeType: taskType});
+    var taskConnection = connectionDefinitions({name: 'Task', nodeType: taskType});
 
-    taskConnection = connection.connectionType;
 
     userType = new GraphQLObjectType({
       name: 'User',
@@ -98,12 +109,33 @@ describe('relay', function () {
           type: GraphQLString
         },
         tasks: {
-          type: taskConnection,
-          args: connectionArgs,
+          type: taskConnection.connectionType,
+          args: {
+            test: {
+              type: GraphQLBoolean
+            }
+          },
           resolve: resolver(User.Tasks)
         }
       },
       interfaces: [nodeInterface]
+    });
+
+    var userConnection = connectionDefinitions({name: 'User', nodeType: userType});
+
+    projectType = new GraphQLObjectType({
+      name: 'Project',
+      fields: {
+        id: globalIdField('User'),
+        name: {
+          type: GraphQLString
+        },
+        users: {
+          type: userConnection.connectionType,
+          args: connectionArgs,
+          resolve: resolver(Project.Users)
+        }
+      }
     });
 
     schema = new GraphQLSchema({
@@ -130,6 +162,15 @@ describe('relay', function () {
               }
             },
             resolve: resolver(User)
+          },
+          project: {
+            type: projectType,
+            args: {
+              id: {
+                type: new GraphQLNonNull(GraphQLInt)
+              }
+            },
+            resolve: resolver(Project)
           }
         }
       })
@@ -139,10 +180,15 @@ describe('relay', function () {
 
   before(function () {
     var userId = 1
+      , projectId = 1
       , taskId = 1;
 
     return this.sequelize.sync({force: true}).bind(this).then(function () {
       return Promise.join(
+        Project.create({
+          id: projectId++,
+          name: 'project-' + Math.random().toString()
+        }),
         User.create({
           id: userId++,
           name: 'b' + Math.random().toString(),
@@ -157,7 +203,8 @@ describe('relay', function () {
         }, {
           include: [User.Tasks]
         })
-      ).bind(this).spread(function (userA, userB) {
+      ).bind(this).spread(function (project, userA, userB) {
+          this.project = project;
           this.userA = userA;
           this.userB = userB;
           this.users = [userA, userB];
@@ -165,7 +212,11 @@ describe('relay', function () {
     });
   });
 
-  it('should resolve a plain result with a single model', function () {
+  before(function () {
+    return this.project.setUsers([this.userA.id, this.userB.id]);
+  });
+
+  it('should resolve a plain result with a single connection', function () {
     var user = this.userB;
 
     return graphql(schema, `
@@ -206,7 +257,7 @@ describe('relay', function () {
     });
   });
 
-  it('should resolve a plain result with a single model', function () {
+  it('should resolve an array of objects containing connections', function () {
     var users = this.users;
 
     return graphql(schema, `
@@ -230,6 +281,42 @@ describe('relay', function () {
         expect(user.tasks.edges).to.have.length.above(0);
       });
 
+    });
+  });
+
+  it('should resolve nested connections', function () {
+    var project = this.project;
+
+    return graphql(schema, `
+      {
+        project(id: 1) {
+          users {
+            edges {
+              node {
+                name
+                tasks(test: true) {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `).then(result => {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data.project.users.edges).to.have.length(2);
+      let [nodeA, nodeB] = result.data.project.users.edges;
+      let userA = nodeA.node;
+      let userB = nodeB.node;
+      expect(userA).to.have.property('tasks');
+      expect(userA.tasks.edges).to.have.length.above(0);
+      expect(userB).to.have.property('tasks');
+      expect(userB.tasks.edges).to.have.length.above(0);
     });
   });
 
