@@ -28,6 +28,7 @@ import {
 
 import {
   globalIdField,
+  toGlobalId,
   connectionDefinitions,
   connectionArgs,
   connectionFromArray
@@ -72,7 +73,7 @@ describe('relay', function () {
       timestamps: false
     });
 
-    Project = sequelize.define('name', {
+    Project = sequelize.define('project', {
       name: {
         type: Sequelize.STRING
       }
@@ -83,7 +84,21 @@ describe('relay', function () {
     User.Tasks = User.hasMany(Task, {as: 'tasks'});
     Project.Users = Project.hasMany(User, {as: 'users'});
 
-    var node = sequelizeNodeInterface(sequelize, {Project: projectType, User: userType, Task: taskType});
+    var node = sequelizeNodeInterface(sequelize, (obj) => {
+      switch(obj.Model.options.name.singular) {
+        case 'user':
+          return userType;
+          break;
+        case 'project':
+          return projectType;
+          break;
+        case 'task':
+          return taskType;
+          break;
+        default:
+          return null;
+      }
+    });
     nodeInterface = node.nodeInterface;
     nodeField = node.nodeField;
 
@@ -171,7 +186,8 @@ describe('relay', function () {
               }
             },
             resolve: resolver(Project)
-          }
+          },
+          node: nodeField
         }
       })
     });
@@ -214,6 +230,17 @@ describe('relay', function () {
 
   before(function () {
     return this.project.setUsers([this.userA.id, this.userB.id]);
+  });
+
+  it('should return userA when running a node query', function() {
+    var user = this.userA;
+
+    var globalId = toGlobalId('User', user.id);
+
+    return graphql(schema, `
+      {node(id: "${globalId}"){id ... on User{name}}}
+    `).then(r => console.log(r));
+
   });
 
   it('should resolve a plain result with a single connection', function () {
