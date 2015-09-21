@@ -1,5 +1,23 @@
 import {fromGlobalId, connectionFromArray, nodeDefinitions} from 'graphql-relay';
 
+class NodeTypeMapper {
+
+  constructor( sequelize ) {
+    this.models = Object.keys(sequelize.models);
+    this.models.forEach(model => {
+      this[model] = null;
+    });
+  }
+
+  mapTypes( types ) {
+    this.models.forEach(model => {
+      if (types[model]) {
+        this[model] = types[model];
+      }
+    });
+  }
+}
+
 export function idFetcher(sequelize) {
   return globalId => {
     let {type, id} = fromGlobalId(globalId);
@@ -12,13 +30,6 @@ export function idFetcher(sequelize) {
   };
 }
 
-export function typeResolver(types) {
-  return obj => {
-    console.log(types);
-    return types[obj.Model.options.name.singular];
-  };
-}
-
 export function isConnection(type) {
   return typeof type.name !== 'undefined' && type.name.endsWith('Connection');
 }
@@ -27,6 +38,13 @@ export function handleConnection(values, args) {
   return connectionFromArray(values, args);
 }
 
-export function sequelizeNodeInterface(sequelize, fn) {
-  return nodeDefinitions(idFetcher(sequelize), fn);
+export function sequelizeNodeInterface(sequelize) {
+  let nodeTypeMapper = new NodeTypeMapper(sequelize);
+  const nodeObjects = nodeDefinitions(idFetcher(sequelize), obj => {
+    return nodeTypeMapper[obj.Model.options.name.singular];
+  });
+  return {
+    nodeTypeMapper,
+    ...nodeObjects
+  }
 }

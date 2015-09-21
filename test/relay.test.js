@@ -84,23 +84,10 @@ describe('relay', function () {
     User.Tasks = User.hasMany(Task, {as: 'tasks'});
     Project.Users = Project.hasMany(User, {as: 'users'});
 
-    var node = sequelizeNodeInterface(sequelize, (obj) => {
-      switch(obj.Model.options.name.singular) {
-        case 'user':
-          return userType;
-          break;
-        case 'project':
-          return projectType;
-          break;
-        case 'task':
-          return taskType;
-          break;
-        default:
-          return null;
-      }
-    });
+    var node = sequelizeNodeInterface(sequelize);
     nodeInterface = node.nodeInterface;
     nodeField = node.nodeField;
+    var nodeTypeMapper = node.nodeTypeMapper;
 
     taskType = new GraphQLObjectType({
       name: 'Task',
@@ -152,6 +139,13 @@ describe('relay', function () {
         }
       }
     });
+
+    nodeTypeMapper.mapTypes({
+      [User.name]: userType,
+      [Project.name]: projectType,
+      [Task.name]: taskType
+    });
+
 
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
@@ -207,14 +201,14 @@ describe('relay', function () {
         }),
         User.create({
           id: userId++,
-          name: 'b' + Math.random().toString(),
+          name: 'a' + Math.random().toString(),
           tasks: [generateTask(taskId++), generateTask(taskId++), generateTask(taskId++)]
         }, {
           include: [User.Tasks]
         }),
         User.create({
           id: userId++,
-          name: 'a' + Math.random().toString(),
+          name: 'b' + Math.random().toString(),
           tasks: [generateTask(taskId++), generateTask(taskId++)]
         }, {
           include: [User.Tasks]
@@ -238,8 +232,18 @@ describe('relay', function () {
     var globalId = toGlobalId('User', user.id);
 
     return graphql(schema, `
-      {node(id: "${globalId}"){id ... on User{name}}}
-    `).then(r => console.log(r));
+      {
+        node(id: "${globalId}") {
+          id
+          ... on User {
+            name
+          }
+        }
+      }
+    `).then(result => {
+      expect(result.data.node.id).to.equal(globalId);
+      expect(result.data.node.name).to.equal(user.name);
+    });
 
   });
 
