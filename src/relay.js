@@ -46,5 +46,5 @@ export function sequelizeNodeInterface(sequelize) {
   return {
     nodeTypeMapper,
     ...nodeObjects
-  }
+  };
 }
