@@ -19,9 +19,9 @@ import {
 
 describe('attributeFields', function () {
   var Model;
-
+  var modelName = Math.random().toString();
   before(function () {
-    Model = sequelize.define(Math.random().toString(), {
+    Model = sequelize.define(modelName, {
       email: {
         type: Sequelize.STRING,
         allowNull: false
@@ -36,6 +36,9 @@ describe('attributeFields', function () {
         type: Sequelize.FLOAT
       },
       enum: {
+        type: Sequelize.ENUM('first', 'second')
+      },
+      enumTwo: {
         type: Sequelize.ENUM('first', 'second')
       },
       list: {
@@ -55,7 +58,7 @@ describe('attributeFields', function () {
   it('should return fields for a simple model', function () {
     var fields = attributeFields(Model);
 
-    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'float', 'enum', 'list', 'virtualInteger', 'virtualBoolean']);
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'float', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean']);
 
     expect(fields.id.type).to.be.an.instanceOf(GraphQLNonNull);
     expect(fields.id.type.ofType).to.equal(GraphQLInt);
@@ -69,6 +72,8 @@ describe('attributeFields', function () {
 
     expect(fields.enum.type).to.be.an.instanceOf(GraphQLEnumType);
 
+    expect(fields.enumTwo.type).to.be.an.instanceOf(GraphQLEnumType);
+
     expect(fields.list.type).to.be.an.instanceOf(GraphQLList);
 
     expect(fields.float.type).to.equal(GraphQLFloat);
@@ -80,9 +85,19 @@ describe('attributeFields', function () {
 
   it('should be possible to exclude fields', function () {
     var fields = attributeFields(Model, {
-      exclude: ['id', 'email', 'float', 'enum', 'list', 'virtualInteger', 'virtualBoolean']
+      exclude: ['id', 'email', 'float', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean']
     });
 
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
+  });
+
+  it('should automatically name enum types', function () {
+    var fields = attributeFields(Model);
+
+    expect(fields.enum.type.name).to.not.be.undefined;
+    expect(fields.enumTwo.type.name).to.not.be.undefined;
+
+    expect(fields.enum.type.name).to.equal(modelName + 'enum' + 'EnumType');
+    expect(fields.enumTwo.type.name).to.equal(modelName + 'enumTwo' + 'EnumType');
   });
 });
