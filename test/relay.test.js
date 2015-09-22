@@ -504,4 +504,22 @@ describe('relay', function () {
     });
   });
 
+  it('should support fragments', function () {
+
+    return graphql(schema, `
+      {
+        project(id: 1) {
+          ...name
+        }
+      }
+      fragment name on Project {
+        name
+      }
+    `).then(result => {
+      console.log(result);
+      expect(result.errors).to.have.length(0);
+    });
+
+  });
+
 });
