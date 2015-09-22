@@ -3,6 +3,7 @@ import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
 import argsToFindOptions from './argsToFindOptions';
+import { isConnection, handleConnection } from './relay';
 
 function inList(list, attribute) {
   return ~list.indexOf(attribute);
@@ -25,6 +26,9 @@ module.exports = function (target, options) {
 
   resolver = function (source, args, info) {
     if (association && source.get(association.as) !== undefined) {
+      if (isConnection(info.returnType)) {
+        return handleConnection(source[info.fieldName], args);
+      }
       return source.get(association.as);
     }
 
@@ -66,6 +70,9 @@ module.exports = function (target, options) {
 
     if (association) {
       return source[association.accessors.get](findOptions).then(function (result) {
+        if (isConnection(info.returnType)) {
+          result = handleConnection(result, args);
+        }
         return options.after(result, args, root, {
           ast: simpleAST,
           type: type

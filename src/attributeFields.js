@@ -1,5 +1,5 @@
 import * as typeMapper from './typeMapper';
-import { GraphQLNonNull } from 'graphql';
+import { GraphQLNonNull, GraphQLEnumType } from 'graphql';
 
 module.exports = function (Model, options) {
   options = options || {};
@@ -13,6 +13,10 @@ module.exports = function (Model, options) {
     memo[key] = {
       type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
     };
+
+    if ( memo[key].type instanceof GraphQLEnumType ) {
+      memo[key].type.name = `${Model.name}${key}EnumType`;
+    }
 
     if (attribute.allowNull === false || attribute.primaryKey === true) {
       memo[key].type = new GraphQLNonNull(memo[key].type);
