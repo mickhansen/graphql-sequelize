@@ -112,11 +112,7 @@ describe('relay', function () {
         },
         tasks: {
           type: taskConnection.connectionType,
-          args: {
-            test: {
-              type: GraphQLBoolean
-            }
-          },
+          args: connectionArgs,
           resolve: resolver(User.Tasks)
         }
       },
@@ -247,6 +243,163 @@ describe('relay', function () {
 
   });
 
+  it('should support first queries on connections', function() {
+    var user = this.userB;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+          tasks(first: 1) {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data).to.deep.equal({
+        user: {
+          name: user.name,
+          tasks: {
+            edges: [
+              {
+                node: {
+                  name: user.tasks[0].name
+                }
+              }
+            ]
+          }
+        }
+      });
+    });
+  });
+
+  it('should support last queries on connections', function() {
+    var user = this.userB;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+          tasks(last: 1) {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data).to.deep.equal({
+        user: {
+          name: user.name,
+          tasks: {
+            edges: [
+              {
+                node: {
+                  name: user.tasks[user.tasks.length - 1].name
+                }
+              }
+            ]
+          }
+        }
+      });
+    });
+  });
+
+
+  it('should support after queries on connections', function() {
+    var user = this.userA;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+          tasks(first: 1) {
+            pageInfo {
+              hasNextPage,
+              startCursor
+            },
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+      }
+    `)
+    .then(function (result) {
+      return graphql(schema, `
+        {
+          user(id: ${user.id}) {
+            name
+            tasks(first: 1, after: "${result.data.user.tasks.pageInfo.startCursor}") {
+              edges {
+                node {
+                  name
+                }
+              }
+            }
+          }
+        }
+      `)
+    })
+    .then(function (result) {
+      expect(result.data.user.tasks.edges[0].node.name).to.equal(user.tasks[1].name);
+    });
+  });
+
+  it('should support before queries on connections', function() {
+    var user = this.userA;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+          tasks(last: 1) {
+            pageInfo {
+              hasNextPage,
+              endCursor
+            },
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+      }
+    `)
+      .then(function (result) {
+        return graphql(schema, `
+        {
+          user(id: ${user.id}) {
+            name
+            tasks(last: 1, before: "${result.data.user.tasks.pageInfo.endCursor}") {
+              edges {
+                node {
+                  name
+                }
+              }
+            }
+          }
+        }
+      `)
+      })
+      .then(function (result) {
+        expect(result.data.user.tasks.edges[0].node.name).to.equal(user.tasks[1].name);
+      });
+  });
+
   it('should resolve a plain result with a single connection', function () {
     var user = this.userB;
 
@@ -325,7 +478,7 @@ describe('relay', function () {
             edges {
               node {
                 name
-                tasks(test: true) {
+                tasks {
                   edges {
                     node {
                       name
