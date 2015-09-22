@@ -29,6 +29,9 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     VIRTUAL
   } = sequelizeTypes;
 
+  // Regex for finding special characters
+  const specialChars = /[^a-z\d]/i;
+
   if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
   if (sequelizeType instanceof FLOAT) return GraphQLFloat;
   if (sequelizeType instanceof INTEGER) return GraphQLInt;
@@ -48,6 +51,15 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof ENUM) {
     return new GraphQLEnumType({
       values: sequelizeType.values.reduce((obj, value) => {
+        if (specialChars.test(value)) {
+          value = value.split(specialChars).reduce((reduced, val, idx) => {
+            let newVal = val;
+            if (idx > 0) {
+              newVal = `${val[0].toUpperCase()}${val.slice(1)}`;
+            }
+            return `${reduced}${newVal}`;
+          });
+        }
         obj[value] = {value};
         return obj;
       }, {})
