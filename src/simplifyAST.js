@@ -10,11 +10,25 @@ function deepMerge(a, b) {
   });
 }
 
-module.exports = function simplyAST(ast, parent) {
+function hasFragments(info) {
+  return info.fragments && Object.keys(info.fragments).length > 0;
+}
+
+function isFragment(info, ast) {
+  return hasFragments(info) && info.fragments[ast.name.value] && ast.kind !== 'FragmentDefinition';
+}
+
+module.exports = function simplyAST(ast, info, parent) {
   var selections;
+  info = info || {};
 
   if (ast.selectionSet) selections = ast.selectionSet.selections;
   if (Array.isArray(ast)) selections = ast;
+
+  if (isFragment(info, ast)) {
+    return simplyAST(info.fragments[ast.name.value], info);
+
+  }
 
   if (!selections) return {
     fields: {},
@@ -26,10 +40,16 @@ module.exports = function simplyAST(ast, parent) {
       , alias = selection.alias && selection.alias.value
       , key = alias || name;
 
+    if (selection.kind === 'FragmentSpread') {
+      simpleAST = deepMerge(
+        simpleAST, simplyAST(selection, info)
+      );
+      return simpleAST;
+    }
+
     simpleAST.fields[key] = simpleAST.fields[key] || {};
     simpleAST.fields[key] = deepMerge(
-      simpleAST.fields[key],
-      simplyAST(selection, simpleAST.fields[key])
+      simpleAST.fields[key], simplyAST(selection, info, simpleAST.fields[key])
     );
 
     if (alias) {
