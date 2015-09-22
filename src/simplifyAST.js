@@ -18,9 +18,9 @@ function isFragment(info, ast) {
   return hasFragments(info) && info.fragments[ast.name.value] && ast.kind !== 'FragmentDefinition';
 }
 
-module.exports = function simplyAST(ast, info, parent, log) {
+module.exports = function simplyAST(ast, info, parent) {
   var selections;
-  log = log || false;
+  info = info || {};
 
   if (ast.selectionSet) selections = ast.selectionSet.selections;
   if (Array.isArray(ast)) selections = ast;
