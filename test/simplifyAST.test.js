@@ -9,7 +9,8 @@ var chai = require('chai')
   , parse = function (query) {
       return parser(query).definitions[0];
     }
-  , simplifyAST = require('../src/simplifyAST');
+  , simplifyAST = require('../src/simplifyAST')
+  , info = { fragments: {} };
 
 describe('simplifyAST', function () {
   it('should simplify a basic nested structure', function () {
@@ -22,7 +23,7 @@ describe('simplifyAST', function () {
           }
         }
       }
-    `))).to.deep.equal({
+    `), info)).to.deep.equal({
       args: {},
       fields: {
         users: {
@@ -54,7 +55,7 @@ describe('simplifyAST', function () {
           name
         }
       }
-    `))).to.deep.equal({
+    `), info)).to.deep.equal({
       args: {},
       fields: {
         user: {
@@ -84,7 +85,7 @@ describe('simplifyAST', function () {
           }
         }
       }
-    `));
+    `), info);
 
     expect(ast.fields.users.fields.projects.fields.nodes.$parent).to.be.ok;
     expect(ast.fields.users.fields.projects.fields.nodes.$parent.args).to.deep.equal({
@@ -107,7 +108,7 @@ describe('simplifyAST', function () {
           }
         }
       }
-    `))).to.deep.equal({
+    `), info)).to.deep.equal({
       args: {},
       fields: {
         users: {
@@ -158,7 +159,7 @@ describe('simplifyAST', function () {
           }
         }
       }
-    `))).to.deep.equal({
+    `), info)).to.deep.equal({
       args: {},
       fields: {
         users: {
@@ -202,7 +203,7 @@ describe('simplifyAST', function () {
           name
         }
       }
-    `))).to.deep.equal({
+    `), info)).to.deep.equal({
       args: {},
       fields: {
         luke: {

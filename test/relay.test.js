@@ -509,15 +509,31 @@ describe('relay', function () {
     return graphql(schema, `
       {
         project(id: 1) {
-          ...name
+          ...getNames
         }
       }
-      fragment name on Project {
+      fragment getNames on Project {
         name
       }
     `).then(result => {
-      console.log(result);
-      expect(result.errors).to.have.length(0);
+      expect(result.errors).to.not.exist;
+    });
+
+  });
+
+  it('should not support fragments on the wrong type', function () {
+
+    return graphql(schema, `
+      {
+        project(id: 1) {
+          ...getNames
+        }
+      }
+      fragment getNames on User {
+        name
+      }
+    `).then(result => {
+      expect(result.errors).to.exist.and.have.length(1);
     });
 
   });
