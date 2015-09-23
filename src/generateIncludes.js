@@ -45,7 +45,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
     }
 
     association = includeResolver.$association;
-    include = options.include && !includeResolver.$options.separate;
+    include = options.include && !(includeResolver.$options && includeResolver.$options.separate);
 
     if (association) {
       includeOptions = argsToFindOptions(args, association.target);
