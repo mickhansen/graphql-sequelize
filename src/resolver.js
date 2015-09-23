@@ -37,7 +37,7 @@ module.exports = function (target, options) {
       , type = info.returnType
       , list = type instanceof GraphQLList
       , includeResult
-      , simpleAST = simplifyAST(ast[0])
+      , simpleAST = simplifyAST(ast[0], info)
       , findOptions = argsToFindOptions(args, model);
 
     type = type.ofType || type;
