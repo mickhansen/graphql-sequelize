@@ -68,7 +68,9 @@ let userType = new GraphQLObjectType({
     },
     tasks: {
       type: GraphQLList(taskType),
-      resolve: resolver(User.Tasks)
+      resolve: resolver(User.Tasks, {
+        separate: true // load seperately, disables auto including - default: false
+      })
     }
   }
 });
@@ -86,7 +88,9 @@ let schema = new GraphQLSchema({
             type: new GraphQLNonNull(GraphQLInt)
           }
         },
-        resolve: resolver(User)
+        resolve: resolver(User, {
+          include: false // disable auto including of associations based on AST - default: true
+        })
       }
     }
   })

@@ -11,7 +11,6 @@ export default function generateIncludes(simpleAST, type, root, options) {
 
   type = type.ofType || type;
   options = options || {};
-  if (options.include === undefined) options.include = true;
 
   Object.keys(simpleAST.fields).forEach(function (key) {
     var association
@@ -20,7 +19,8 @@ export default function generateIncludes(simpleAST, type, root, options) {
       , args = simpleAST.fields[key].args
       , includeResolver = type._fields[name].resolve
       , nestedResult
-      , allowedAttributes;
+      , allowedAttributes
+      , include;
 
     if (!includeResolver) return;
 
@@ -34,8 +34,10 @@ export default function generateIncludes(simpleAST, type, root, options) {
       var dummyResult = generateIncludes(
         simpleAST.fields[key],
         type._fields[key].type,
-        root
+        root,
+        options
       );
+
       result.include = result.include.concat(dummyResult.include);
       result.attributes = result.attributes.concat(dummyResult.attributes);
       result.order = result.order.concat(dummyResult.order);
@@ -43,6 +45,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
     }
 
     association = includeResolver.$association;
+    include = options.include && !includeResolver.$options.separate;
 
     if (association) {
       includeOptions = argsToFindOptions(args, association.target);
@@ -61,7 +64,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
         result.attributes.push(association.source.primaryKeyAttribute);
       }
 
-      if (options.include && !includeOptions.limit) {
+      if (include && !includeOptions.limit) {
         if (includeOptions.order) {
           includeOptions.order.map(function (order) {
             order.unshift({

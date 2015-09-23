@@ -55,13 +55,13 @@ module.exports = function (target, options) {
     );
 
     findOptions.include = includeResult.include;
-    findOptions.root = root;
-    findOptions.attributes = _.unique(findOptions.attributes.concat(includeResult.attributes));
-    findOptions.logging = findOptions.logging || root.logging;
-
     if (includeResult.order) {
       findOptions.order = (findOptions.order || []).concat(includeResult.order);
     }
+    findOptions.attributes = _.unique(findOptions.attributes.concat(includeResult.attributes));
+
+    findOptions.root = root;
+    findOptions.logging = findOptions.logging || root.logging;
 
     findOptions = options.before(findOptions, args, root, {
       ast: simpleAST,
