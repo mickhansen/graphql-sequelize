@@ -26,6 +26,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     TEXT,
     UUID,
     DATE,
+    DATEONLY,
     ARRAY,
     VIRTUAL
   } = sequelizeTypes;
@@ -44,7 +45,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof STRING ||
       sequelizeType instanceof TEXT ||
       sequelizeType instanceof UUID ||
-      sequelizeType instanceof DATE) {
+      sequelizeType instanceof DATE ||
+      sequelizeType instanceof DATEONLY) {
     return GraphQLString;
   }
 
