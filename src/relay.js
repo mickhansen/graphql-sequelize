@@ -10,21 +10,22 @@ class NodeTypeMapper {
   }
 
   mapTypes( types ) {
-    this.models.forEach(model => {
-      if (types[model]) {
-        this[model] = types[model];
-      }
+    Object.keys(types).forEach(type => {
+      this[type] = types[type];
     });
   }
 }
 
-export function idFetcher(sequelize) {
+export function idFetcher(sequelize, nodeTypeMapper) {
   return globalId => {
     let {type, id} = fromGlobalId(globalId);
     const models = Object.keys(sequelize.models);
     type = type.toLowerCase();
     if (models.some(model => model === type)) {
       return sequelize.models[type].findById(id);
+    }
+    if (nodeTypeMapper[type]) {
+      return nodeTypeMapper[type];
     }
     return null;
   };
@@ -40,8 +41,11 @@ export function handleConnection(values, args) {
 
 export function sequelizeNodeInterface(sequelize) {
   let nodeTypeMapper = new NodeTypeMapper(sequelize);
-  const nodeObjects = nodeDefinitions(idFetcher(sequelize), obj => {
-    return nodeTypeMapper[obj.Model.options.name.singular];
+  const nodeObjects = nodeDefinitions(idFetcher(sequelize, nodeTypeMapper), obj => {
+    var name = obj.Model
+            ? obj.Model.options.name.singular
+            : obj.name;
+    return nodeTypeMapper[name];
   });
   return {
     nodeTypeMapper,
