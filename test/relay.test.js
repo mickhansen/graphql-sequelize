@@ -50,6 +50,7 @@ describe('relay', function () {
     , nodeInterface
     , Project
     , projectType
+    , viewerType
     , userConnection
     , nodeField
     , schema;
@@ -136,10 +137,24 @@ describe('relay', function () {
       }
     });
 
+    viewerType = new GraphQLObjectType({
+      name: 'Viewer',
+      description: 'root viewer for queries',
+      fields: () => ({
+        id: globalIdField('Viewer'),
+        name: {
+          type: GraphQLString,
+          resolve: () => 'Viewer!'
+        }
+      }),
+      interfaces: [nodeInterface]
+});
+
     nodeTypeMapper.mapTypes({
       [User.name]: userType,
       [Project.name]: projectType,
-      [Task.name]: taskType
+      [Task.name]: taskType,
+      viewer: viewerType
     });
 
 
@@ -147,6 +162,13 @@ describe('relay', function () {
       query: new GraphQLObjectType({
         name: 'RootQueryType',
         fields: {
+          viewer: {
+            type: viewerType,
+            resolve: () => ({
+              name: 'Viewer!',
+              id: 1
+            })
+          },
           user: {
             type: userType,
             args: {
@@ -220,6 +242,21 @@ describe('relay', function () {
 
   before(function () {
     return this.project.setUsers([this.userA.id, this.userB.id]);
+  });
+
+  it('should support unassociated GraphQL types', function() {
+
+    var globalId = toGlobalId('Viewer');
+    return graphql(schema, `
+      {
+        node(id: "${globalId}") {
+          id
+        }
+      }
+    `).then(result => {
+      expect(result.data.node.id).to.equal(globalId);
+    });
+
   });
 
   it('should return userA when running a node query', function() {

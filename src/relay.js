@@ -44,7 +44,7 @@ export function sequelizeNodeInterface(sequelize) {
   const nodeObjects = nodeDefinitions(idFetcher(sequelize, nodeTypeMapper), obj => {
     var name = obj.Model
             ? obj.Model.options.name.singular
-            : obj.name;
+            : obj.name.toLowerCase();
     return nodeTypeMapper[name];
   });
   return {
