@@ -4,5 +4,6 @@ module.exports = {
   defaultArgs: require('./defaultArgs'),
   typeMapper: require('./typeMapper'),
   attributeFields: require('./attributeFields'),
-  simplifyAST: require('./simplifyAST')
+  simplifyAST: require('./simplifyAST'),
+  relay: require('./relay')
 };
