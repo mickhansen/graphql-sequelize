@@ -168,6 +168,31 @@ userType = new GraphQLObjectType({
 });
 ```
 
+### VIRTUAL attributes and GraphQL fields
+
+If you have `Sequelize.VIRTUAL` attributes on your sequelize model, you need to explicitly set the return type and any field dependencies via `new Sequelize.VIRTUAL(returnType, [dependencies ... ])`.
+
+For example, `fullName` here will not always return valid data when queried via GraphQL:
+```js
+firstName: { type: Sequelize.STRING },
+lastName: { type: Sequelize.STRING },
+fullName: {
+  type: Sequelize.VIRTUAL,
+  get: function() { return `${this.firstName} ${this.lastName}`; },
+},
+```
+
+To work properly `fullName` needs to be more fully specified:
+
+```js
+firstName: { type: Sequelize.STRING },
+lastName: { type: Sequelize.STRING },
+fullName: {
+  type: new Sequelize.VIRTUAL(Sequelize.STRING, ['firstName', 'lastName']),
+  get: function() { return `${this.firstName} ${this.lastName}`; },
+},
+```
+
 ## args helpers
 
 ### defaultArgs
