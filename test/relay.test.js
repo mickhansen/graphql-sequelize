@@ -58,7 +58,7 @@ describe('relay', function () {
   before(function () {
     sequelize.modelManager.models = [];
     sequelize.models = {};
-    User = sequelize.define('user', {
+    User = sequelize.define('User', {
       name: {
         type: Sequelize.STRING
       }
@@ -66,7 +66,7 @@ describe('relay', function () {
       timestamps: false
     });
 
-    Task = sequelize.define('task', {
+    Task = sequelize.define('Task', {
       name: {
         type: Sequelize.STRING
       }
@@ -74,7 +74,7 @@ describe('relay', function () {
       timestamps: false
     });
 
-    Project = sequelize.define('project', {
+    Project = sequelize.define('Project', {
       name: {
         type: Sequelize.STRING
       }
@@ -150,11 +150,12 @@ describe('relay', function () {
       interfaces: [nodeInterface]
 });
 
+
     nodeTypeMapper.mapTypes({
       [User.name]: userType,
       [Project.name]: projectType,
       [Task.name]: taskType,
-      viewer: viewerType
+      'Viewer': viewerType
     });
 
 

@@ -20,7 +20,6 @@ export function idFetcher(sequelize, nodeTypeMapper) {
   return globalId => {
     let {type, id} = fromGlobalId(globalId);
     const models = Object.keys(sequelize.models);
-    type = type.toLowerCase();
     if (models.some(model => model === type)) {
       return sequelize.models[type].findById(id);
     }
@@ -44,7 +43,7 @@ export function sequelizeNodeInterface(sequelize) {
   const nodeObjects = nodeDefinitions(idFetcher(sequelize, nodeTypeMapper), obj => {
     var name = obj.Model
             ? obj.Model.options.name.singular
-            : obj.name.toLowerCase();
+            : obj.name;
     return nodeTypeMapper[name];
   });
   return {
