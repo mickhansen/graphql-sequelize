@@ -168,6 +168,12 @@ userType = new GraphQLObjectType({
 });
 ```
 
+### ENUM attributes with non-alphanumeric characters
+
+GraphQL enum types [only support ASCII alphanumeric characters and underscores](https://facebook.github.io/graphql/#Name).
+If you have other characters, like a dash (`-`) in your Sequelize enum types,
+they will be converted to camelCase. For example: `foo-bar` becomes `fooBar`.
+
 ### VIRTUAL attributes and GraphQL fields
 
 If you have `Sequelize.VIRTUAL` attributes on your sequelize model, you need to explicitly set the return type and any field dependencies via `new Sequelize.VIRTUAL(returnType, [dependencies ... ])`.
