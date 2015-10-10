@@ -91,6 +91,14 @@ describe('attributeFields', function () {
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
   });
 
+  it('should be possible to specify specific fields', function () {
+    var fields = attributeFields(Model, {
+      only: ['id', 'email', 'list']
+    });
+
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'list']);
+  });
+
   it('should automatically name enum types', function () {
     var fields = attributeFields(Model);
 

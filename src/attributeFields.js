@@ -6,6 +6,7 @@ module.exports = function (Model, options) {
 
   var result = Object.keys(Model.rawAttributes).reduce(function (memo, key) {
     if (options.exclude && ~options.exclude.indexOf(key)) return memo;
+    if (options.only && !~options.only.indexOf(key)) return memo;
 
     var attribute = Model.rawAttributes[key]
       , type = attribute.type;

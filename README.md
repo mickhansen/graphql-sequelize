@@ -140,7 +140,11 @@ var Model = sequelize.define('User', {
 
 import {attributeFields} from 'graphql-sequelize';
 
-attributeFields(Model);
+attributeFields(Model, {
+  // ... options
+  exclude: [], // array of model attributes to ignore - default: []
+  only: [], // only generate definitions for these model attributes - default: null
+});
 
 /*
 {
