@@ -32,7 +32,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   } = sequelizeTypes;
 
   // Regex for finding special characters
-  const specialChars = /[^a-z\d]/i;
+  const specialChars = /[^a-z\d_]/i;
 
   if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
   if (sequelizeType instanceof FLOAT) return GraphQLFloat;
