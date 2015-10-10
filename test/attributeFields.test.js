@@ -39,7 +39,7 @@ describe('attributeFields', function () {
         type: Sequelize.ENUM('first', 'second')
       },
       enumTwo: {
-        type: Sequelize.ENUM('first', 'second')
+        type: Sequelize.ENUM('foo_bar', 'foo-bar')
       },
       list: {
         type: Sequelize.ARRAY(Sequelize.STRING)
@@ -107,5 +107,21 @@ describe('attributeFields', function () {
 
     expect(fields.enum.type.name).to.equal(modelName + 'enum' + 'EnumType');
     expect(fields.enumTwo.type.name).to.equal(modelName + 'enumTwo' + 'EnumType');
+  });
+
+  it('should support enum values with characters not allowed by GraphQL', function () {
+    var fields = attributeFields(Model);
+
+    expect(fields.enumTwo.type.getValues()).to.not.be.undefined;
+    expect(fields.enumTwo.type.getValues()[1].name).to.equal('fooBar');
+    expect(fields.enumTwo.type.getValues()[1].value).to.equal('foo-bar');
+  });
+
+  it('should support enum values with underscores', function () {
+    var fields = attributeFields(Model);
+
+    expect(fields.enumTwo.type.getValues()).to.not.be.undefined;
+    expect(fields.enumTwo.type.getValues()[0].name).to.equal('foo_bar');
+    expect(fields.enumTwo.type.getValues()[0].value).to.equal('foo_bar');
   });
 });
