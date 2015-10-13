@@ -109,15 +109,5 @@ export default function generateIncludes(simpleAST, type, root, options) {
     }
   });
 
-  if (isConnection(type)) {
-    let node = simpleAST.fields.edges.fields.node;
-    let fields = [];
-    _.forIn(node.fields, (field, key) => {
-      if (!field.fields.hasOwnProperty('edges')) {
-        fields.push(key);
-      }
-    });
-    result.attributes = result.attributes.concat(fields);
-  }
   return result;
 }
