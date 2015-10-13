@@ -7,6 +7,7 @@ var chai = require('chai')
   , sequelize = helper.sequelize
   , Sequelize = require('sequelize')
   , Promise = helper.Promise
+  , sinon = require('sinon')
   , attributeFields = require('../src/attributeFields');
 
 import {
@@ -148,7 +149,7 @@ describe('relay', function () {
         }
       }),
       interfaces: [nodeInterface]
-});
+    });
 
 
     nodeTypeMapper.mapTypes({
@@ -416,26 +417,24 @@ describe('relay', function () {
           }
         }
       }
-    `)
-      .then(function (result) {
-        return graphql(schema, `
-        {
-          user(id: ${user.id}) {
-            name
-            tasks(last: 1, before: "${result.data.user.tasks.pageInfo.endCursor}") {
-              edges {
-                node {
-                  name
-                }
+    `).then(function (result) {
+      return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+          tasks(last: 1, before: "${result.data.user.tasks.pageInfo.endCursor}") {
+            edges {
+              node {
+                name
               }
             }
           }
         }
-      `)
-      })
-      .then(function (result) {
-        expect(result.data.user.tasks.edges[0].node.name).to.equal(user.tasks[1].name);
-      });
+      }
+    `)
+    }).then(function (result) {
+      expect(result.data.user.tasks.edges[0].node.name).to.equal(user.tasks[1].name);
+    });
   });
 
   it('should resolve a plain result with a single connection', function () {
@@ -507,7 +506,8 @@ describe('relay', function () {
   });
 
   it('should resolve nested connections', function () {
-    var project = this.project;
+    var project = this.project
+      , sqlSpy = sinon.spy();
 
     return graphql(schema, `
       {
@@ -528,17 +528,25 @@ describe('relay', function () {
           }
         }
       }
-    `).then(result => {
+    `, {
+      logging: sqlSpy
+    }).then(result => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.project.users.edges).to.have.length(2);
       let [nodeA, nodeB] = result.data.project.users.edges;
       let userA = nodeA.node;
       let userB = nodeB.node;
+
       expect(userA).to.have.property('tasks');
       expect(userA.tasks.edges).to.have.length.above(0);
+      expect(userA.tasks.edges[0].node.name).to.be.ok;
+
       expect(userB).to.have.property('tasks');
       expect(userB.tasks.edges).to.have.length.above(0);
+      expect(userB.tasks.edges[0].node.name).to.be.ok;
+
+      expect(sqlSpy).to.have.been.calledOnce;
     });
   });
 

@@ -14,13 +14,16 @@ export default function generateIncludes(simpleAST, type, root, options) {
 
   Object.keys(simpleAST.fields).forEach(function (key) {
     var association
-      , name = simpleAST.fields[key].key || key
+      , fieldAST = simpleAST.fields[key]
+      , name = fieldAST.key || key
+      , fieldType = type._fields[name] && type._fields[name].type
       , includeOptions
-      , args = simpleAST.fields[key].args
+      , args = fieldAST.args
       , includeResolver = type._fields[name].resolve
       , nestedResult
       , allowedAttributes
-      , include;
+      , include
+      , connectionFields = [];
 
     if (!includeResolver) return;
 
@@ -30,10 +33,15 @@ export default function generateIncludes(simpleAST, type, root, options) {
       }
     }
 
+    if (isConnection(fieldType)) {
+      fieldAST = fieldAST.fields.edges.fields.node;
+      fieldType = fieldType._fields.edges.type.ofType._fields.node.type;
+    }
+
     if (includeResolver.$passthrough) {
       var dummyResult = generateIncludes(
-        simpleAST.fields[key],
-        type._fields[key].type,
+        fieldAST,
+        fieldType,
         root,
         options
       );
@@ -53,7 +61,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
 
       if (includeResolver.$before) {
         includeOptions = includeResolver.$before(includeOptions, args, root, {
-          ast: simpleAST.fields[key],
+          ast: fieldAST,
           type: type
         });
       }
@@ -80,14 +88,15 @@ export default function generateIncludes(simpleAST, type, root, options) {
         }
 
         includeOptions.attributes = (includeOptions.attributes || [])
-                                    .concat(Object.keys(simpleAST.fields[key].fields))
+                                    .concat(Object.keys(fieldAST.fields))
+                                    .concat(connectionFields)
                                     .filter(inList.bind(null, allowedAttributes));
 
         includeOptions.attributes.push(association.target.primaryKeyAttribute);
 
         nestedResult = generateIncludes(
-          simpleAST.fields[key],
-          type._fields[key].type,
+          fieldAST,
+          fieldType,
           root,
           includeResolver.$options
         );
