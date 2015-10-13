@@ -1,4 +1,16 @@
-import {fromGlobalId, connectionFromArray, nodeDefinitions} from 'graphql-relay';
+import {
+  fromGlobalId,
+  connectionFromArray,
+  nodeDefinitions,
+  connectionDefinitions,
+  connectionArgs
+} from 'graphql-relay';
+
+import {
+  GraphQLList
+} from 'graphql';
+
+import resolver from './resolver';
 
 class NodeTypeMapper {
 
@@ -58,4 +70,37 @@ export function nodeAST(connectionAST) {
 
 export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
+}
+
+export function sequelizeConnection({name, nodeType, association, orderBy}) {
+  const {
+    edgeType,
+    connectionType
+  } = connectionDefinitions({name: name, nodeType: nodeType});
+
+  if (orderBy === undefined) {
+    orderBy = new GraphQLList({
+      name: name + 'ConnectionOrder',
+      values: {
+        ID: [association.target.primaryKeyAttribute, 'ASC']
+      }
+    });
+  }
+
+  let $connectionArgs = {
+    ...connectionArgs,
+    orderBy: {
+      type: new GraphQLList(orderBy)
+    }
+  };
+
+  let resolve = resolver(association);
+
+  return {
+    connectionType,
+    edgeType,
+    nodeType,
+    connectionArgs: $connectionArgs,
+    resolve
+  };
 }
