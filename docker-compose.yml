@@ -1,0 +1,16 @@
+dev:
+  build: .
+  links:
+  - db
+  volumes:
+  - .:/src/graphql-sequelize
+  environment:
+    DB_DATABASE: graphql_sequelize_test
+    DB_USER: graphql_sequelize_test
+    DB_PASSWORD: graphql_sequelize_test
+
+db:
+  image: postgres:9.4
+  environment:
+    POSTGRES_USER: graphql_sequelize_test
+    POSTGRES_PASSWORD: graphql_sequelize_test

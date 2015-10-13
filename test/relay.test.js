@@ -8,7 +8,8 @@ var chai = require('chai')
   , Sequelize = require('sequelize')
   , Promise = helper.Promise
   , sinon = require('sinon')
-  , attributeFields = require('../src/attributeFields');
+  , attributeFields = require('../src/attributeFields')
+  , _ = require('lodash');
 
 import {
   GraphQLString,
@@ -83,8 +84,9 @@ describe('relay', function () {
       timestamps: false
     });
 
-    User.Tasks = User.hasMany(Task, {as: 'tasks'});
+    User.Tasks = User.hasMany(Task, {as: 'taskItems'}); // Specifically different from connection type name
     Project.Users = Project.hasMany(User, {as: 'users'});
+
 
     var node = sequelizeNodeInterface(sequelize);
     nodeInterface = node.nodeInterface;
@@ -233,14 +235,14 @@ describe('relay', function () {
         User.create({
           id: userId++,
           name: 'a' + Math.random().toString(),
-          tasks: [generateTask(taskId++), generateTask(taskId++), generateTask(taskId++)]
+          [User.Tasks.as]: [generateTask(taskId++), generateTask(taskId++), generateTask(taskId++)]
         }, {
           include: [User.Tasks]
         }),
         User.create({
           id: userId++,
           name: 'b' + Math.random().toString(),
-          tasks: [generateTask(taskId++), generateTask(taskId++)]
+          [User.Tasks.as]: [generateTask(taskId++), generateTask(taskId++)]
         }, {
           include: [User.Tasks]
         })
@@ -319,7 +321,7 @@ describe('relay', function () {
             edges: [
               {
                 node: {
-                  name: user.tasks[0].name
+                  name: user.taskItems[0].name
                 }
               }
             ]
@@ -355,7 +357,7 @@ describe('relay', function () {
             edges: [
               {
                 node: {
-                  name: user.tasks[user.tasks.length - 1].name
+                  name: user[User.Tasks.as][user[User.Tasks.as].length - 1].name
                 }
               }
             ]
@@ -404,7 +406,7 @@ describe('relay', function () {
       `)
     })
     .then(function (result) {
-      expect(result.data.user.tasks.edges[0].node.name).to.equal(user.tasks[1].name);
+      expect(result.data.user.tasks.edges[0].node.name).to.equal(user.taskItems[1].name);
     });
   });
 
@@ -444,7 +446,7 @@ describe('relay', function () {
       }
     `)
     }).then(function (result) {
-      expect(result.data.user.tasks.edges[0].node.name).to.equal(user.tasks[1].name);
+      expect(result.data.user.tasks.edges[0].node.name).to.equal(user.taskItems[1].name);
     });
   });
 
@@ -474,12 +476,12 @@ describe('relay', function () {
             edges: [
               {
                 node: {
-                  name: user.tasks[0].name
+                  name: user.taskItems[0].name
                 }
               },
               {
                 node: {
-                  name: user.tasks[1].name
+                  name: user.taskItems[1].name
                 }
               }
             ]

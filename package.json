@@ -11,7 +11,9 @@
     "check": "npm run lint && npm test",
     "lint": "eslint src",
     "build": "rm -rf lib/* && babel src --ignore test --optional runtime --out-dir lib",
-    "test": "mocha $npm_package_options_mocha"
+    "test": "mocha $npm_package_options_mocha",
+    "build-docker": "docker-compose build",
+    "test-docker": "docker-compose run dev /bin/sh -c \"npm run test\""
   },
   "repository": {
     "type": "git",
@@ -37,6 +39,8 @@
     "graphql": "^0.4.7",
     "istanbul": "^0.3.17",
     "mocha": "^2.2.5",
+    "pg": "^4.4.2",
+    "pg-hstore": "^2.3.2",
     "sequelize": "^3.7.0",
     "sinon": "^1.15.4",
     "sinon-chai": "^2.8.0",

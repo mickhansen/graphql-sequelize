@@ -27,7 +27,7 @@ module.exports = function (target, options) {
   resolver = function (source, args, info) {
     if (association && source.get(association.as) !== undefined) {
       if (isConnection(info.returnType)) {
-        return handleConnection(source[info.fieldName], args);
+        return handleConnection(source.get(association.as), args);
       }
       return source.get(association.as);
     }
