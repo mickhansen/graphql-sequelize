@@ -1,5 +1,5 @@
 import argsToFindOptions from './argsToFindOptions';
-import {isConnection} from './relay';
+import {isConnection, nodeAST, nodeType} from './relay';
 import _ from 'lodash';
 
 function inList(list, attribute) {
@@ -34,8 +34,8 @@ export default function generateIncludes(simpleAST, type, root, options) {
     }
 
     if (isConnection(fieldType)) {
-      fieldAST = fieldAST.fields.edges.fields.node;
-      fieldType = fieldType._fields.edges.type.ofType._fields.node.type;
+      fieldAST = nodeAST(fieldAST);
+      fieldType = nodeType(fieldType);
     }
 
     if (includeResolver.$passthrough) {

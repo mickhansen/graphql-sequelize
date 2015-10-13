@@ -201,6 +201,17 @@ describe('relay', function () {
             },
             resolve: resolver(Project)
           },
+          projectNoInclude: {
+            type: projectType,
+            args: {
+              id: {
+                type: new GraphQLNonNull(GraphQLInt)
+              }
+            },
+            resolve: resolver(Project, {
+              include: false
+            })
+          },
           node: nodeField
         }
       })
@@ -547,6 +558,51 @@ describe('relay', function () {
       expect(userB.tasks.edges[0].node.name).to.be.ok;
 
       expect(sqlSpy).to.have.been.calledOnce;
+    });
+  });
+
+  it('should resolve nested connections with a include: false top level node', function () {
+    var project = this.project
+      , sqlSpy = sinon.spy();
+
+    return graphql(schema, `
+      {
+        projectNoInclude(id: 1) {
+          users {
+            edges {
+              node {
+                name
+                tasks {
+                  edges {
+                    node {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `, {
+      logging: sqlSpy
+    }).then(result => {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data.projectNoInclude.users.edges).to.have.length(2);
+      let [nodeA, nodeB] = result.data.projectNoInclude.users.edges;
+      let userA = nodeA.node;
+      let userB = nodeB.node;
+
+      expect(userA).to.have.property('tasks');
+      expect(userA.tasks.edges).to.have.length.above(0);
+      expect(userA.tasks.edges[0].node.name).to.be.ok;
+
+      expect(userB).to.have.property('tasks');
+      expect(userB.tasks.edges).to.have.length.above(0);
+      expect(userB.tasks.edges[0].node.name).to.be.ok;
+
+      expect(sqlSpy).to.have.been.calledTwice;
     });
   });
 

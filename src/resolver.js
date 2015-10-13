@@ -3,7 +3,7 @@ import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
 import argsToFindOptions from './argsToFindOptions';
-import { isConnection, handleConnection } from './relay';
+import { isConnection, handleConnection, nodeAST, nodeType } from './relay';
 
 function inList(list, attribute) {
   return ~list.indexOf(attribute);
@@ -38,11 +38,19 @@ module.exports = function (target, options) {
       , list = type instanceof GraphQLList
       , includeResult
       , simpleAST = simplifyAST(ast[0], info)
+      , fields = simpleAST.fields
       , findOptions = argsToFindOptions(args, model);
+
+    if (isConnection(info.returnType)) {
+      simpleAST = nodeAST(simpleAST);
+      fields = simpleAST.fields;
+
+      type = nodeType(type);
+    }
 
     type = type.ofType || type;
 
-    findOptions.attributes = Object.keys(simpleAST.fields)
+    findOptions.attributes = Object.keys(fields)
                              .filter(inList.bind(null, targetAttributes));
 
     findOptions.attributes.push(model.primaryKeyAttribute);
