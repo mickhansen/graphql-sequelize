@@ -24,6 +24,10 @@ Please take a look at [the tests](https://github.com/mickhansen/graphql-sequeliz
 - Only loads the attributes defined in the query (automatically adds primary key and foreign keys)
 - Prefetching nested resolvers with includes/joins
 
+### Relay
+
+[Relay documentation](docs/relay.md)
+
 ### Examples 
 
 ```js
