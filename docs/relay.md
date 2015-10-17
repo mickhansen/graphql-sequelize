@@ -84,7 +84,7 @@ const taskType = new GraphQLObjectType({
 const userTaskConnection = sequelizeConnection({
   name: Task.name,
   nodeType: taskType,
-  association: User.Tasks // must be the return value of a model association setup call.
+  target: User.Tasks | User // Can be an association for parent related connections or a model for "anonymous" connections
   orderBy: new GraphQLEnumType({
     name: 'UserTaskOrderBy',
     values: {

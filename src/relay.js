@@ -72,17 +72,19 @@ export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
 
-export function sequelizeConnection({name, nodeType, association, orderBy}) {
+export function sequelizeConnection({name, nodeType, target, orderBy}) {
   const {
     edgeType,
     connectionType
   } = connectionDefinitions({name: name, nodeType: nodeType});
 
+  const model = target.target ? target.target : target;
+
   if (orderBy === undefined) {
     orderBy = new GraphQLList({
       name: name + 'ConnectionOrder',
       values: {
-        ID: [association.target.primaryKeyAttribute, 'ASC']
+        ID: [model.primaryKeyAttribute, 'ASC']
       }
     });
   }
@@ -94,7 +96,7 @@ export function sequelizeConnection({name, nodeType, association, orderBy}) {
     }
   };
 
-  let resolve = resolver(association);
+  let resolve = resolver(target);
 
   return {
     connectionType,
