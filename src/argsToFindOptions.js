@@ -18,9 +18,11 @@ export default function argsToFindOptions(args, target) {
       }
 
       if (key === 'order' && args[key]) {
-        result.order = [
-          [args[key]]
-        ];
+        if (args[key].indexOf('reverse:') === 0) {
+          result.order = [[args[key].substring(8), 'DESC']];
+        } else {
+          result.order = [[args[key], 'ASC']];
+        }
       }
     });
   }
