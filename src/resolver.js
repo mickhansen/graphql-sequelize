@@ -23,10 +23,11 @@ module.exports = function (target, options) {
   if (options.include === undefined) options.include = true;
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
+  if (options.handleConnection === undefined) options.handleConnection = true;
 
   resolver = function (source, args, info) {
     if (association && source.get(association.as) !== undefined) {
-      if (isConnection(info.returnType)) {
+      if (options.handleConnection && isConnection(info.returnType)) {
         return handleConnection(source.get(association.as), args);
       }
       return source.get(association.as);
@@ -78,7 +79,7 @@ module.exports = function (target, options) {
 
     if (association) {
       return source[association.accessors.get](findOptions).then(function (result) {
-        if (isConnection(info.returnType)) {
+        if (options.handleConnection && isConnection(info.returnType)) {
           result = handleConnection(result, args);
         }
         return options.after(result, args, root, {

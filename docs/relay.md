@@ -85,14 +85,14 @@ const userTaskConnection = sequelizeConnection({
   name: Task.name,
   nodeType: taskType,
   target: User.Tasks | User // Can be an association for parent related connections or a model for "anonymous" connections
+  // if no orderBy is specified the model primary key will be used.
   orderBy: new GraphQLEnumType({
     name: 'UserTaskOrderBy',
     values: {
-      AGE: ['createdAt', 'DESC'], // The first ENUM value will be the default order. The order will be used for `first`, will automatically be inversed for `last` lookups.
-      FIRST_NAME: 'firstName' // ASC per default
+      AGE: {value: ['createdAt', 'DESC']}, // The first ENUM value will be the default order. The order will be used for `first`, will automatically be inversed for `last` lookups.
+      TITLE: {value:  ['title', 'ASC']}
     }
   }),
-  // if no orderBy is specified the model primary key will be used.
   where: function (key, value) {
     // for custom args other than connectionArgs return a sequelize where parameter
 
@@ -107,7 +107,6 @@ const userType = new GraphQLObjectType({
     name: {
       type: GraphQLString
     },
-    // or simply use tasks: userTaskConnection
     tasks: {
       type: userTaskConnection.connectionType,
       args: userTaskConnection.connectionArgs,
@@ -116,4 +115,18 @@ const userType = new GraphQLObjectType({
   }
 });
 
+```
+{
+  user(id: 123) {
+    tasks(first: 10, orderBy: AGE) {
+      edges {
+        cursor
+        node: {
+          id
+          title
+        }
+      }
+    }
+  }
+}
 ```

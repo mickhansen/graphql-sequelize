@@ -7,8 +7,14 @@ import {
 } from 'graphql-relay';
 
 import {
-  GraphQLList
+  GraphQLList,
+  GraphQLEnumType
 } from 'graphql';
+
+import {
+  base64,
+  unbase64,
+} from './base64.js';
 
 import resolver from './resolver';
 
@@ -80,13 +86,16 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
 
   const model = target.target ? target.target : target;
 
+  const SEPERATOR = '$';
+  const PREFIX = 'arrayconnection' + SEPERATOR;
+
   if (orderBy === undefined) {
-    orderBy = new GraphQLList({
+    orderBy = new GraphQLList(new GraphQLEnumType({
       name: name + 'ConnectionOrder',
       values: {
         ID: [model.primaryKeyAttribute, 'ASC']
       }
-    });
+    }));
   }
 
   let $connectionArgs = {
@@ -96,13 +105,96 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
     }
   };
 
-  let resolve = resolver(target);
+  let resolve = resolver(target, {
+    handleConnection: false,
+    before: function (options, args) {
+      if (args.first || args.last) {
+        options.limit = parseInt(args.first || args.last, 10);
+      }
+
+      if (!args.orderBy) {
+        args.orderBy = orderBy.values[0].value;
+      }
+
+      let orderAttribute = orderByAttribute(args.orderBy);
+      let orderDirection = args.orderBy[0][1];
+
+      options.order = args.orderBy;
+      options.attributes.push(orderAttribute);
+
+      if (args.after || args.before) {
+        let after = fromCursor(args.after || args.before);
+        let orderValue = after.orderValue;
+
+        if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
+          orderValue = new Date(orderValue);
+        }
+
+        options.where = options.where || {};
+
+        if (orderDirection === 'ASC' || args.before) {
+          options.where[orderByAttribute(args.orderBy)] = {
+            $gt: orderValue
+          };
+        } else {
+          options.where[orderByAttribute(args.orderBy)] = {
+            $lt: orderValue
+          };
+        }
+      }
+
+      return options;
+    }
+  });
+
+  let orderByAttribute = function (orderBy) {
+    return orderBy[0][0];
+  };
+
+  let toCursor = function (value, orderBy) {
+    let id = value.get(model.primaryKeyAttribute);
+    let orderValue = value.get(orderByAttribute(orderBy));
+    return base64(PREFIX + id + SEPERATOR + orderValue);
+  };
+
+  let fromCursor = function (cursor) {
+    cursor = unbase64(cursor);
+    cursor = cursor.substring(PREFIX.length, cursor.length);
+    let [id, orderValue] = cursor.split(SEPERATOR);
+
+    return {
+      id,
+      orderValue
+    };
+  };
 
   return {
     connectionType,
     edgeType,
     nodeType,
     connectionArgs: $connectionArgs,
-    resolve
+    resolve: function (source, args, info) {
+      return resolve(source, args, info).then(function (values) {
+        let edges = values.map((value) => {
+          return {
+            cursor: toCursor(value, args.orderBy),
+            node: value
+          };
+        });
+
+        let firstEdge = edges[0];
+        let lastEdge = edges[edges.length - 1];
+
+        return {
+          edges,
+          pageInfo: {
+            startCursor: firstEdge ? firstEdge.cursor : null,
+            endCursor: lastEdge ? lastEdge.cursor : null,
+            hasPreviousPage: null,
+            hasNextPage: null,
+          },
+        };
+      });
+    }
   };
 }
