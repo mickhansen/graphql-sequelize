@@ -77,6 +77,10 @@ module.exports = function (target, options) {
       type: type
     });
 
+    if (!findOptions.order) {
+      findOptions.order = [model.primaryKeyAttribute, 'ASC'];
+    }
+
     if (association) {
       return source[association.accessors.get](findOptions).then(function (result) {
         if (options.handleConnection && isConnection(info.returnType)) {
