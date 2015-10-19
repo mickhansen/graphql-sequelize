@@ -33,6 +33,7 @@
     "babel": "^5.6.14",
     "babel-core": "^5.6.20",
     "babel-eslint": "^3.1.23",
+    "bluebird": "^2.10.2",
     "chai": "^3.0.0",
     "chai-as-promised": "^5.1.0",
     "eslint": "^0.24.1",

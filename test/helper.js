@@ -2,11 +2,13 @@
 
 var Sequelize = require('sequelize')
   , Helper = {}
-  , dialect = process.env.DB_PORT_5432_TCP_ADDR ? 'postgres' : 'sqlite'
+  , dialect = process.env.DB_PORT_5432_TCP_ADDR || process.env.CI ? 'postgres' : 'sqlite'
   , host = dialect === 'postgres' ? process.env.DB_PORT_5432_TCP_ADDR : null
   , user = dialect === 'postgres' ? 'graphql_sequelize_test' : null 
   , database = dialect === 'postgres' ? 'graphql_sequelize_test' : null 
   , password = dialect === 'postgres' ? 'graphql_sequelize_test' : null;
+
+if (process.env.CI) user = 'postgres';
 
 Helper.sequelize = new Sequelize(database, user, password, {
   host: host,

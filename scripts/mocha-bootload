@@ -1,5 +1,5 @@
 require('babel/register')({
-  optional: ['runtime']
+  optional: ['runtime', 'bluebirdCoroutines']
 });
 
 var chai = require('chai');

@@ -122,6 +122,13 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
       options.order = args.orderBy;
       options.attributes.push(orderAttribute);
 
+      if (model.sequelize.dialect.name === 'postgres') {
+        options.attributes.push([
+          model.sequelize.literal('COUNT(*) OVER()'),
+          'full_count'
+        ]);
+      }
+
       if (args.after || args.before) {
         let after = fromCursor(args.after || args.before);
         let orderValue = after.orderValue;
@@ -184,15 +191,16 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
 
         let firstEdge = edges[0];
         let lastEdge = edges[edges.length - 1];
+        let fullCount = values[0].dataValues.full_count && parseInt(values[0].dataValues.full_count, 10) || 0;
 
         return {
           edges,
           pageInfo: {
             startCursor: firstEdge ? firstEdge.cursor : null,
             endCursor: lastEdge ? lastEdge.cursor : null,
-            hasPreviousPage: null,
-            hasNextPage: null,
-          },
+            hasPreviousPage: false,
+            hasNextPage: args.first != null ? fullCount > parseInt(args.first, 10) : false,
+          }
         };
       });
     }
