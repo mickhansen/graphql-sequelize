@@ -148,6 +148,8 @@ attributeFields(Model, {
   // ... options
   exclude: [], // array of model attributes to ignore - default: []
   only: [], // only generate definitions for these model attributes - default: null
+  globalId: true, // return an relay global id field - default: false
+  map: {} // rename fields - default: {}
 });
 
 /*

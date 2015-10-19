@@ -1,5 +1,6 @@
 import * as typeMapper from './typeMapper';
 import { GraphQLNonNull, GraphQLEnumType } from 'graphql';
+import { globalIdField } from 'graphql-relay';
 
 module.exports = function (Model, options) {
   options = options || {};
@@ -11,11 +12,15 @@ module.exports = function (Model, options) {
     var attribute = Model.rawAttributes[key]
       , type = attribute.type;
 
+    if (options.map && options.map[key]) {
+      key = options.map[key];
+    }
+
     memo[key] = {
       type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
     };
 
-    if ( memo[key].type instanceof GraphQLEnumType ) {
+    if (memo[key].type instanceof GraphQLEnumType ) {
       memo[key].type.name = `${Model.name}${key}EnumType`;
     }
 
@@ -25,6 +30,10 @@ module.exports = function (Model, options) {
 
     return memo;
   }, {});
+
+  if (options.globalId) {
+    result.id = globalIdField(Model.name);
+  }
 
   return result;
 };

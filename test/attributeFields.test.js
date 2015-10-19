@@ -17,6 +17,10 @@ import {
   GraphQLList
 } from 'graphql';
 
+import {
+  toGlobalId
+} from 'graphql-relay';
+
 describe('attributeFields', function () {
   var Model;
   var modelName = Math.random().toString();
@@ -97,6 +101,29 @@ describe('attributeFields', function () {
     });
 
     expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'list']);
+  });
+
+  it('should be possible to rename fields with map', function () {
+    var fields = attributeFields(Model, {
+      map: {
+        id: '_id'
+      }
+    });
+
+    expect(Object.keys(fields)).to.contain('_id');
+    expect(Object.keys(fields)).not.to.contain('id');
+  });
+
+  it('should be possible to automatically set a relay globalId', function () {
+    var fields = attributeFields(Model, {
+      globalId: true
+    });
+
+    expect(fields.id.resolve).to.be.ok;
+    expect(fields.id.type.ofType.name).to.equal('ID');
+    expect(fields.id.resolve({
+      id: 23
+    })).to.equal(toGlobalId(Model.name, 23));
   });
 
   it('should automatically name enum types', function () {
