@@ -37,8 +37,8 @@ describe('typeMapper', () => {
   });
 
   describe('DECIMAL', function () {
-    it('should map to GraphQLFloat', function () {
-      expect(toGraphQL(new DECIMAL(), Sequelize)).to.equal(GraphQLFloat);
+    it('should map to GraphQLString', function () {
+      expect(toGraphQL(new DECIMAL(), Sequelize)).to.equal(GraphQLString);
     });
   });
 

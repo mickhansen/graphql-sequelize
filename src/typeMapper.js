@@ -39,8 +39,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
 
   if (sequelizeType instanceof FLOAT ||
-      sequelizeType instanceof DOUBLE ||
-      sequelizeType instanceof DECIMAL) return GraphQLFloat;
+      sequelizeType instanceof DOUBLE) return GraphQLFloat;
 
   if (sequelizeType instanceof INTEGER ||
       sequelizeType instanceof BIGINT) {
@@ -51,7 +50,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
       sequelizeType instanceof TEXT ||
       sequelizeType instanceof UUID ||
       sequelizeType instanceof DATE ||
-      sequelizeType instanceof DATEONLY) {
+      sequelizeType instanceof DATEONLY ||
+      sequelizeType instanceof DECIMAL) {
     return GraphQLString;
   }
 
