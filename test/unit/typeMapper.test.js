@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { toGraphQL } from '../src/typeMapper';
+import { toGraphQL } from '../../src/typeMapper';
 
 import Sequelize from 'sequelize';
 

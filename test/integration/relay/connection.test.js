@@ -4,8 +4,8 @@ import {expect} from 'chai';
 import helper from '../helper';
 import Sequelize from 'sequelize';
 import sinon from 'sinon';
-import attributeFields from '../../src/attributeFields';
-import resolver from '../../src/resolver';
+import attributeFields from '../../../src/attributeFields';
+import resolver from '../../../src/resolver';
 
 const {
   sequelize,
@@ -14,7 +14,7 @@ const {
 
 import {
   sequelizeConnection
-} from '../../src/relay';
+} from '../../../src/relay';
 
 import {
   GraphQLString,

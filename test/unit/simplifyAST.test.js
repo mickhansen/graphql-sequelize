@@ -9,7 +9,7 @@ var chai = require('chai')
   , parse = function (query) {
       return parser(query).definitions[0];
     }
-  , simplifyAST = require('../src/simplifyAST');
+  , simplifyAST = require('../../src/simplifyAST');
 
 describe('simplifyAST', function () {
   it('should simplify a basic nested structure', function () {

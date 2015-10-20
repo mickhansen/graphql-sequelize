@@ -2,13 +2,13 @@
 
 var chai = require('chai')
   , expect = chai.expect
-  , resolver = require('../src/resolver')
+  , resolver = require('../../src/resolver')
   , helper = require('./helper')
   , sequelize = helper.sequelize
   , Sequelize = require('sequelize')
   , Promise = helper.Promise
   , sinon = require('sinon')
-  , attributeFields = require('../src/attributeFields')
+  , attributeFields = require('../../src/attributeFields')
   , _ = require('lodash');
 
 import {
@@ -26,7 +26,7 @@ import {
 
 import {
   sequelizeNodeInterface
-} from '../src/relay';
+} from '../../src/relay';
 
 import {
   globalIdField,

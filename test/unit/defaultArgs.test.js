@@ -5,7 +5,7 @@ var chai = require('chai')
   , helper = require('./helper')
   , sequelize = helper.sequelize
   , Sequelize = require('sequelize')
-  , defaultArgs = require('../src/defaultArgs');
+  , defaultArgs = require('../../src/defaultArgs');
 
 import {
   GraphQLString,

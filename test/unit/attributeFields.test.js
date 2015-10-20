@@ -5,7 +5,7 @@ var chai = require('chai')
   , helper = require('./helper')
   , sequelize = helper.sequelize
   , Sequelize = require('sequelize')
-  , attributeFields = require('../src/attributeFields');
+  , attributeFields = require('../../src/attributeFields');
 
 import {
   GraphQLString,

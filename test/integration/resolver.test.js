@@ -2,7 +2,7 @@
 
 var chai = require('chai')
   , expect = chai.expect
-  , resolver = require('../src/resolver')
+  , resolver = require('../../src/resolver')
   , helper = require('./helper')
   , Sequelize = require('sequelize')
   , sinon = require('sinon')

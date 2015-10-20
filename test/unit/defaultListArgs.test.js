@@ -2,7 +2,7 @@
 
 var chai = require('chai')
   , expect = chai.expect
-  , defaultListArgs = require('../src/defaultListArgs');
+  , defaultListArgs = require('../../src/defaultListArgs');
 
 import {
   GraphQLString,

@@ -4,15 +4,18 @@
   "description": "GraphQL & Relay for MySQL & Postgres via Sequelize",
   "main": "lib/index.js",
   "options": {
-    "mocha": "--require scripts/mocha-bootload test/*.test.js test/**/*.test.js"
+    "mocha": "--require scripts/mocha-bootload"
   },
   "scripts": {
-    "check": "npm run lint && npm test",
+    "prepublish": "npm run check",
+    "check": "npm run lint && npm run test-unit",
     "lint": "eslint src",
     "build": "rm -rf lib/* && babel src --ignore test --optional runtime --out-dir lib",
-    "test": "mocha $npm_package_options_mocha",
+    "test": "npm run test-unit && npm run test-integration",
+    "test-unit": "mocha $npm_package_options_mocha test/unit/*.test.js",
     "build-docker": "docker-compose build",
-    "test-docker": "docker-compose run dev /bin/sh -c \"npm run test\""
+    "test-docker": "docker-compose run dev /bin/sh -c \"npm run test-integration\"",
+    "test-integration": "mocha $npm_package_options_mocha test/integration/*.test.js test/integration/**/*.test.js"
   },
   "repository": {
     "type": "git",
