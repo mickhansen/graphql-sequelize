@@ -84,7 +84,8 @@ if (helper.sequelize.dialect.name === 'postgres') {
             name: this.Task.name + 'ConnectionOrder',
             values: {
               ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
-              LATEST: {value: ['createdAt', 'DESC']}
+              LATEST: {value: ['createdAt', 'DESC']},
+              NAME: {value: ['name', 'ASC']}
             }
           })
         });
@@ -125,15 +126,15 @@ if (helper.sequelize.dialect.name === 'postgres') {
         
         this.userA = await this.User.create({
           [this.User.Tasks.as]: [
-            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 45000)},
-            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 40000)},
-            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 35000)},
-            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 30000)},
-            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 25000)},
-            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 20000)},
-            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 15000)},
-            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 10000)},
-            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 5000)}
+            {id: ++taskId, name: 'AAA', createdAt: new Date(now - 45000)},
+            {id: ++taskId, name: 'ABA', createdAt: new Date(now - 40000)},
+            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 35000)},
+            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 30000)},
+            {id: ++taskId, name: 'BAA', createdAt: new Date(now - 25000)},
+            {id: ++taskId, name: 'BBB', createdAt: new Date(now - 20000)},
+            {id: ++taskId, name: 'CAA', createdAt: new Date(now - 15000)},
+            {id: ++taskId, name: 'CCC', createdAt: new Date(now - 10000)},
+            {id: ++taskId, name: 'DDD', createdAt: new Date(now - 5000)}
           ]
         }, {
           include: [this.User.Tasks]
@@ -264,6 +265,49 @@ if (helper.sequelize.dialect.name === 'postgres') {
         let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor);
         verify(lastResult, lastThree);
         expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
+      });
+
+      it('should support fetching the next element although it has the same orderValue', async function () {
+        let firstResult = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              tasks(first: 3, orderBy: NAME) {
+                edges {
+                  cursor
+                  node {
+                    id
+                    name
+                  }
+                }
+                pageInfo {
+                  endCursor
+                }
+              }
+            }
+          }
+        `);
+
+        let secondResult = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              tasks(first: 3, after: "${firstResult.data.user.tasks.pageInfo.endCursor}", orderBy: NAME) {
+                edges {
+                  cursor
+                  node {
+                    id
+                    name
+                  }
+                }
+                pageInfo {
+                  endCursor
+                }
+              }
+            }
+          }
+        `);
+
+        expect(firstResult.data.user.tasks.edges[2].node.name).to.equal('ABC');
+        expect(firstResult.data.user.tasks.edges[2].node.name).to.equal(secondResult.data.user.tasks.edges[0].node.name);
       });
     });
   });

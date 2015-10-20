@@ -16,6 +16,7 @@ import {
   unbase64,
 } from './base64.js';
 
+import _ from 'lodash';
 import resolver from './resolver';
 
 class NodeTypeMapper {
@@ -127,6 +128,11 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
       options.order = [
         [orderAttribute, orderDirection]
       ];
+
+      if (orderByAttribute !== model.primaryKeyAttribute) {
+        options.order.push([model.primaryKeyAttribute, 'ASC']);
+      }
+
       options.attributes.push(orderAttribute);
 
       if (model.sequelize.dialect.name === 'postgres') {
@@ -146,15 +152,26 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
 
         options.where = options.where || {};
 
-        if (orderDirection === 'ASC') {
-          options.where[orderByAttribute(orderBy)] = {
-            $gt: orderValue
-          };
-        } else {
-          options.where[orderByAttribute(orderBy)] = {
-            $lt: orderValue
-          };
-        }
+        let where = {
+          $or: [
+            {
+              [orderByAttribute(orderBy)]: {
+                [orderDirection === 'ASC' ? '$gt' : '$lt']: orderValue
+              }
+            },
+            {
+              [orderByAttribute(orderBy)]: {
+                $eq: orderValue
+              },
+              [model.primaryKeyAttribute]: {
+                [orderDirection === 'ASC' ? '$gt' : '$lt']: cursor.id
+              }
+            }
+          ]
+        };
+
+        // TODO, do a proper merge that won't kill another $or
+        _.assign(options.where, where);
       }
 
       return options;
