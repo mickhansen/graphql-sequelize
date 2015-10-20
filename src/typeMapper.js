@@ -20,6 +20,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     BOOLEAN,
     ENUM,
     FLOAT,
+    DECIMAL,
+    DOUBLE,
     INTEGER,
     BIGINT,
     STRING,
@@ -35,7 +37,10 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   const specialChars = /[^a-z\d_]/i;
 
   if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
-  if (sequelizeType instanceof FLOAT) return GraphQLFloat;
+
+  if (sequelizeType instanceof FLOAT ||
+      sequelizeType instanceof DOUBLE ||
+      sequelizeType instanceof DECIMAL) return GraphQLFloat;
 
   if (sequelizeType instanceof INTEGER ||
       sequelizeType instanceof BIGINT) {

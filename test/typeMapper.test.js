@@ -1,13 +1,24 @@
 import { expect } from 'chai';
-import typeMapper from '../src/typeMapper';
+import { toGraphQL } from '../src/typeMapper';
 
-import {
+import Sequelize from 'sequelize';
+
+const {
   BOOLEAN,
   ENUM,
   FLOAT,
+  DECIMAL,
+  DOUBLE,
   INTEGER,
-  STRING
-} from 'sequelize';
+  BIGINT,
+  STRING,
+  TEXT,
+  UUID,
+  DATE,
+  DATEONLY,
+  ARRAY,
+  VIRTUAL
+} = Sequelize;
 
 import {
   GraphQLString,
@@ -19,5 +30,21 @@ import {
 } from 'graphql';
 
 describe('typeMapper', () => {
-  // TODO write tests for typeMapper
-})
+  describe('DOUBLE', function () {
+    it('should map to GraphQLFloat', function () {
+      expect(toGraphQL(new DOUBLE(), Sequelize)).to.equal(GraphQLFloat);
+    });
+  });
+
+  describe('DECIMAL', function () {
+    it('should map to GraphQLFloat', function () {
+      expect(toGraphQL(new DECIMAL(), Sequelize)).to.equal(GraphQLFloat);
+    });
+  });
+
+  describe('FLOAT', function () {
+    it('should map to GraphQLFloat', function () {
+      expect(toGraphQL(new FLOAT(), Sequelize)).to.equal(GraphQLFloat);
+    });
+  });
+});
