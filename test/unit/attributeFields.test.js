@@ -103,17 +103,6 @@ describe('attributeFields', function () {
     expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'list']);
   });
 
-  it('should be possible to rename fields with map', function () {
-    var fields = attributeFields(Model, {
-      map: {
-        id: '_id'
-      }
-    });
-
-    expect(Object.keys(fields)).to.contain('_id');
-    expect(Object.keys(fields)).not.to.contain('id');
-  });
-
   it('should be possible to automatically set a relay globalId', function () {
     var fields = attributeFields(Model, {
       globalId: true

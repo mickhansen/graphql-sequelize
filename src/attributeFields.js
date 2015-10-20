@@ -12,10 +12,6 @@ module.exports = function (Model, options) {
     var attribute = Model.rawAttributes[key]
       , type = attribute.type;
 
-    if (options.map && options.map[key]) {
-      key = options.map[key];
-    }
-
     memo[key] = {
       type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
     };
