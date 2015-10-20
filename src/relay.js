@@ -192,7 +192,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
                   $eq: orderValue
                 },
                 [model.primaryKeyAttribute]: {
-                  [orderDirection === 'ASC' ? '$gt' : '$lt']: cursor.id
+                  $gt: cursor.id
                 }
               }
             ]
