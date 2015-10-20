@@ -59,6 +59,11 @@ export default function generateIncludes(simpleAST, type, root, options) {
       includeOptions = argsToFindOptions(args, association.target);
       allowedAttributes = Object.keys(association.target.rawAttributes);
 
+      includeOptions.attributes = (includeOptions.attributes || [])
+                                  .concat(Object.keys(fieldAST.fields))
+                                  .concat(connectionFields)
+                                  .filter(inList.bind(null, allowedAttributes));
+
       if (includeResolver.$before) {
         includeOptions = includeResolver.$before(includeOptions, args, root, {
           ast: fieldAST,
@@ -72,8 +77,10 @@ export default function generateIncludes(simpleAST, type, root, options) {
         result.attributes.push(association.source.primaryKeyAttribute);
       }
 
-      if (include && !includeOptions.limit) {
-        if (includeOptions.order) {
+      let separate = includeOptions.limit && association.associationType === 'HasMany' && false;
+
+      if (include && (!includeOptions.limit || separate)) {
+        if (includeOptions.order && !separate) {
           includeOptions.order.map(function (order) {
             order.unshift({
               model: association.target,
@@ -87,12 +94,11 @@ export default function generateIncludes(simpleAST, type, root, options) {
           delete includeOptions.order;
         }
 
-        includeOptions.attributes = (includeOptions.attributes || [])
-                                    .concat(Object.keys(fieldAST.fields))
-                                    .concat(connectionFields)
-                                    .filter(inList.bind(null, allowedAttributes));
-
         includeOptions.attributes.push(association.target.primaryKeyAttribute);
+
+        if (association.associationType === 'HasMany') {
+          includeOptions.attributes.push(association.foreignKey);
+        }
 
         nestedResult = generateIncludes(
           fieldAST,

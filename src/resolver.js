@@ -26,13 +26,6 @@ module.exports = function (target, options) {
   if (options.handleConnection === undefined) options.handleConnection = true;
 
   resolver = function (source, args, info) {
-    if (association && source.get(association.as) !== undefined) {
-      if (options.handleConnection && isConnection(info.returnType)) {
-        return handleConnection(source.get(association.as), args);
-      }
-      return source.get(association.as);
-    }
-
     var root = info.rootValue || {}
       , ast = info.fieldASTs
       , type = info.returnType
@@ -50,6 +43,16 @@ module.exports = function (target, options) {
     }
 
     type = type.ofType || type;
+
+    if (association && source.get(association.as) !== undefined) {
+      if (options.handleConnection && isConnection(info.returnType)) {
+        return handleConnection(source.get(association.as), args);
+      }
+      return options.after(source.get(association.as), args, root, {
+        ast: simpleAST,
+        type: type
+      });
+    }
 
     findOptions.attributes = Object.keys(fields)
                              .filter(inList.bind(null, targetAttributes));

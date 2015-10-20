@@ -3,6 +3,7 @@
 import {expect} from 'chai';
 import helper from '../helper';
 import Sequelize from 'sequelize';
+import sinon from 'sinon';
 import attributeFields from '../../src/attributeFields';
 import resolver from '../../src/resolver';
 
@@ -54,8 +55,12 @@ if (helper.sequelize.dialect.name === 'postgres') {
           timestamps: true
         });
 
+        this.ProjectMember = sequelize.define('projectMember', {
+
+        });
+
         this.User.Tasks = this.User.hasMany(this.Task, {as: 'tasks'});
-        this.User.Projects = this.User.hasMany(this.Project, {as: 'projects'});
+        this.User.Projects = this.User.belongsToMany(this.Project, {as: 'projects', through: this.ProjectMember});
 
         this.Project.Tasks = this.Project.hasMany(this.Task, {as: 'tasks'});
         this.Task.Project = this.Task.belongsTo(this.Project, {as: 'project'});
@@ -68,20 +73,12 @@ if (helper.sequelize.dialect.name === 'postgres') {
           }
         });
 
-        this.projectType = new GraphQLObjectType({
-          name: this.Project.name,
-          fields: {
-            ...attributeFields(this.Project),
-            id: globalIdField(this.Project.name)
-          }
-        });
-
-        this.userTaskConnection = sequelizeConnection({
-          name: this.Task.name,
+        this.projectTaskConnection = sequelizeConnection({
+          name: this.Project.name + this.Task.name,
           nodeType: this.taskType,
-          target: this.User.Tasks,
+          target: this.Project.Tasks,
           orderBy: new GraphQLEnumType({
-            name: this.Task.name + 'ConnectionOrder',
+            name: this.Project.name + this.Task.name + 'ConnectionOrder',
             values: {
               ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
               LATEST: {value: ['createdAt', 'DESC']},
@@ -89,6 +86,46 @@ if (helper.sequelize.dialect.name === 'postgres') {
             }
           })
         });
+
+        this.projectType = new GraphQLObjectType({
+          name: this.Project.name,
+          fields: {
+            ...attributeFields(this.Project),
+            id: globalIdField(this.Project.name),
+            tasks: {
+              type: this.projectTaskConnection.connectionType,
+              args: this.projectTaskConnection.connectionArgs,
+              resolve: this.projectTaskConnection.resolve
+            },
+          }
+        });
+
+        this.userTaskConnection = sequelizeConnection({
+          name: this.User.name + this.Task.name,
+          nodeType: this.taskType,
+          target: this.User.Tasks,
+          orderBy: new GraphQLEnumType({
+            name: this.User.name + this.Task.name + 'ConnectionOrder',
+            values: {
+              ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
+              LATEST: {value: ['createdAt', 'DESC']},
+              NAME: {value: ['name', 'ASC']}
+            }
+          })
+        });
+
+        this.userProjectConnection = sequelizeConnection({
+          name: this.Project.name,
+          nodeType: this.projectType,
+          target: this.User.Projects,
+          orderBy: new GraphQLEnumType({
+            name: this.User.name + this.Project.name + 'ConnectionOrder',
+            values: {
+              ID: {value: [this.Project.primaryKeyAttribute, 'ASC']}
+            }
+          })
+        });
+
         this.userType = new GraphQLObjectType({
           name: this.User.name,
           fields: {
@@ -98,6 +135,11 @@ if (helper.sequelize.dialect.name === 'postgres') {
               type: this.userTaskConnection.connectionType,
               args: this.userTaskConnection.connectionArgs,
               resolve: this.userTaskConnection.resolve
+            },
+            projects: {
+              type: this.userProjectConnection.connectionType,
+              args: this.userProjectConnection.connectionArgs,
+              resolve: this.userProjectConnection.resolve
             }
           }
         });
@@ -123,22 +165,38 @@ if (helper.sequelize.dialect.name === 'postgres') {
 
         let taskId = 0
           , now = new Date(2015, 10, 17, 3, 24, 0, 0);
+
+        [this.projectA, this.projectB] = await Promise.join(
+          this.Project.create({}),
+          this.Project.create({})
+        );
         
         this.userA = await this.User.create({
           [this.User.Tasks.as]: [
-            {id: ++taskId, name: 'AAA', createdAt: new Date(now - 45000)},
-            {id: ++taskId, name: 'ABA', createdAt: new Date(now - 40000)},
-            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 35000)},
-            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 30000)},
-            {id: ++taskId, name: 'BAA', createdAt: new Date(now - 25000)},
-            {id: ++taskId, name: 'BBB', createdAt: new Date(now - 20000)},
-            {id: ++taskId, name: 'CAA', createdAt: new Date(now - 15000)},
-            {id: ++taskId, name: 'CCC', createdAt: new Date(now - 10000)},
-            {id: ++taskId, name: 'DDD', createdAt: new Date(now - 5000)}
+            {id: ++taskId, name: 'AAA', createdAt: new Date(now - 45000), projectId: this.projectA.get('id')},
+            {id: ++taskId, name: 'ABA', createdAt: new Date(now - 40000), projectId: this.projectA.get('id')},
+            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 35000), projectId: this.projectA.get('id')},
+            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 30000), projectId: this.projectA.get('id')},
+            {id: ++taskId, name: 'BAA', createdAt: new Date(now - 25000), projectId: this.projectA.get('id')},
+            {id: ++taskId, name: 'BBB', createdAt: new Date(now - 20000), projectId: this.projectB.get('id')},
+            {id: ++taskId, name: 'CAA', createdAt: new Date(now - 15000), projectId: this.projectB.get('id')},
+            {id: ++taskId, name: 'CCC', createdAt: new Date(now - 10000), projectId: this.projectB.get('id')},
+            {id: ++taskId, name: 'DDD', createdAt: new Date(now - 5000), projectId: this.projectB.get('id')}
           ]
         }, {
           include: [this.User.Tasks]
         });
+
+        await Promise.join(
+          this.ProjectMember.create({
+            projectId: this.projectA.get('id'),
+            userId: this.userA.get('id')
+          }),
+          this.ProjectMember.create({
+            projectId: this.projectB.get('id'),
+            userId: this.userA.get('id')
+          })
+        );
       });
 
       it('should support in-query slicing and pagination with first and orderBy', async function () {
@@ -308,6 +366,48 @@ if (helper.sequelize.dialect.name === 'postgres') {
 
         expect(firstResult.data.user.tasks.edges[2].node.name).to.equal('ABC');
         expect(firstResult.data.user.tasks.edges[2].node.name).to.equal(secondResult.data.user.tasks.edges[0].node.name);
+      });
+
+      it('should support paging a nested connection', async function () {
+        let sqlSpy = sinon.spy();
+
+        let result = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              projects {
+                edges {
+                  node {
+                    tasks(first: 3, orderBy: LATEST) {
+                      edges {
+                        cursor
+                        node {
+                          id
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `, {
+          logging: sqlSpy
+        });
+
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        let projects = result.data.user.projects.edges.map(function (edge) {
+          return edge.node;
+        });
+
+        expect(projects[0].tasks.edges.length).to.equal(3);
+        expect(projects[1].tasks.edges.length).to.equal(3);
+
+        expect(projects[0].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[4].get('id')));
+        expect(projects[1].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[8].get('id')));
+
+        //expect(sqlSpy.callCount).to.equal(2);
       });
     });
   });

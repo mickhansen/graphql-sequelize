@@ -79,104 +79,31 @@ export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
 
-export function sequelizeConnection({name, nodeType, target, orderBy}) {
+export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnum}) {
   const {
     edgeType,
     connectionType
   } = connectionDefinitions({name: name, nodeType: nodeType});
 
   const model = target.target ? target.target : target;
-
   const SEPERATOR = '$';
   const PREFIX = 'arrayconnection' + SEPERATOR;
 
-  if (orderBy === undefined) {
-    orderBy = new GraphQLList(new GraphQLEnumType({
+  if (orderByEnum === undefined) {
+    orderByEnum = new GraphQLEnumType({
       name: name + 'ConnectionOrder',
       values: {
-        ID: [model.primaryKeyAttribute, 'ASC']
+        ID: {value: [model.primaryKeyAttribute, 'ASC']}
       }
-    }));
+    });
   }
 
   let $connectionArgs = {
     ...connectionArgs,
     orderBy: {
-      type: new GraphQLList(orderBy)
+      type: new GraphQLList(orderByEnum)
     }
   };
-
-  let resolve = resolver(target, {
-    handleConnection: false,
-    before: function (options, args) {
-      if (args.first || args.last) {
-        options.limit = parseInt(args.first || args.last, 10);
-      }
-
-      if (!args.orderBy) {
-        args.orderBy = orderBy.values[0].value;
-      }
-
-      let orderBy = args.orderBy;
-      let orderAttribute = orderByAttribute(orderBy);
-      let orderDirection = args.orderBy[0][1];
-
-      if (args.last) {
-        orderDirection = orderDirection === 'ASC' ? 'DESC' : 'ASC';
-      }
-
-      options.order = [
-        [orderAttribute, orderDirection]
-      ];
-
-      if (orderByAttribute !== model.primaryKeyAttribute) {
-        options.order.push([model.primaryKeyAttribute, 'ASC']);
-      }
-
-      options.attributes.push(orderAttribute);
-
-      if (model.sequelize.dialect.name === 'postgres') {
-        options.attributes.push([
-          model.sequelize.literal('COUNT(*) OVER()'),
-          'full_count'
-        ]);
-      }
-
-      if (args.after || args.before) {
-        let cursor = fromCursor(args.after || args.before);
-        let orderValue = cursor.orderValue;
-
-        if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
-          orderValue = new Date(orderValue);
-        }
-
-        options.where = options.where || {};
-
-        let where = {
-          $or: [
-            {
-              [orderByAttribute(orderBy)]: {
-                [orderDirection === 'ASC' ? '$gt' : '$lt']: orderValue
-              }
-            },
-            {
-              [orderByAttribute(orderBy)]: {
-                $eq: orderValue
-              },
-              [model.primaryKeyAttribute]: {
-                [orderDirection === 'ASC' ? '$gt' : '$lt']: cursor.id
-              }
-            }
-          ]
-        };
-
-        // TODO, do a proper merge that won't kill another $or
-        _.assign(options.where, where);
-      }
-
-      return options;
-    }
-  });
 
   let orderByAttribute = function (orderBy) {
     return orderBy[0][0];
@@ -204,8 +131,84 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
     edgeType,
     nodeType,
     connectionArgs: $connectionArgs,
-    resolve: function (source, args, info) {
-      return resolve(source, args, info).then(function (values) {
+    resolve: resolver(target, {
+      handleConnection: false,
+      include: true,
+      before: function (options, args) {
+        if (args.first || args.last) {
+          options.limit = parseInt(args.first || args.last, 10);
+        }
+
+        if (!args.orderBy) {
+          args.orderBy = [orderByEnum._values[0].value];
+        } else if (typeof args.orderBy === 'string') {
+          args.orderBy = [orderByEnum._nameLookup[args.orderBy].value];
+        }
+
+        let orderBy = args.orderBy;
+        let orderAttribute = orderByAttribute(orderBy);
+        let orderDirection = args.orderBy[0][1];
+
+        if (args.last) {
+          orderDirection = orderDirection === 'ASC' ? 'DESC' : 'ASC';
+        }
+
+        options.order = [
+          [orderAttribute, orderDirection]
+        ];
+
+        if (orderAttribute !== model.primaryKeyAttribute) {
+          options.order.push([model.primaryKeyAttribute, 'ASC']);
+        }
+
+        options.attributes.push(orderAttribute);
+
+        if (model.sequelize.dialect.name === 'postgres' && options.limit) {
+          options.attributes.push([
+            model.sequelize.literal('COUNT(*) OVER()'),
+            'full_count'
+          ]);
+        }
+
+        if (args.after || args.before) {
+          let cursor = fromCursor(args.after || args.before);
+          let orderValue = cursor.orderValue;
+
+          if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
+            orderValue = new Date(orderValue);
+          }
+
+          options.where = options.where || {};
+
+          let where = {
+            $or: [
+              {
+                [orderAttribute]: {
+                  [orderDirection === 'ASC' ? '$gt' : '$lt']: orderValue
+                }
+              },
+              {
+                [orderAttribute]: {
+                  $eq: orderValue
+                },
+                [model.primaryKeyAttribute]: {
+                  [orderDirection === 'ASC' ? '$gt' : '$lt']: cursor.id
+                }
+              }
+            ]
+          };
+
+          // TODO, do a proper merge that won't kill another $or
+          _.assign(options.where, where);
+        }
+
+        return options;
+      },
+      after: function (values, args) {
+        if (!args.orderBy) {
+          args.orderBy = [orderByEnum._values[0].value];
+        }
+
         let edges = values.map((value) => {
           return {
             cursor: toCursor(value, args.orderBy),
@@ -215,7 +218,8 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
 
         let firstEdge = edges[0];
         let lastEdge = edges[edges.length - 1];
-        let fullCount = values[0].dataValues.full_count && parseInt(values[0].dataValues.full_count, 10) || 0;
+        let fullCount = values[0] && values[0].dataValues.full_count &&
+                        parseInt(values[0].dataValues.full_count, 10) || 0;
 
         return {
           edges,
@@ -226,7 +230,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
             hasNextPage: args.first != null ? fullCount > parseInt(args.first, 10) : false,
           }
         };
-      });
-    }
+      }
+    })
   };
 }
