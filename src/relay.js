@@ -116,10 +116,17 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
         args.orderBy = orderBy.values[0].value;
       }
 
-      let orderAttribute = orderByAttribute(args.orderBy);
+      let orderBy = args.orderBy;
+      let orderAttribute = orderByAttribute(orderBy);
       let orderDirection = args.orderBy[0][1];
 
-      options.order = args.orderBy;
+      if (args.last) {
+        orderDirection = orderDirection === 'ASC' ? 'DESC' : 'ASC';
+      }
+
+      options.order = [
+        [orderAttribute, orderDirection]
+      ];
       options.attributes.push(orderAttribute);
 
       if (model.sequelize.dialect.name === 'postgres') {
@@ -130,8 +137,8 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
       }
 
       if (args.after || args.before) {
-        let after = fromCursor(args.after || args.before);
-        let orderValue = after.orderValue;
+        let cursor = fromCursor(args.after || args.before);
+        let orderValue = cursor.orderValue;
 
         if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
           orderValue = new Date(orderValue);
@@ -139,12 +146,12 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
 
         options.where = options.where || {};
 
-        if (orderDirection === 'ASC' || args.before) {
-          options.where[orderByAttribute(args.orderBy)] = {
+        if (orderDirection === 'ASC') {
+          options.where[orderByAttribute(orderBy)] = {
             $gt: orderValue
           };
         } else {
-          options.where[orderByAttribute(args.orderBy)] = {
+          options.where[orderByAttribute(orderBy)] = {
             $lt: orderValue
           };
         }
@@ -198,7 +205,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy}) {
           pageInfo: {
             startCursor: firstEdge ? firstEdge.cursor : null,
             endCursor: lastEdge ? lastEdge.cursor : null,
-            hasPreviousPage: false,
+            hasPreviousPage: args.last != null ? fullCount > parseInt(args.last, 10) : false,
             hasNextPage: args.first != null ? fullCount > parseInt(args.first, 10) : false,
           }
         };

@@ -84,8 +84,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
             name: this.Task.name + 'ConnectionOrder',
             values: {
               ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
-              OLDEST: {value: ['createdAt', 'ASC']},
-              NEWEST: {value: ['createdAt', 'DESC']}
+              LATEST: {value: ['createdAt', 'DESC']}
             }
           })
         });
@@ -120,28 +119,35 @@ if (helper.sequelize.dialect.name === 'postgres') {
         });
 
         await this.sequelize.sync({force: true});
+
+        let taskId = 0
+          , now = new Date(2015, 10, 17, 3, 24, 0, 0);
         
         this.userA = await this.User.create({
           [this.User.Tasks.as]: [
-            {name: Math.random().toString(), createdAt: new Date(Date.now() - 10500)},
-            {name: Math.random().toString(), createdAt: new Date(Date.now() - 9500)},
-            {name: Math.random().toString(), createdAt: new Date(Date.now() - 8500)},
-            {name: Math.random().toString(), createdAt: new Date(Date.now() - 7500)},
-            {name: Math.random().toString(), createdAt: new Date(Date.now() - 6500)},
-            {name: Math.random().toString(), createdAt: new Date(Date.now() - 5500)},
-            {name: Math.random().toString(), createdAt: new Date(Date.now() - 4500)},
-            {name: Math.random().toString(), createdAt: new Date(Date.now() - 3500)},
-            {name: Math.random().toString(), createdAt: new Date(Date.now() - 2500)}
+            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 45000)},
+            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 40000)},
+            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 35000)},
+            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 30000)},
+            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 25000)},
+            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 20000)},
+            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 15000)},
+            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 10000)},
+            {id: ++taskId, name: Math.random().toString(), createdAt: new Date(now - 5000)}
           ]
         }, {
           include: [this.User.Tasks]
         });
       });
 
-      it('should support in-query slicing and pagination with an orderBy', async function () {
+      it('should support in-query slicing and pagination with first and orderBy', async function () {
         let firstThree = this.userA.tasks.slice(this.userA.tasks.length - 3, this.userA.tasks.length);
         let nextThree = this.userA.tasks.slice(this.userA.tasks.length - 6, this.userA.tasks.length - 3);
         let lastThree = this.userA.tasks.slice(this.userA.tasks.length - 9, this.userA.tasks.length - 6);
+
+        expect(firstThree.length).to.equal(3);
+        expect(nextThree.length).to.equal(3);
+        expect(lastThree.length).to.equal(3);
 
         let verify = function(result, expectedTasks) {
           if (result.errors) throw new Error(result.errors[0].stack);
@@ -150,19 +156,23 @@ if (helper.sequelize.dialect.name === 'postgres') {
             return edge.node;
           });
 
-          expect(resultTasks.length).to.equal(3);
-          expect(resultTasks.map((task) => {
+          let resultIds = resultTasks.map((task) => {
             return parseInt(fromGlobalId(task.id).id, 10);
-          }).sort()).to.deep.equal(expectedTasks.map(function (task) {
+          }).sort();
+
+          let expectedIds = expectedTasks.map(function (task) {
             return task.get('id');
-          }).sort());
+          }).sort();
+
+          expect(resultTasks.length).to.equal(3);
+          expect(resultIds).to.deep.equal(expectedIds);
         };
 
         let query = (after) => {
           return graphql(this.schema, `
             {
               user(id: ${this.userA.id}) {
-                tasks(first: 3, ${after ? 'after: "'+after+'", ' : ''} orderBy: NEWEST) {
+                tasks(first: 3, ${after ? 'after: "'+after+'", ' : ''} orderBy: LATEST) {
                   edges {
                     cursor
                     node {
@@ -178,7 +188,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           `);
-        }
+        };
 
         let firstResult = await query();
         verify(firstResult, firstThree);
@@ -191,6 +201,69 @@ if (helper.sequelize.dialect.name === 'postgres') {
         let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor);
         verify(lastResult, lastThree);
         expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+      });
+
+      it('should support reverse pagination with last and orderBy', async function () {
+        let firstThree = this.userA.tasks.slice(0, 3);
+        let nextThree = this.userA.tasks.slice(3, 6);
+        let lastThree = this.userA.tasks.slice(6, 9);
+
+        expect(firstThree.length).to.equal(3);
+        expect(nextThree.length).to.equal(3);
+        expect(lastThree.length).to.equal(3);
+
+        let verify = function(result, expectedTasks) {
+          if (result.errors) throw new Error(result.errors[0].stack);
+
+          var resultTasks = result.data.user.tasks.edges.map(function (edge) {
+            return edge.node;
+          });
+
+          let resultIds = resultTasks.map((task) => {
+            return parseInt(fromGlobalId(task.id).id, 10);
+          }).sort();
+
+          let expectedIds = expectedTasks.map(function (task) {
+            return task.get('id');
+          }).sort();
+
+          expect(resultTasks.length).to.equal(3);
+          expect(resultIds).to.deep.equal(expectedIds);
+        };
+
+        let query = (before) => {
+          return graphql(this.schema, `
+            {
+              user(id: ${this.userA.id}) {
+                tasks(last: 3, ${before ? 'before: "'+before+'", ' : ''} orderBy: LATEST) {
+                  edges {
+                    cursor
+                    node {
+                      id
+                      name
+                    }
+                  }
+                  pageInfo {
+                    hasPreviousPage
+                    endCursor
+                  }
+                }
+              }
+            }
+          `);
+        };
+
+        let firstResult = await query();
+        verify(firstResult, firstThree);
+        expect(firstResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+
+        let nextResult = await query(firstResult.data.user.tasks.pageInfo.endCursor);
+        verify(nextResult, nextThree);
+        expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+
+        let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor);
+        verify(lastResult, lastThree);
+        expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
       });
     });
   });

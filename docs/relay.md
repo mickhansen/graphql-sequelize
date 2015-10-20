@@ -89,7 +89,7 @@ const userTaskConnection = sequelizeConnection({
   orderBy: new GraphQLEnumType({
     name: 'UserTaskOrderBy',
     values: {
-      AGE: {value: ['createdAt', 'DESC']}, // The first ENUM value will be the default order. The order will be used for `first`, will automatically be inversed for `last` lookups.
+      AGE: {value: ['createdAt', 'DESC']}, // The first ENUM value will be the default order. The direction will be used for `first`, will automatically be inversed for `last` lookups.
       TITLE: {value:  ['title', 'ASC']}
     }
   }),
