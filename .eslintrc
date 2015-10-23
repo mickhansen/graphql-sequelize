@@ -28,7 +28,7 @@
     "no-dupe-keys": 2,
     "no-duplicate-case": 2,
     "no-empty": 2,
-    "no-empty-class": 2,
+    "no-empty-character-class": 2,
     "no-ex-assign": 2,
     "no-extra-boolean-cast": 2,
     "no-extra-parens": 0,
@@ -137,7 +137,7 @@
       2,
       2,
       {
-        "indentSwitchCase": true
+        "SwitchCase": 2
       }
     ],
     "brace-style": [
@@ -181,7 +181,7 @@
     "no-ternary": 0,
     "no-trailing-spaces": 2,
     "no-underscore-dangle": 0,
-    "no-wrap-func": 2,
+    "no-extra-parens": 2,
     "one-var": 0,
     "operator-assignment": [
       2,
@@ -239,12 +239,12 @@
         "nonwords": false
       }
     ],
-    "spaced-line-comment": [
+    "spaced-comment": [
       2,
       "always"
     ],
     "wrap-regex": 0,
     "no-var": 0,
-    "max-len": [2, 110, 4]
+    "max-len": [2, 130, 4]
   }
 }
