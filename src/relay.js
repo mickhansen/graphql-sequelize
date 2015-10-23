@@ -226,8 +226,8 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
           pageInfo: {
             startCursor: firstEdge ? firstEdge.cursor : null,
             endCursor: lastEdge ? lastEdge.cursor : null,
-            hasPreviousPage: args.last != null ? fullCount > parseInt(args.last, 10) : false,
-            hasNextPage: args.first != null ? fullCount > parseInt(args.first, 10) : false,
+            hasPreviousPage: args.last !== null && args.last !== undefined ? fullCount > parseInt(args.last, 10) : false,
+            hasNextPage: args.first !== null && args.first !== undefined ? fullCount > parseInt(args.first, 10) : false,
           }
         };
       }
