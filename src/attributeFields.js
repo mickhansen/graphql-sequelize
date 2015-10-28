@@ -28,7 +28,7 @@ module.exports = function (Model, options) {
   }, {});
 
   if (options.globalId) {
-    result.id = globalIdField(Model.name);
+    result.id = globalIdField(Model.name, instance => instance[Model.primaryKeyAttribute]);
   }
 
   return result;
