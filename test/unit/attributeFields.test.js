@@ -140,4 +140,55 @@ describe('attributeFields', function () {
     expect(fields.enumTwo.type.getValues()[0].name).to.equal('foo_bar');
     expect(fields.enumTwo.type.getValues()[0].value).to.equal('foo_bar');
   });
+
+  describe('with non-default primary key', function () {
+    var ModelWithoutId;
+    var modelName = Math.random().toString();
+    before(function () {
+      ModelWithoutId = sequelize.define(modelName, {
+        email: {
+          primaryKey: true,
+          type: Sequelize.STRING,
+        },
+        firstName: {
+          type: Sequelize.STRING
+        },
+        lastName: {
+          type: Sequelize.STRING
+        },
+        float: {
+          type: Sequelize.FLOAT
+        },
+      }, {
+        timestamps: false
+      });
+    });
+
+    it('should return fields', function () {
+      var fields = attributeFields(ModelWithoutId);
+
+      expect(Object.keys(fields)).to.deep.equal(['email', 'firstName', 'lastName', 'float']);
+
+      expect(fields.email.type).to.be.an.instanceOf(GraphQLNonNull);
+      expect(fields.email.type.ofType).to.equal(GraphQLString);
+
+      expect(fields.firstName.type).to.equal(GraphQLString);
+
+      expect(fields.lastName.type).to.equal(GraphQLString);
+
+      expect(fields.float.type).to.equal(GraphQLFloat);
+    });
+
+    it('should be possible to automatically set a relay globalId', function () {
+      var fields = attributeFields(ModelWithoutId, {
+        globalId: true
+      });
+
+      expect(fields.id.resolve).to.be.ok;
+      expect(fields.id.type.ofType.name).to.equal('ID');
+      expect(fields.id.resolve({
+        email: 'idris@example.com'
+      })).to.equal(toGlobalId(ModelWithoutId.name, 'idris@example.com'));
+    });
+  });
 });
