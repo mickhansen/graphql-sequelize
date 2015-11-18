@@ -75,7 +75,7 @@ let userType = new GraphQLObjectType({
       description: 'The name of the user.',
     },
     tasks: {
-      type: GraphQLList(taskType),
+      type: new GraphQLList(taskType),
       resolve: resolver(User.Tasks, {
         separate: true // load seperately, disables auto including - default: false
       })
