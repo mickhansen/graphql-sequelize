@@ -41,7 +41,7 @@ let User = sequelize.define('user', {
   name: Sequelize.STRING
 });
 
-let Task = sequelize.define('user', {
+let Task = sequelize.define('task', {
   title: Sequelize.STRING
 });
 
