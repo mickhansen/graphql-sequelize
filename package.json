@@ -1,13 +1,13 @@
 {
   "name": "graphql-sequelize",
-  "version": "0.14.0",
+  "version": "0.14.1",
   "description": "GraphQL & Relay for MySQL & Postgres via Sequelize",
   "main": "lib/index.js",
   "options": {
     "mocha": "--require scripts/mocha-bootload"
   },
   "scripts": {
-    "prepublish": "npm run check",
+    "prepublish": "npm run check && npm run build",
     "check": "npm run lint && npm run test-unit",
     "lint": "eslint src",
     "build": "rm -rf lib/* && babel src --ignore test --optional runtime --out-dir lib",
