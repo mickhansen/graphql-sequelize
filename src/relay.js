@@ -79,11 +79,11 @@ export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
 
-export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnum}) {
+export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnum, before}) {
   const {
     edgeType,
     connectionType
-  } = connectionDefinitions({name: name, nodeType: nodeType});
+  } = connectionDefinitions({name, nodeType});
 
   const model = target.target ? target.target : target;
   const SEPERATOR = '$';
@@ -97,6 +97,8 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       }
     });
   }
+
+  before = before || ((options) => options);
 
   let $connectionArgs = {
     ...connectionArgs,
@@ -202,7 +204,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
           _.assign(options.where, where);
         }
 
-        return options;
+        return before(options);
       },
       after: function (values, args) {
         if (!args.orderBy) {

@@ -106,7 +106,6 @@ describe('relay', function () {
 
     var taskConnection = connectionDefinitions({name: 'Task', nodeType: taskType});
 
-
     userType = new GraphQLObjectType({
       name: 'User',
       fields: {
