@@ -227,8 +227,11 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
 
       let firstEdge = edges[0];
       let lastEdge = edges[edges.length - 1];
-      let fullCount = values[0] && values[0].dataValues.full_count &&
-                      parseInt(values[0].dataValues.full_count, 10) || 0;
+      let fullCount = values[0] && values[0].dataValues.full_count && parseInt(values[0].dataValues.full_count, 10);
+
+      if (model.sequelize.dialect.name === 'postgres' && (args.first || args.last)) {
+        if (!fullCount) throw new Error('No fullcount available');
+      }
 
       return {
         source,

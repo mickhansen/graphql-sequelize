@@ -82,7 +82,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
         result.attributes.push(association.source.primaryKeyAttribute);
       }
 
-      let separate = includeOptions.limit && association.associationType === 'HasMany' && false;
+      let separate = includeOptions.limit && association.associationType === 'HasMany';
 
       if (include && (!includeOptions.limit || separate)) {
         if (includeOptions.order && !separate) {

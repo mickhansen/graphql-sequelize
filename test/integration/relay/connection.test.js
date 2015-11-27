@@ -505,7 +505,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
         expect(projects[0].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[4].get('id')));
         expect(projects[1].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[8].get('id')));
 
-        //expect(sqlSpy.callCount).to.equal(2);
+        expect(sqlSpy.callCount).to.equal(2);
       });
 
       it('should support connection fields', async function () {

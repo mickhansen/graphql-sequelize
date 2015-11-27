@@ -909,7 +909,7 @@ describe('resolver', function () {
         });
       });
 
-      expect(sqlSpy.callCount).to.equal(1 + users.length);
+      expect(sqlSpy.callCount).to.equal(2);
     });
   });
 
