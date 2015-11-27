@@ -417,6 +417,39 @@ if (helper.sequelize.dialect.name === 'postgres') {
         expect(firstResult.data.user.tasks.edges[2].node.name).to.equal(secondResult.data.user.tasks.edges[0].node.name);
       });
 
+      it('should support prefetching two nested connections', async function () {
+        let sqlSpy = sinon.spy();
+
+        let result = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              projects {
+                edges {
+                  node {
+                    tasks {
+                      edges {
+                        cursor
+                        node {
+                          id
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `, {
+          logging: sqlSpy
+        });
+
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        expect(sqlSpy.callCount).to.equal(1);
+        expect(result.data.user.projects.edges[1].node.tasks.edges[2].node.name).to.equal('CCC');
+      });
+
       it('should support paging a nested connection', async function () {
         let sqlSpy = sinon.spy();
 

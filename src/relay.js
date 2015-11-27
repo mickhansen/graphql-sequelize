@@ -244,21 +244,28 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     }
   });
 
+  let resolver = (source, args, info) => {
+    if (simplifyAST(info.fieldASTs[0], info).fields.edges) {
+      return $resolver(source, args, info);
+    }
+
+    return {
+      source,
+      args,
+      where: argsToWhere(args)
+    };
+  };
+
+  resolver.$association = $resolver.$association;
+  resolver.$before = $resolver.$before;
+  resolver.$after = $resolver.$after;
+  resolver.$options = $resolver.$options;
+
   return {
     connectionType,
     edgeType,
     nodeType,
     connectionArgs: $connectionArgs,
-    resolve: (source, args, info) => {
-      if (simplifyAST(info.fieldASTs[0], info).fields.edges) {
-        return $resolver(source, args, info);
-      }
-
-      return {
-        source,
-        args,
-        where: argsToWhere(args)
-      };
-    }
+    resolve: resolver
   };
 }
