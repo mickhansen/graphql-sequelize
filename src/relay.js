@@ -17,7 +17,6 @@ import {
 } from './base64.js';
 
 import _ from 'lodash';
-import resolver from './resolver';
 import simplifyAST from './simplifyAST';
 
 class NodeTypeMapper {
@@ -140,7 +139,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     return result;
   };
 
-  let $resolver = resolver(target, {
+  let $resolver = require('./resolver')(target, {
     handleConnection: false,
     include: true,
     before: function (options, args) {
