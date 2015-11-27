@@ -18,6 +18,7 @@ import {
 
 import _ from 'lodash';
 import resolver from './resolver';
+import simplifyAST from './simplifyAST';
 
 class NodeTypeMapper {
 
@@ -79,11 +80,11 @@ export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
 
-export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnum, before}) {
+export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnum, before, connectionFields, where}) {
   const {
     edgeType,
     connectionType
-  } = connectionDefinitions({name, nodeType});
+  } = connectionDefinitions({name, nodeType, connectionFields});
 
   const model = target.target ? target.target : target;
   const SEPERATOR = '$';
@@ -128,111 +129,137 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     };
   };
 
+  let argsToWhere = function (args) {
+    let result = {};
+
+    _.each(args, (value, key) => {
+      if (key in $connectionArgs) return;
+      _.assign(result, where(key, value));
+    });
+
+    return result;
+  };
+
+  let $resolver = resolver(target, {
+    handleConnection: false,
+    include: true,
+    before: function (options, args) {
+      if (args.first || args.last) {
+        options.limit = parseInt(args.first || args.last, 10);
+      }
+
+      if (!args.orderBy) {
+        args.orderBy = [orderByEnum._values[0].value];
+      } else if (typeof args.orderBy === 'string') {
+        args.orderBy = [orderByEnum._nameLookup[args.orderBy].value];
+      }
+
+      let orderBy = args.orderBy;
+      let orderAttribute = orderByAttribute(orderBy);
+      let orderDirection = args.orderBy[0][1];
+
+      if (args.last) {
+        orderDirection = orderDirection === 'ASC' ? 'DESC' : 'ASC';
+      }
+
+      options.order = [
+        [orderAttribute, orderDirection]
+      ];
+
+      if (orderAttribute !== model.primaryKeyAttribute) {
+        options.order.push([model.primaryKeyAttribute, 'ASC']);
+      }
+
+      options.attributes.push(orderAttribute);
+
+      if (model.sequelize.dialect.name === 'postgres' && options.limit) {
+        options.attributes.push([
+          model.sequelize.literal('COUNT(*) OVER()'),
+          'full_count'
+        ]);
+      }
+
+      options.where = argsToWhere(args);
+
+      if (args.after || args.before) {
+        let cursor = fromCursor(args.after || args.before);
+        let orderValue = cursor.orderValue;
+
+        if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
+          orderValue = new Date(orderValue);
+        }
+
+        let slicingWhere = {
+          $or: [
+            {
+              [orderAttribute]: {
+                [orderDirection === 'ASC' ? '$gt' : '$lt']: orderValue
+              }
+            },
+            {
+              [orderAttribute]: {
+                $eq: orderValue
+              },
+              [model.primaryKeyAttribute]: {
+                $gt: cursor.id
+              }
+            }
+          ]
+        };
+
+        // TODO, do a proper merge that won't kill another $or
+        _.assign(options.where, slicingWhere);
+      }
+
+      return before(options);
+    },
+    after: function (values, args, root, {source}) {
+      if (!args.orderBy) {
+        args.orderBy = [orderByEnum._values[0].value];
+      }
+
+      let edges = values.map((value) => {
+        return {
+          cursor: toCursor(value, args.orderBy),
+          node: value
+        };
+      });
+
+      let firstEdge = edges[0];
+      let lastEdge = edges[edges.length - 1];
+      let fullCount = values[0] && values[0].dataValues.full_count &&
+                      parseInt(values[0].dataValues.full_count, 10) || 0;
+
+      return {
+        source,
+        args,
+        where: argsToWhere(args),
+        edges,
+        pageInfo: {
+          startCursor: firstEdge ? firstEdge.cursor : null,
+          endCursor: lastEdge ? lastEdge.cursor : null,
+          hasPreviousPage: args.last !== null && args.last !== undefined ? fullCount > parseInt(args.last, 10) : false,
+          hasNextPage: args.first !== null && args.first !== undefined ? fullCount > parseInt(args.first, 10) : false,
+        }
+      };
+    }
+  });
+
   return {
     connectionType,
     edgeType,
     nodeType,
     connectionArgs: $connectionArgs,
-    resolve: resolver(target, {
-      handleConnection: false,
-      include: true,
-      before: function (options, args) {
-        if (args.first || args.last) {
-          options.limit = parseInt(args.first || args.last, 10);
-        }
-
-        if (!args.orderBy) {
-          args.orderBy = [orderByEnum._values[0].value];
-        } else if (typeof args.orderBy === 'string') {
-          args.orderBy = [orderByEnum._nameLookup[args.orderBy].value];
-        }
-
-        let orderBy = args.orderBy;
-        let orderAttribute = orderByAttribute(orderBy);
-        let orderDirection = args.orderBy[0][1];
-
-        if (args.last) {
-          orderDirection = orderDirection === 'ASC' ? 'DESC' : 'ASC';
-        }
-
-        options.order = [
-          [orderAttribute, orderDirection]
-        ];
-
-        if (orderAttribute !== model.primaryKeyAttribute) {
-          options.order.push([model.primaryKeyAttribute, 'ASC']);
-        }
-
-        options.attributes.push(orderAttribute);
-
-        if (model.sequelize.dialect.name === 'postgres' && options.limit) {
-          options.attributes.push([
-            model.sequelize.literal('COUNT(*) OVER()'),
-            'full_count'
-          ]);
-        }
-
-        if (args.after || args.before) {
-          let cursor = fromCursor(args.after || args.before);
-          let orderValue = cursor.orderValue;
-
-          if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
-            orderValue = new Date(orderValue);
-          }
-
-          options.where = options.where || {};
-
-          let where = {
-            $or: [
-              {
-                [orderAttribute]: {
-                  [orderDirection === 'ASC' ? '$gt' : '$lt']: orderValue
-                }
-              },
-              {
-                [orderAttribute]: {
-                  $eq: orderValue
-                },
-                [model.primaryKeyAttribute]: {
-                  $gt: cursor.id
-                }
-              }
-            ]
-          };
-
-          // TODO, do a proper merge that won't kill another $or
-          _.assign(options.where, where);
-        }
-
-        return before(options);
-      },
-      after: function (values, args) {
-        if (!args.orderBy) {
-          args.orderBy = [orderByEnum._values[0].value];
-        }
-
-        let edges = values.map((value) => {
-          return {
-            cursor: toCursor(value, args.orderBy),
-            node: value
-          };
-        });
-
-        let firstEdge = edges[0];
-        let lastEdge = edges[edges.length - 1];
-        let fullCount = values[0] && values[0].dataValues.full_count &&
-                        parseInt(values[0].dataValues.full_count, 10) || 0;
-
-        return {
-          edges,
-          pageInfo: {
-            startCursor: firstEdge ? firstEdge.cursor : null,
-            endCursor: lastEdge ? lastEdge.cursor : null,
-            hasPreviousPage: args.last !== null && args.last !== undefined ? fullCount > parseInt(args.last, 10) : false,
-            hasNextPage: args.first !== null && args.first !== undefined ? fullCount > parseInt(args.first, 10) : false,
-          }
-        };
+    resolve: (source, args, info) => {
+      if (simplifyAST(info.fieldASTs[0], info).fields.edges) {
+        return $resolver(source, args, info);
       }
-    })
+
+      return {
+        source,
+        args,
+        where: argsToWhere(args)
+      };
+    }
   };
 }

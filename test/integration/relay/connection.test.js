@@ -50,7 +50,8 @@ if (helper.sequelize.dialect.name === 'postgres') {
         });
 
         this.Task = sequelize.define('task', {
-          name: Sequelize.STRING
+          name: Sequelize.STRING,
+          completed: Sequelize.BOOLEAN
         }, {
           timestamps: true
         });
@@ -111,7 +112,23 @@ if (helper.sequelize.dialect.name === 'postgres') {
               LATEST: {value: ['createdAt', 'DESC']},
               NAME: {value: ['name', 'ASC']}
             }
-          })
+          }),
+          connectionFields: () => ({
+            totalCount: {
+              type: GraphQLInt,
+              resolve: function(connection) {
+                return connection.source.countTasks({
+                  where: connection.where
+                });
+              }
+            }
+          }),
+          where: (key, value) => {
+            if (key === 'completed') {
+              value = !!value;
+            }
+            return {[key]: value};
+          }
         });
 
         this.userProjectConnection = sequelizeConnection({
@@ -133,7 +150,12 @@ if (helper.sequelize.dialect.name === 'postgres') {
             id: globalIdField(this.User.name),
             tasks: {
               type: this.userTaskConnection.connectionType,
-              args: this.userTaskConnection.connectionArgs,
+              args: {
+                ...this.userTaskConnection.connectionArgs,
+                completed: {
+                  type: GraphQLBoolean
+                }
+              },
               resolve: this.userTaskConnection.resolve
             },
             projects: {
@@ -173,15 +195,15 @@ if (helper.sequelize.dialect.name === 'postgres') {
         
         this.userA = await this.User.create({
           [this.User.Tasks.as]: [
-            {id: ++taskId, name: 'AAA', createdAt: new Date(now - 45000), projectId: this.projectA.get('id')},
-            {id: ++taskId, name: 'ABA', createdAt: new Date(now - 40000), projectId: this.projectA.get('id')},
-            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 35000), projectId: this.projectA.get('id')},
-            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 30000), projectId: this.projectA.get('id')},
-            {id: ++taskId, name: 'BAA', createdAt: new Date(now - 25000), projectId: this.projectA.get('id')},
-            {id: ++taskId, name: 'BBB', createdAt: new Date(now - 20000), projectId: this.projectB.get('id')},
-            {id: ++taskId, name: 'CAA', createdAt: new Date(now - 15000), projectId: this.projectB.get('id')},
-            {id: ++taskId, name: 'CCC', createdAt: new Date(now - 10000), projectId: this.projectB.get('id')},
-            {id: ++taskId, name: 'DDD', createdAt: new Date(now - 5000), projectId: this.projectB.get('id')}
+            {id: ++taskId, name: 'AAA', createdAt: new Date(now - 45000), projectId: this.projectA.get('id'), completed: false},
+            {id: ++taskId, name: 'ABA', createdAt: new Date(now - 40000), projectId: this.projectA.get('id'), completed: true},
+            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 35000), projectId: this.projectA.get('id'), completed: true},
+            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 30000), projectId: this.projectA.get('id'), completed: false},
+            {id: ++taskId, name: 'BAA', createdAt: new Date(now - 25000), projectId: this.projectA.get('id'), completed: false},
+            {id: ++taskId, name: 'BBB', createdAt: new Date(now - 20000), projectId: this.projectB.get('id'), completed: true},
+            {id: ++taskId, name: 'CAA', createdAt: new Date(now - 15000), projectId: this.projectB.get('id'), completed: true},
+            {id: ++taskId, name: 'CCC', createdAt: new Date(now - 10000), projectId: this.projectB.get('id'), completed: false},
+            {id: ++taskId, name: 'DDD', createdAt: new Date(now - 5000), projectId: this.projectB.get('id'), completed: false}
           ]
         }, {
           include: [this.User.Tasks]
@@ -260,6 +282,33 @@ if (helper.sequelize.dialect.name === 'postgres') {
         let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor);
         verify(lastResult, lastThree);
         expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+      });
+
+      it('should support in-query slicing with user provided args/where', async function () {
+        let result = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              tasks(first: 2, completed: true, orderBy: LATEST) {
+                edges {
+                  node {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          }
+        `);
+
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        expect(result.data.user.tasks.edges.length).to.equal(2);
+        expect(result.data.user.tasks.edges.map(task => {
+          return parseInt(fromGlobalId(task.node.id).id, 10);
+        })).to.deep.equal([
+          this.userA.tasks[6].id,
+          this.userA.tasks[5].id,
+        ]);
       });
 
       it('should support reverse pagination with last and orderBy', async function () {
@@ -408,6 +457,38 @@ if (helper.sequelize.dialect.name === 'postgres') {
         expect(projects[1].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[8].get('id')));
 
         //expect(sqlSpy.callCount).to.equal(2);
+      });
+
+      it('should support connection fields', async function () {
+        let result = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              tasks {
+                totalCount
+              }
+            }
+          }
+        `);
+
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        expect(result.data.user.tasks.totalCount).to.equal(9);
+      });
+
+      it('should support connection fields with args/where', async function () {
+        let result = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              tasks(completed: true) {
+                totalCount
+              }
+            }
+          }
+        `);
+
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        expect(result.data.user.tasks.totalCount).to.equal(4);
       });
     });
   });

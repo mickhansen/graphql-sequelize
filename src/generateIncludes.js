@@ -33,7 +33,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
       }
     }
 
-    if (isConnection(fieldType)) {
+    if (isConnection(fieldType) && fieldAST.fields.edges) {
       fieldAST = nodeAST(fieldAST);
       fieldType = nodeType(fieldType);
     }

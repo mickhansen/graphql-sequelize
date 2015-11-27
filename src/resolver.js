@@ -50,7 +50,8 @@ module.exports = function (target, options) {
       }
       return options.after(source.get(association.as), args, root, {
         ast: simpleAST,
-        type: type
+        type: type,
+        source: source
       });
     }
 
@@ -77,7 +78,8 @@ module.exports = function (target, options) {
 
     findOptions = options.before(findOptions, args, root, {
       ast: simpleAST,
-      type: type
+      type: type,
+      source: source
     });
 
     if (!findOptions.order) {
@@ -91,14 +93,16 @@ module.exports = function (target, options) {
         }
         return options.after(result, args, root, {
           ast: simpleAST,
-          type: type
+          type: type,
+          source: source
         });
       });
     }
     return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
       return options.after(result, args, root, {
         ast: simpleAST,
-        type: type
+        type: type,
+        source: source
       });
     });
   };
