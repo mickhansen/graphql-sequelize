@@ -74,6 +74,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           }
         });
 
+        this.projectTaskConnectionFieldSpy = sinon.spy();
         this.projectTaskConnection = sequelizeConnection({
           name: this.Project.name + this.Task.name,
           nodeType: this.taskType,
@@ -85,7 +86,19 @@ if (helper.sequelize.dialect.name === 'postgres') {
               LATEST: {value: ['createdAt', 'DESC']},
               NAME: {value: ['name', 'ASC']}
             }
-          })
+          }),
+          connectionFields: () => ({
+            totalCount: {
+              type: GraphQLInt,
+              resolve: function(connection, args, {rootValue}) {
+                self.projectTaskConnectionFieldSpy(connection);
+                return connection.source.countTasks({
+                  where: connection.where,
+                  logging: rootValue.logging
+                });
+              }
+            }
+          }),
         });
 
         this.projectType = new GraphQLObjectType({
@@ -101,6 +114,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           }
         });
 
+        this.userTaskConnectionFieldSpy = sinon.spy();
         this.userTaskConnection = sequelizeConnection({
           name: this.User.name + this.Task.name,
           nodeType: this.taskType,
@@ -116,9 +130,11 @@ if (helper.sequelize.dialect.name === 'postgres') {
           connectionFields: () => ({
             totalCount: {
               type: GraphQLInt,
-              resolve: function(connection) {
+              resolve: function(connection, args, {rootValue}) {
+                self.userTaskConnectionFieldSpy(connection);
                 return connection.source.countTasks({
-                  where: connection.where
+                  where: connection.where,
+                  logging: rootValue.logging
                 });
               }
             }
@@ -493,6 +509,8 @@ if (helper.sequelize.dialect.name === 'postgres') {
       });
 
       it('should support connection fields', async function () {
+        let sqlSpy = sinon.spy();
+
         let result = await graphql(this.schema, `
           {
             user(id: ${this.userA.id}) {
@@ -501,14 +519,47 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `);
+        `, {
+          logging: sqlSpy
+        });
 
         if (result.errors) throw new Error(result.errors[0].stack);
 
         expect(result.data.user.tasks.totalCount).to.equal(9);
+        expect(this.userTaskConnectionFieldSpy.firstCall.args[0].source.get('tasks')).to.be.undefined;
+      });
+
+      it('should support connection fields on nested connections', async function () {
+        let sqlSpy = sinon.spy();
+
+        let result = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              projects {
+                edges {
+                  node {
+                    tasks {
+                      totalCount
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `, {
+          logging: sqlSpy
+        });
+
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        expect(result.data.user.projects.edges[0].node.tasks.totalCount).to.equal(5);
+        expect(result.data.user.projects.edges[1].node.tasks.totalCount).to.equal(4);
+        expect(this.projectTaskConnectionFieldSpy.firstCall.args[0].source.get('tasks')).to.be.undefined;
       });
 
       it('should support connection fields with args/where', async function () {
+        let sqlSpy = sinon.spy();
+
         let result = await graphql(this.schema, `
           {
             user(id: ${this.userA.id}) {
@@ -517,11 +568,14 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `);
+        `, {
+          logging: sqlSpy
+        });
 
         if (result.errors) throw new Error(result.errors[0].stack);
 
         expect(result.data.user.tasks.totalCount).to.equal(4);
+        expect(this.userTaskConnectionFieldSpy.firstCall.args[0].source.get('tasks')).to.be.undefined;
       });
     });
   });

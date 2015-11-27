@@ -33,9 +33,14 @@ export default function generateIncludes(simpleAST, type, root, options) {
       }
     }
 
-    if (isConnection(fieldType) && fieldAST.fields.edges) {
+    if (isConnection(fieldType)) {
       fieldAST = nodeAST(fieldAST);
       fieldType = nodeType(fieldType);
+    }
+
+    if (!fieldAST) {
+      // No point in ncluding if no fields have been asked for
+      return;
     }
 
     if (includeResolver.$passthrough) {

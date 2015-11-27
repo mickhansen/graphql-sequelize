@@ -72,7 +72,8 @@ export function sequelizeNodeInterface(sequelize) {
 }
 
 export function nodeAST(connectionAST) {
-  return connectionAST.fields.edges.fields.node;
+  return connectionAST.fields.edges &&
+         connectionAST.fields.edges.fields.node;
 }
 
 export function nodeType(connectionType) {
