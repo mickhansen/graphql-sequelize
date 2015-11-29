@@ -72,6 +72,31 @@ describe('simplifyAST', function () {
     });
   });
 
+  it('should simplify a basic structure with an inline fragment', function () {
+    expect(simplifyAST(parse(`
+      {
+        user {
+          ... on User {
+            name
+          }
+        }
+      }
+    `))).to.deep.equal({
+      args: {},
+      fields: {
+        user: {
+          args: {},
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            }
+          }
+        }
+      }
+    });
+  });
+
   it('should expose a $parent', function () {
     var ast = simplifyAST(parse(`
       {

@@ -568,7 +568,6 @@ describe('relay', function () {
   });
 
   it('should support fragments', function () {
-
     return graphql(schema, `
       {
         project(id: 1) {
@@ -579,13 +578,25 @@ describe('relay', function () {
         name
       }
     `).then(result => {
-      expect(result.errors).to.not.exist;
+      if (result.errors) throw new Error(result.errors[0].stack);
     });
+  });
 
+  it('should support inline fragments', function () {
+    return graphql(schema, `
+      {
+        project(id: 1) {
+          ... on Project {
+            name
+          }
+        }
+      }
+    `).then(result => {
+      if (result.errors) throw new Error(result.errors[0].stack);
+    });
   });
 
   it('should not support fragments on the wrong type', function () {
-
     return graphql(schema, `
       {
         project(id: 1) {
@@ -598,7 +609,5 @@ describe('relay', function () {
     `).then(result => {
       expect(result.errors).to.exist.and.have.length(1);
     });
-
   });
-
 });

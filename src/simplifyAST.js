@@ -18,7 +18,7 @@ function isFragment(info, ast) {
   return hasFragments(info) && info.fragments[ast.name.value] && ast.kind !== 'FragmentDefinition';
 }
 
-module.exports = function simplyAST(ast, info, parent) {
+module.exports = function simplifyAST(ast, info, parent) {
   var selections;
   info = info || {};
 
@@ -26,8 +26,7 @@ module.exports = function simplyAST(ast, info, parent) {
   if (Array.isArray(ast)) selections = ast;
 
   if (isFragment(info, ast)) {
-    return simplyAST(info.fragments[ast.name.value], info);
-
+    return simplifyAST(info.fragments[ast.name.value], info);
   }
 
   if (!selections) return {
@@ -36,20 +35,20 @@ module.exports = function simplyAST(ast, info, parent) {
   };
 
   return selections.reduce(function (simpleAST, selection) {
-    var name = selection.name.value
-      , alias = selection.alias && selection.alias.value
-      , key = alias || name;
-
-    if (selection.kind === 'FragmentSpread') {
+    if (selection.kind === 'FragmentSpread' || selection.kind === 'InlineFragment') {
       simpleAST = deepMerge(
-        simpleAST, simplyAST(selection, info)
+        simpleAST, simplifyAST(selection, info)
       );
       return simpleAST;
     }
 
+    var name = selection.name.value
+      , alias = selection.alias && selection.alias.value
+      , key = alias || name;
+
     simpleAST.fields[key] = simpleAST.fields[key] || {};
     simpleAST.fields[key] = deepMerge(
-      simpleAST.fields[key], simplyAST(selection, info, simpleAST.fields[key])
+      simpleAST.fields[key], simplifyAST(selection, info, simpleAST.fields[key])
     );
 
     if (alias) {
