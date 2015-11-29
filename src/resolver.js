@@ -57,6 +57,7 @@ module.exports = function (target, options) {
     }
 
     findOptions.attributes = Object.keys(fields)
+                             .map(key => fields[key].key || key)
                              .filter(inList.bind(null, targetAttributes));
 
     findOptions.attributes.push(model.primaryKeyAttribute);

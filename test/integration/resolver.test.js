@@ -662,7 +662,7 @@ describe('resolver', function () {
         users {
           name,
           tasks {
-            title
+            name: title
           }
         }
       }
@@ -674,6 +674,9 @@ describe('resolver', function () {
       expect(result.data.users).to.have.length(users.length);
       result.data.users.forEach(function (user) {
         expect(user.tasks).to.have.length.above(0);
+        user.tasks.forEach(function (task) {
+          expect(task.name).to.be.ok;
+        });
       });
 
       expect(spy.callCount).to.equal(1 + users.length);
