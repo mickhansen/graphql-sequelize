@@ -48,6 +48,7 @@ module.exports = function (target, options) {
       if (options.handleConnection && isConnection(info.returnType)) {
         return handleConnection(source.get(association.as), args);
       }
+
       return options.after(source.get(association.as), args, root, {
         ast: simpleAST,
         type: type,

@@ -317,6 +317,28 @@ describe('resolver', function () {
     });
   });
 
+  it('should resolve a plain result with an aliased field', function () {
+    var user = this.userB;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+          magic: myVirtual
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data).to.deep.equal({
+        user: {
+          name: user.name,
+          magic: 'lol'
+        }
+      });
+    });
+  });
+
   it('should resolve a plain result with a single model and aliases', function () {
     var userA = this.userA
       , userB = this.userB;

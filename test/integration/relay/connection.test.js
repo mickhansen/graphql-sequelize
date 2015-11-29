@@ -327,6 +327,26 @@ if (helper.sequelize.dialect.name === 'postgres') {
         ]);
       });
 
+      it('should support nested aliased fields', async function () {
+        let result = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              tasks(first: 1, completed: true, orderBy: LATEST) {
+                edges {
+                  node {
+                    id
+                    title: name
+                  }
+                }
+              }
+            }
+          }
+        `);
+
+        if (result.errors) throw new Error(result.errors[0].stack);
+        expect(result.data.user.tasks.edges[0].node.title).to.equal('CAA');
+      });
+
       it('should support reverse pagination with last and orderBy', async function () {
         let firstThree = this.userA.tasks.slice(0, 3);
         let nextThree = this.userA.tasks.slice(3, 6);

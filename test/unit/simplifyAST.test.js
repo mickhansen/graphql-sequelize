@@ -199,7 +199,7 @@ describe('simplifyAST', function () {
           name
         }
         leia: human(id: "1003") {
-          name
+          firstName: name
         }
       }
     `))).to.deep.equal({
@@ -223,7 +223,8 @@ describe('simplifyAST', function () {
             id: "1003"
           },
           fields: {
-            name: {
+            firstName: {
+              key: "name",
               args: {},
               fields: {}
             }

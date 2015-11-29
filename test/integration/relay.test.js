@@ -409,46 +409,6 @@ describe('relay', function () {
     });
   });
 
-  it.skip('should support before queries on connections', function() {
-    var user = this.userA;
-
-    return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          tasks(last: 1) {
-            pageInfo {
-              hasNextPage,
-              endCursor
-            },
-            edges {
-              node {
-                name
-              }
-            }
-          }
-        }
-      }
-    `).then(function (result) {
-      return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          tasks(last: 1, before: "${result.data.user.tasks.pageInfo.endCursor}") {
-            edges {
-              node {
-                name
-              }
-            }
-          }
-        }
-      }
-    `)
-    }).then(function (result) {
-      expect(result.data.user.tasks.edges[0].node.name).to.equal(user.taskItems[1].name);
-    });
-  });
-
   it('should resolve a plain result with a single connection', function () {
     var user = this.userB;
 

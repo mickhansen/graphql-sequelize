@@ -65,7 +65,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
       allowedAttributes = Object.keys(association.target.rawAttributes);
 
       includeOptions.attributes = (includeOptions.attributes || [])
-                                  .concat(Object.keys(fieldAST.fields))
+                                  .concat(Object.keys(fieldAST.fields).map(key => fieldAST.fields[key].key || key))
                                   .concat(connectionFields)
                                   .filter(inList.bind(null, allowedAttributes));
 
