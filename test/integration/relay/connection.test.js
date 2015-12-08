@@ -597,6 +597,35 @@ if (helper.sequelize.dialect.name === 'postgres') {
         expect(result.data.user.tasks.totalCount).to.equal(4);
         expect(this.userTaskConnectionFieldSpy.firstCall.args[0].source.get('tasks')).to.be.undefined;
       });
+
+      it('should not barf on paging if there are no connection edges', async function () {
+        let user = await this.User.create({});
+
+        let result = await graphql(this.schema, `
+          {
+            user(id: ${user.get('id')}) {
+              tasks(first: 10) {
+                totalCount
+
+                edges {
+                  node {
+                    id
+                  }
+                }
+
+                pageInfo {
+                  hasNextPage
+                }
+              }
+            }
+          }
+        `, {});
+
+        if (result.errors) throw new Error(result.errors[0].stack);
+        expect(result.data.user).not.to.be.null;
+        expect(result.data.user.tasks.totalCount).to.equal(0);
+        expect(result.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+      });
     });
   });
 }

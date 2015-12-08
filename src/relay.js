@@ -188,6 +188,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       }
 
       options.where = argsToWhere(args);
+      options.required = false;
 
       if (args.after || args.before) {
         let cursor = fromCursor(args.after || args.before);
@@ -237,6 +238,9 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       let lastEdge = edges[edges.length - 1];
       let fullCount = values[0] && values[0].dataValues.full_count && parseInt(values[0].dataValues.full_count, 10);
 
+      if (!values[0]) {
+        fullCount = 0;
+      }
       if (model.sequelize.dialect.name === 'postgres' && (args.first || args.last)) {
         if (fullCount === null || fullCount === undefined) throw new Error('No fullcount available');
       }
