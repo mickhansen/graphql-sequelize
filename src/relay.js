@@ -20,7 +20,6 @@ import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 
 class NodeTypeMapper {
-
   constructor( sequelize ) {
     this.models = Object.keys(sequelize.models);
     this.models.forEach(model => {
@@ -49,6 +48,16 @@ export function idFetcher(sequelize, nodeTypeMapper) {
   };
 }
 
+export function typeResolver(nodeTypeMapper) {
+  return obj => {
+    var name = obj.Model
+               ? obj.Model.options.name.singular
+               : obj.name;
+
+    return nodeTypeMapper[name];
+  };
+}
+
 export function isConnection(type) {
   return typeof type.name !== 'undefined' && type.name.endsWith('Connection');
 }
@@ -59,12 +68,11 @@ export function handleConnection(values, args) {
 
 export function sequelizeNodeInterface(sequelize) {
   let nodeTypeMapper = new NodeTypeMapper(sequelize);
-  const nodeObjects = nodeDefinitions(idFetcher(sequelize, nodeTypeMapper), obj => {
-    var name = obj.Model
-            ? obj.Model.options.name.singular
-            : obj.name;
-    return nodeTypeMapper[name];
-  });
+  const nodeObjects = nodeDefinitions(
+    idFetcher(sequelize, nodeTypeMapper),
+    typeResolver(nodeTypeMapper)
+  );
+
   return {
     nodeTypeMapper,
     ...nodeObjects
@@ -230,7 +238,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       let fullCount = values[0] && values[0].dataValues.full_count && parseInt(values[0].dataValues.full_count, 10);
 
       if (model.sequelize.dialect.name === 'postgres' && (args.first || args.last)) {
-        if (!fullCount) throw new Error('No fullcount available');
+        if (fullCount === null || fullCount === undefined) throw new Error('No fullcount available');
       }
 
       return {

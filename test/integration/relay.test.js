@@ -259,7 +259,6 @@ describe('relay', function () {
   });
 
   it('should support unassociated GraphQL types', function() {
-
     var globalId = toGlobalId('Viewer');
     return graphql(schema, `
       {
@@ -274,9 +273,8 @@ describe('relay', function () {
   });
 
   it('should return userA when running a node query', function() {
-    var user = this.userA;
-
-    var globalId = toGlobalId('User', user.id);
+    var user = this.userA
+      , globalId = toGlobalId('User', user.id);
 
     return graphql(schema, `
       {
@@ -291,7 +289,6 @@ describe('relay', function () {
       expect(result.data.node.id).to.equal(globalId);
       expect(result.data.node.name).to.equal(user.name);
     });
-
   });
 
   it('should support first queries on connections', function() {
