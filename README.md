@@ -267,7 +267,7 @@ defaultArgs(Model);
 ```
 
 Which when added to args will let the resolver automatically support limit and ordering in args for graphql queries.
-Should be be used with fields of type `GraphQLList`
+Should be used with fields of type `GraphQLList`
 
 ```js
 import {defaultListArgs} from 'graphql-sequelize'
