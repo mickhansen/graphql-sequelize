@@ -100,7 +100,10 @@ module.exports = function (target, options) {
         });
       });
     }
-    return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
+    return model[list || isConnection(info.returnType) ? 'findAll' : 'findOne'](findOptions).then(function (result) {
+      if (options.handleConnection && isConnection(info.returnType)) {
+        result = handleConnection(result, args);
+      }
       return options.after(result, args, root, {
         ast: simpleAST,
         type: type,
