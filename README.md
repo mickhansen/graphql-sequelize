@@ -18,7 +18,7 @@ graphql-sequelize assumes you have graphql and sequelize installed.
 ## Resolve helpers
 
 A helper for resolving graphql queries targeted at Sequelize models or associations.
-Please take a look at [the tests](https://github.com/mickhansen/graphql-sequelize/blob/master/test/resolver.test.js) to best get an idea of implementation.
+Please take a look at [the tests](https://github.com/mickhansen/graphql-sequelize/blob/master/test/integration/resolver.test.js) to best get an idea of implementation.
 
 ### Features
 
