@@ -151,7 +151,8 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
   let $resolver = require('./resolver')(target, {
     handleConnection: false,
     include: true,
-    before: function (options, args) {
+    list: true,
+    before: function (options, args, root) {
       if (args.first || args.last) {
         options.limit = parseInt(args.first || args.last, 10);
       }
@@ -220,7 +221,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
         _.assign(options.where, slicingWhere);
       }
 
-      return before(options);
+      return before(options, args, root);
     },
     after: function (values, args, root, {source}) {
       if (!args.orderBy) {

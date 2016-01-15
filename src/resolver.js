@@ -29,7 +29,7 @@ module.exports = function (target, options) {
     var root = info.rootValue || {}
       , ast = info.fieldASTs
       , type = info.returnType
-      , list = type instanceof GraphQLList
+      , list = options.list || type instanceof GraphQLList
       , includeResult
       , simpleAST = simplifyAST(ast[0], info)
       , fields = simpleAST.fields

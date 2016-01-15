@@ -60,11 +60,11 @@ if (helper.sequelize.dialect.name === 'postgres') {
 
         });
 
-        this.User.Tasks = this.User.hasMany(this.Task, {as: 'tasks'});
+        this.User.Tasks = this.User.hasMany(this.Task, {as: 'tasks', foreignKey: 'userId'});
         this.User.Projects = this.User.belongsToMany(this.Project, {as: 'projects', through: this.ProjectMember});
 
-        this.Project.Tasks = this.Project.hasMany(this.Task, {as: 'tasks'});
-        this.Task.Project = this.Task.belongsTo(this.Project, {as: 'project'});
+        this.Project.Tasks = this.Project.hasMany(this.Task, {as: 'tasks', foreignKey: 'projectId'});
+        this.Task.Project = this.Task.belongsTo(this.Project, {as: 'project', foreignKey: 'projectId'});
 
         this.taskType = new GraphQLObjectType({
           name: this.Task.name,
@@ -182,6 +182,33 @@ if (helper.sequelize.dialect.name === 'postgres') {
           }
         });
 
+        this.viewerTaskConnection = sequelizeConnection({
+          name: 'Viewer' + this.Task.name,
+          nodeType: this.taskType,
+          target: this.Task,
+          orderBy: new GraphQLEnumType({
+            name: 'Viewer' + this.Task.name + 'ConnectionOrder',
+            values: {
+              ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
+            }
+          }),
+          before: (options, args, root) => {
+            options.where = options.where || {};
+            options.where.userId = root.viewer.get('id');
+            return options;
+          }
+        });
+        this.viewerType = new GraphQLObjectType({
+          name: 'Viewer',
+          fields: {
+            tasks: {
+              type: this.viewerTaskConnection.connectionType,
+              args: this.viewerTaskConnection.connectionArgs,
+              resolve: this.viewerTaskConnection.resolve
+            }
+          }
+        });
+
         this.schema = new GraphQLSchema({
           query: new GraphQLObjectType({
             name: 'RootQueryType',
@@ -194,15 +221,22 @@ if (helper.sequelize.dialect.name === 'postgres') {
                   }
                 },
                 resolve: resolver(this.User)
-              }
+              },
+              viewer: {
+                type: this.viewerType,
+                resolve: function (source, args, info) {
+                  return info.rootValue.viewer;
+                }
+              },
             }
           })
         });
 
         await this.sequelize.sync({force: true});
 
-        let taskId = 0
-          , now = new Date(2015, 10, 17, 3, 24, 0, 0);
+        let now = new Date(2015, 10, 17, 3, 24, 0, 0);
+
+        this.taskId = 0;
 
         [this.projectA, this.projectB] = await Promise.join(
           this.Project.create({}),
@@ -211,15 +245,15 @@ if (helper.sequelize.dialect.name === 'postgres') {
         
         this.userA = await this.User.create({
           [this.User.Tasks.as]: [
-            {id: ++taskId, name: 'AAA', createdAt: new Date(now - 45000), projectId: this.projectA.get('id'), completed: false},
-            {id: ++taskId, name: 'ABA', createdAt: new Date(now - 40000), projectId: this.projectA.get('id'), completed: true},
-            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 35000), projectId: this.projectA.get('id'), completed: true},
-            {id: ++taskId, name: 'ABC', createdAt: new Date(now - 30000), projectId: this.projectA.get('id'), completed: false},
-            {id: ++taskId, name: 'BAA', createdAt: new Date(now - 25000), projectId: this.projectA.get('id'), completed: false},
-            {id: ++taskId, name: 'BBB', createdAt: new Date(now - 20000), projectId: this.projectB.get('id'), completed: true},
-            {id: ++taskId, name: 'CAA', createdAt: new Date(now - 15000), projectId: this.projectB.get('id'), completed: true},
-            {id: ++taskId, name: 'CCC', createdAt: new Date(now - 10000), projectId: this.projectB.get('id'), completed: false},
-            {id: ++taskId, name: 'DDD', createdAt: new Date(now - 5000), projectId: this.projectB.get('id'), completed: false}
+            {id: ++this.taskId, name: 'AAA', createdAt: new Date(now - 45000), projectId: this.projectA.get('id'), completed: false},
+            {id: ++this.taskId, name: 'ABA', createdAt: new Date(now - 40000), projectId: this.projectA.get('id'), completed: true},
+            {id: ++this.taskId, name: 'ABC', createdAt: new Date(now - 35000), projectId: this.projectA.get('id'), completed: true},
+            {id: ++this.taskId, name: 'ABC', createdAt: new Date(now - 30000), projectId: this.projectA.get('id'), completed: false},
+            {id: ++this.taskId, name: 'BAA', createdAt: new Date(now - 25000), projectId: this.projectA.get('id'), completed: false},
+            {id: ++this.taskId, name: 'BBB', createdAt: new Date(now - 20000), projectId: this.projectB.get('id'), completed: true},
+            {id: ++this.taskId, name: 'CAA', createdAt: new Date(now - 15000), projectId: this.projectB.get('id'), completed: true},
+            {id: ++this.taskId, name: 'CCC', createdAt: new Date(now - 10000), projectId: this.projectB.get('id'), completed: false},
+            {id: ++this.taskId, name: 'DDD', createdAt: new Date(now - 5000), projectId: this.projectB.get('id'), completed: false}
           ]
         }, {
           include: [this.User.Tasks]
@@ -625,6 +659,47 @@ if (helper.sequelize.dialect.name === 'postgres') {
         expect(result.data.user).not.to.be.null;
         expect(result.data.user.tasks.totalCount).to.equal(0);
         expect(result.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+      });
+
+      it('should support model connections', async function () {
+        let viewer = await this.User.create();
+
+        let tasks = await Promise.join(
+          viewer.createTask({
+            id: ++this.taskId
+          }),
+          viewer.createTask({
+            id: ++this.taskId
+          }),
+          this.Task.create({
+            id: ++this.taskId
+          })
+        );
+
+        let result = await graphql(this.schema, `
+          {
+            viewer {
+              tasks {
+                edges {
+                  cursor
+                  node {
+                    id
+                    name
+                  }
+                }
+              }
+            }
+          }
+        `, {
+          viewer: viewer
+        });
+
+        expect(result.data.viewer.tasks.edges.length).to.equal(2);
+        expect(
+          result.data.viewer.tasks.edges.map(edge => fromGlobalId(edge.node.id).id).sort()
+        ).deep.equal(
+          tasks.slice(0, 2).map(task => task.get('id').toString()).sort()
+        );
       });
     });
   });
