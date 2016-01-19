@@ -1030,4 +1030,107 @@ describe('resolver', function () {
       });
     });
   });
+
+  describe('filterAttributes', function () {
+    beforeEach(function () {
+      this.defaultValue = resolver.filterAttributes;
+      this.userType = new GraphQLObjectType({
+        name: 'User',
+        description: 'A user',
+        fields: {
+          id: {
+            type: new GraphQLNonNull(GraphQLInt),
+          },
+          name: {
+            type: GraphQLString,
+          },
+          fullName: {
+            type: GraphQLString,
+            resolve: (user) => user.get('name')
+          }
+        }
+      });
+    });
+
+    afterEach(function () {
+      resolver.filterAttributes = this.defaultValue;
+    });
+
+    it('should be able to disable via a global option', async function ()  {
+      resolver.filterAttributes = false;
+
+      var user = this.userB
+        , schema;
+
+      schema = new GraphQLSchema({
+        query: new GraphQLObjectType({
+          name: 'RootQueryType',
+          fields: {
+            user: {
+              type: this.userType,
+              args: {
+                id: {
+                  type: GraphQLInt
+                }
+              },
+              resolve: resolver(User, {
+                include: false
+              })
+            }
+          }
+        })
+      });
+
+      return graphql(schema, `
+        {
+          user(id: ${user.get('id')}) {
+            fullName
+          }
+        }
+      `).then(function (result) {
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        expect(result.data.user.fullName).to.equal(user.get('name'));
+      });
+    });
+
+    it('should be able to disable via a resolver option', async function ()  {
+      resolver.filterAttributes = true;
+      
+      var user = this.userB
+        , schema;
+
+      schema = new GraphQLSchema({
+        query: new GraphQLObjectType({
+          name: 'RootQueryType',
+          fields: {
+            user: {
+              type: this.userType,
+              args: {
+                id: {
+                  type: GraphQLInt
+                }
+              },
+              resolve: resolver(User, {
+                include: false,
+                filterAttributes: false
+              })
+            }
+          }
+        })
+      });
+
+      return graphql(schema, `
+        {
+          user(id: ${user.get('id')}) {
+            fullName
+          }
+        }
+      `).then(function (result) {
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        expect(result.data.user.fullName).to.equal(user.get('name'));
+      });
+    });
+  });
 });

@@ -9,7 +9,7 @@ function inList(list, attribute) {
   return ~list.indexOf(attribute);
 }
 
-module.exports = function (target, options) {
+function resolverFactory(target, options) {
   var resolver
     , targetAttributes
     , isModel = !!target.getTableName
@@ -24,6 +24,7 @@ module.exports = function (target, options) {
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
+  if (options.filterAttributes) options.filterAttributes = resolverFactory.filterAttributes;
 
   resolver = function (source, args, info) {
     var root = info.rootValue || {}
@@ -56,9 +57,13 @@ module.exports = function (target, options) {
       });
     }
 
-    findOptions.attributes = Object.keys(fields)
+    if (options.filterAttributes) {
+      findOptions.attributes = Object.keys(fields)
                              .map(key => fields[key].key || key)
                              .filter(inList.bind(null, targetAttributes));
+    } else {
+      findOptions.attributes = targetAttributes;
+    }
 
     findOptions.attributes.push(model.primaryKeyAttribute);
 
@@ -118,4 +123,8 @@ module.exports = function (target, options) {
   resolver.$options = options;
 
   return resolver;
-};
+}
+
+resolverFactory.filterAttributes = false;
+
+module.exports = resolverFactory;
