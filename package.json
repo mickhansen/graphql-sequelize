@@ -33,7 +33,7 @@
   "homepage": "https://github.com/mickhansen/graphql-sequelize",
   "devDependencies": {
     "babel": "^5.8.29",
-    "babel-core": "^5.8.31",
+    "babel-core": "^6.4.5",
     "babel-eslint": "^4.1.3",
     "bluebird": "^3.0.0",
     "chai": "^3.0.0",
