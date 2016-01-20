@@ -12,7 +12,7 @@
     "lint": "eslint src",
     "build": "rm -rf lib/* && babel src --ignore test --optional runtime --out-dir lib",
     "test": "npm run test-unit && npm run test-docker",
-    "test-unit": "mocha $npm_package_options_mocha test/unit/*.test.js",
+    "test-unit": "mocha $npm_package_options_mocha test/unit/*.test.js test/unit/**/*.test.js",
     "build-docker": "docker-compose build",
     "test-docker": "docker-compose run dev /bin/sh -c \"npm run test-integration\"",
     "test-integration": "mocha $npm_package_options_mocha test/integration/*.test.js test/integration/**/*.test.js"
@@ -46,12 +46,13 @@
     "pg-hstore": "^2.3.2",
     "sequelize": "^3.16.0",
     "sinon": "^1.15.4",
+    "sinon-as-promised": "^4.0.0",
     "sinon-chai": "^2.8.0",
     "sqlite3": "^3.0.9"
   },
   "dependencies": {
     "babel-runtime": "^6.0.8",
-    "graphql-relay": "^0.3.3",
+    "graphql-relay": "^0.3.6",
     "lodash": "^3.10.0"
   }
 }

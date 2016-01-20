@@ -340,6 +340,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
             user(id: ${this.userA.id}) {
               tasks(first: 2, completed: true, orderBy: LATEST) {
                 edges {
+                  cursor
                   node {
                     id
                     name

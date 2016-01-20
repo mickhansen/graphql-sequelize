@@ -92,7 +92,11 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
   const {
     edgeType,
     connectionType
-  } = connectionDefinitions({name, nodeType, connectionFields});
+  } = connectionDefinitions({
+    name,
+    nodeType,
+    connectionFields
+  });
 
   const model = target.target ? target.target : target;
   const SEPERATOR = '$';
@@ -106,6 +110,8 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       }
     });
   }
+
+  let defaultOrderBy = orderByEnum._values[0].value;
 
   before = before || ((options) => options);
 
@@ -146,6 +152,17 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     });
 
     return result;
+  };
+
+  let resolveEdge = function (item, args = {}) {
+    if (!args.orderBy) {
+      args.orderBy = [defaultOrderBy];
+    }
+
+    return {
+      cursor: toCursor(item, args.orderBy),
+      node: item
+    };
   };
 
   let $resolver = require('./resolver')(target, {
@@ -224,15 +241,8 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       return before(options, args, root);
     },
     after: function (values, args, root, {source}) {
-      if (!args.orderBy) {
-        args.orderBy = [orderByEnum._values[0].value];
-      }
-
       let edges = values.map((value) => {
-        return {
-          cursor: toCursor(value, args.orderBy),
-          node: value
-        };
+        return resolveEdge(value, args);
       });
 
       let firstEdge = edges[0];
@@ -282,6 +292,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     connectionType,
     edgeType,
     nodeType,
+    resolveEdge,
     connectionArgs: $connectionArgs,
     resolve: resolver
   };
