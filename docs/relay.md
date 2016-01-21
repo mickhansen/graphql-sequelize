@@ -82,7 +82,7 @@ const taskType = new GraphQLObjectType({
 });
 
 const userTaskConnection = sequelizeConnection({
-  name: Task.name,
+  name: 'userTask',
   nodeType: taskType,
   target: User.Tasks | User // Can be an association for parent related connections or a model for "anonymous" connections
   // if no orderBy is specified the model primary key will be used.
@@ -142,9 +142,9 @@ const userType = new GraphQLObjectType({
 {
   user(id: 123) {
     tasks(first: 10, orderBy: AGE) {
-      total
+      ...totalCount
       edges {
-        wasCreatedByUser
+        ...getCreated
         cursor
         node {
           id
@@ -153,5 +153,13 @@ const userType = new GraphQLObjectType({
       }
     }
   }
+}
+  
+fragment totalCount on userTaskConnection {
+   total
+}
+  
+fragment getCreated on userTaskEdge {
+  wasCreatedByUser
 }
 ```
