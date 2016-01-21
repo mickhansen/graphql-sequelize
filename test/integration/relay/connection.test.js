@@ -66,6 +66,8 @@ if (helper.sequelize.dialect.name === 'postgres') {
         this.Project.Tasks = this.Project.hasMany(this.Task, {as: 'tasks', foreignKey: 'projectId'});
         this.Task.Project = this.Task.belongsTo(this.Project, {as: 'project', foreignKey: 'projectId'});
 
+        this.Project.Owner = this.Project.belongsTo(this.User, {as: 'owner', foreignKey: 'ownerId'});
+
         this.taskType = new GraphQLObjectType({
           name: this.Task.name,
           fields: {
@@ -76,7 +78,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
 
         this.projectTaskConnectionFieldSpy = sinon.spy();
         this.projectTaskConnection = sequelizeConnection({
-          name: this.Project.name + this.Task.name,
+          name: 'projectTask',
           nodeType: this.taskType,
           target: this.Project.Tasks,
           orderBy: new GraphQLEnumType({
@@ -110,13 +112,13 @@ if (helper.sequelize.dialect.name === 'postgres') {
               type: this.projectTaskConnection.connectionType,
               args: this.projectTaskConnection.connectionArgs,
               resolve: this.projectTaskConnection.resolve
-            },
+            }
           }
         });
 
         this.userTaskConnectionFieldSpy = sinon.spy();
         this.userTaskConnection = sequelizeConnection({
-          name: this.User.name + this.Task.name,
+          name: 'userTask',
           nodeType: this.taskType,
           target: this.User.Tasks,
           orderBy: new GraphQLEnumType({
@@ -148,7 +150,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
         });
 
         this.userProjectConnection = sequelizeConnection({
-          name: this.Project.name,
+          name: 'userProject',
           nodeType: this.projectType,
           target: this.User.Projects,
           orderBy: new GraphQLEnumType({
@@ -156,7 +158,15 @@ if (helper.sequelize.dialect.name === 'postgres') {
             values: {
               ID: {value: [this.Project.primaryKeyAttribute, 'ASC']}
             }
-          })
+          }),
+          edgeFields: {
+            isOwner: {
+              type: GraphQLBoolean,
+              resolve: function(edge) {
+                return edge.node.ownerId === edge.source.id;
+              }
+            }
+          }
         });
 
         this.userType = new GraphQLObjectType({
@@ -260,6 +270,9 @@ if (helper.sequelize.dialect.name === 'postgres') {
         });
 
         await Promise.join(
+          this.projectA.update({
+            ownerId: this.userA.get('id')
+          }),
           this.ProjectMember.create({
             projectId: this.projectA.get('id'),
             userId: this.userA.get('id')
@@ -610,6 +623,36 @@ if (helper.sequelize.dialect.name === 'postgres') {
         expect(result.data.user.projects.edges[0].node.tasks.totalCount).to.equal(5);
         expect(result.data.user.projects.edges[1].node.tasks.totalCount).to.equal(4);
         expect(this.projectTaskConnectionFieldSpy.firstCall.args[0].source.get('tasks')).to.be.undefined;
+      });
+
+      it('should support edgeFields', async function () {
+        let sqlSpy = sinon.spy();
+
+        let result = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              projects {
+                edges {
+                  ...projectOwner
+                  node {
+                    id 
+                  }
+                }
+              }
+            }
+          }
+
+          fragment projectOwner on userProjectEdge {
+            isOwner
+          }
+        `, {
+          logging: sqlSpy
+        });
+
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        let isOwner = result.data.user.projects.edges.map(edge => edge.isOwner);
+        expect(isOwner.sort()).to.deep.equal([true, false].sort());
       });
 
       it('should support connection fields with args/where', async function () {

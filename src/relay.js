@@ -88,14 +88,15 @@ export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
 
-export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnum, before, connectionFields, where}) {
+export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnum, before, connectionFields, edgeFields, where}) {
   const {
     edgeType,
     connectionType
   } = connectionDefinitions({
     name,
     nodeType,
-    connectionFields
+    connectionFields,
+    edgeFields
   });
 
   const model = target.target ? target.target : target;
@@ -154,14 +155,15 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     return result;
   };
 
-  let resolveEdge = function (item, args = {}) {
+  let resolveEdge = function (item, args = {}, source) {
     if (!args.orderBy) {
       args.orderBy = [defaultOrderBy];
     }
 
     return {
       cursor: toCursor(item, args.orderBy),
-      node: item
+      node: item,
+      source: source
     };
   };
 
@@ -242,7 +244,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     },
     after: function (values, args, root, {source}) {
       let edges = values.map((value) => {
-        return resolveEdge(value, args);
+        return resolveEdge(value, args, source);
       });
 
       let firstEdge = edges[0];

@@ -97,6 +97,29 @@ const userTaskConnection = sequelizeConnection({
     // for custom args other than connectionArgs return a sequelize where parameter
 
     return {[key]: value};
+  },
+  connectionFields: {
+    total: {
+      type: GraphQLInt,
+      resolve: ({source}) => {
+        /*
+         * We return a object containing the source, edges and more as the connection result
+         * You there for need to extract source from the usual source argument
+         */
+        return source.countTasks();
+      }
+    }
+  },
+  edgeFields: {
+    wasCreatedByUser: {
+      type: GraphQLBoolean,
+      resolve: (edge) => {
+        /*
+         * We attach the connection source to edges
+         */
+        return edge.node.createdBy === edge.source.id;
+      }
+    }
   }
 });
 
