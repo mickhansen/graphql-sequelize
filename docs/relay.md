@@ -137,14 +137,16 @@ const userType = new GraphQLObjectType({
     }
   }
 });
-
+```
 ```
 {
   user(id: 123) {
     tasks(first: 10, orderBy: AGE) {
+      total
       edges {
+        wasCreatedByUser
         cursor
-        node: {
+        node {
           id
           title
         }
