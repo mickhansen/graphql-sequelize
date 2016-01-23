@@ -171,7 +171,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     handleConnection: false,
     include: true,
     list: true,
-    before: function (options, args, root) {
+    before: function (options, args, root, context) {
       if (args.first || args.last) {
         options.limit = parseInt(args.first || args.last, 10);
       }
@@ -240,7 +240,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
         _.assign(options.where, slicingWhere);
       }
 
-      return before(options, args, root);
+      return before(options, args, root, context);
     },
     after: function (values, args, root, {source}) {
       let edges = values.map((value) => {
