@@ -188,6 +188,74 @@ userType = new GraphQLObjectType({
 });
 ```
 
+### Renaming generated fields
+
+attributeFields accepts a ```map``` option to customize the way the attribute fields are named. The ```map``` option accepts
+an object or a function that returns a string. 
+
+```js
+
+var Model = sequelize.define('User', {
+  email: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  firstName: {
+    type: Sequelize.STRING
+  },
+  lastName: {
+    type: Sequelize.STRING
+  }
+});
+
+attributeFields(Model, {
+    map:{
+        email:"Email",
+        firstName:"FirstName",
+        lastName:"LastName"
+    }
+});
+
+/*
+{
+  id: {
+    type: new GraphQLNonNull(GraphQLInt)
+  },
+  Email: {
+    type: new GraphQLNonNull(GraphQLString)
+  },
+  FirstName: {
+    type: GraphQLString
+  },
+  LastName: {
+    type: GraphQLString
+  }
+}
+*/
+
+attributeFields(Model, {
+    map:(k) => k.toLowerCase()
+});
+
+/*
+{
+  id: {
+    type: new GraphQLNonNull(GraphQLInt)
+  },
+  email: {
+    type: new GraphQLNonNull(GraphQLString)
+  },
+  firstname: {
+    type: GraphQLString
+  },
+  lastname: {
+    type: GraphQLString
+  }
+}
+*/
+
+```
+
 ### ENUM attributes with non-alphanumeric characters
 
 GraphQL enum types [only support ASCII alphanumeric characters and underscores](https://facebook.github.io/graphql/#Name).
