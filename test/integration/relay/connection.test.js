@@ -230,7 +230,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
                     type: new GraphQLNonNull(GraphQLInt)
                   }
                 },
-                resolve: resolver(this.User)
+                resolve: resolver(this.User,{filterAttributes:false})
               },
               viewer: {
                 type: this.viewerType,
