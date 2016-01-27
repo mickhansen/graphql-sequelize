@@ -12,26 +12,25 @@ module.exports = function (Model, options) {
     var attribute = Model.rawAttributes[key]
       , type = attribute.type;
 
-    // determine the key
-    var mappedKey = key;
+
     if (options.map) {
       if (typeof options.map === 'function') {
-        mappedKey = options.map(key);
+        key = options.map(key) || key;
       } else {
-        mappedKey = options.map[key] || key;
+        key = options.map[key] || key;
       }
     }
 
-    memo[mappedKey] = {
+    memo[key] = {
       type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
     };
 
-    if (memo[mappedKey].type instanceof GraphQLEnumType ) {
-      memo[mappedKey].type.name = `${Model.name}${mappedKey}EnumType`;
+    if (memo[key].type instanceof GraphQLEnumType ) {
+      memo[key].type.name = `${Model.name}${key}EnumType`;
     }
 
     if (attribute.allowNull === false || attribute.primaryKey === true) {
-      memo[mappedKey].type = new GraphQLNonNull(memo[mappedKey].type);
+      memo[key].type = new GraphQLNonNull(memo[key].type);
     }
 
     return memo;
