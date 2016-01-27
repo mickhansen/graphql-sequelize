@@ -159,7 +159,7 @@ attributeFields(Model, {
   exclude: [], // array of model attributes to ignore - default: []
   only: [], // only generate definitions for these model attributes - default: null
   globalId: true, // return an relay global id field - default: false
-  map: {key:targetValue} || func(key) // rename fields via a model attribute object map or a renaming function - default: null
+  map: {} // rename fields - default: {}
 });
 
 /*
@@ -186,73 +186,6 @@ userType = new GraphQLObjectType({
     // ... extra fields
   })
 });
-```
-### Renaming generated fields
-
-attributeFields accepts a ```map``` option to customize the way the attribute fields are named. The ```map``` option accepts
-an object or a function that returns a string. 
-
-```js
-
-var Model = sequelize.define('User', {
-  email: {
-    type: Sequelize.STRING,
-    allowNull: false
-  },
-  firstName: {
-    type: Sequelize.STRING
-  },
-  lastName: {
-    type: Sequelize.STRING
-  }
-});
-
-attributeFields(Model, {
-    map:{
-        email:"Email",
-        firstName:"FirstName",
-        lastName:"LastName"
-    }
-});
-
-/*
-{
-  id: {
-    type: new GraphQLNonNull(GraphQLInt)
-  },
-  Email: {
-    type: new GraphQLNonNull(GraphQLString)
-  },
-  FirstName: {
-    type: GraphQLString
-  },
-  LastName: {
-    type: GraphQLString
-  }
-}
-*/
-
-attributeFields(Model, {
-    map:(k) => k.toLowerCase()
-});
-
-/*
-{
-  id: {
-    type: new GraphQLNonNull(GraphQLInt)
-  },
-  email: {
-    type: new GraphQLNonNull(GraphQLString)
-  },
-  firstname: {
-    type: GraphQLString
-  },
-  lastname: {
-    type: GraphQLString
-  }
-}
-*/
-
 ```
 
 ### ENUM attributes with non-alphanumeric characters
