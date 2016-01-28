@@ -59,7 +59,17 @@ describe('attributeFields', function () {
       },
       virtualBoolean: {
         type: new Sequelize.VIRTUAL(Sequelize.BOOLEAN)
+      },
+      date:{
+        type:Sequelize.DATE
+      },
+      time:{
+        type:Sequelize.TIME
+      },
+      dateonly:{
+        type:Sequelize.DATEONLY
       }
+
     }, {
       timestamps: false
     });
@@ -68,7 +78,10 @@ describe('attributeFields', function () {
   it('should return fields for a simple model', function () {
     var fields = attributeFields(Model);
 
-    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean']);
+
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal', 'enum',
+        'enumTwo', 'list', 'virtualInteger', 'virtualBoolean','date','time','dateonly']);
+
 
     expect(fields.id.type).to.be.an.instanceOf(GraphQLNonNull);
     expect(fields.id.type.ofType).to.equal(GraphQLInt);
@@ -95,6 +108,12 @@ describe('attributeFields', function () {
     expect(fields.virtualInteger.type).to.equal(GraphQLInt);
 
     expect(fields.virtualBoolean.type).to.equal(GraphQLBoolean);
+
+    expect(fields.date.type).to.equal(GraphQLString);
+
+    expect(fields.time.type).to.equal(GraphQLString);
+
+    expect(fields.dateonly.type).to.equal(GraphQLString);
   });
 
   it('should be possible to rename fields with a object map',function () {
@@ -110,7 +129,7 @@ describe('attributeFields', function () {
 
   it('should be possible to exclude fields', function () {
     var fields = attributeFields(Model, {
-      exclude: ['id', 'email', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean']
+      exclude: ['id', 'email', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean','date','time','dateonly']
     });
 
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);

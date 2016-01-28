@@ -30,6 +30,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     UUID,
     DATE,
     DATEONLY,
+    TIME,
     ARRAY,
     VIRTUAL
   } = sequelizeTypes;
@@ -53,6 +54,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
       sequelizeType instanceof UUID ||
       sequelizeType instanceof DATE ||
       sequelizeType instanceof DATEONLY ||
+      sequelizeType instanceof TIME ||
       sequelizeType instanceof DECIMAL) {
     return GraphQLString;
   }
