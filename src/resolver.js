@@ -9,7 +9,7 @@ function inList(list, attribute) {
   return ~list.indexOf(attribute);
 }
 
-function resolverFactory(target, options = {filterAttributes: true}) {
+function resolverFactory(target, options) {
   var resolver
     , targetAttributes
     , isModel = !!target.getTableName
@@ -24,6 +24,7 @@ function resolverFactory(target, options = {filterAttributes: true}) {
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
+  if (options.filterAttributes === undefined) options.filterAttributes = resolverFactory.filterAttributes;
 
   resolver = function (source, args, info) {
     var root = info.rootValue || {}
@@ -124,6 +125,6 @@ function resolverFactory(target, options = {filterAttributes: true}) {
   return resolver;
 }
 
-resolverFactory.filterAttributes = false;
+resolverFactory.filterAttributes = true;
 
 module.exports = resolverFactory;
