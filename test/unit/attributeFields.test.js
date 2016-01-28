@@ -36,6 +36,9 @@ describe('attributeFields', function () {
       lastName: {
         type: Sequelize.STRING
       },
+      char:{
+        type:Sequelize.CHAR
+      },
       float: {
         type: Sequelize.FLOAT
       },
@@ -65,7 +68,7 @@ describe('attributeFields', function () {
   it('should return fields for a simple model', function () {
     var fields = attributeFields(Model);
 
-    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean']);
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean']);
 
     expect(fields.id.type).to.be.an.instanceOf(GraphQLNonNull);
     expect(fields.id.type.ofType).to.equal(GraphQLInt);
@@ -76,6 +79,8 @@ describe('attributeFields', function () {
     expect(fields.firstName.type).to.equal(GraphQLString);
 
     expect(fields.lastName.type).to.equal(GraphQLString);
+
+    expect(fields.char.type).to.equal(GraphQLString);
 
     expect(fields.enum.type).to.be.an.instanceOf(GraphQLEnumType);
 
@@ -94,7 +99,7 @@ describe('attributeFields', function () {
 
   it('should be possible to exclude fields', function () {
     var fields = attributeFields(Model, {
-      exclude: ['id', 'email', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean']
+      exclude: ['id', 'email', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean']
     });
 
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
