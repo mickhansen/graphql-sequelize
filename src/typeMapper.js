@@ -20,6 +20,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     BOOLEAN,
     ENUM,
     FLOAT,
+    CHAR,
     DECIMAL,
     DOUBLE,
     INTEGER,
@@ -46,7 +47,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     return GraphQLInt;
   }
 
-  if (sequelizeType instanceof STRING ||
+  if (sequelizeType instanceof CHAR ||
+      sequelizeType instanceof STRING ||
       sequelizeType instanceof TEXT ||
       sequelizeType instanceof UUID ||
       sequelizeType instanceof DATE ||
