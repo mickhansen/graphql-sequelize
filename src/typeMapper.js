@@ -88,7 +88,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   }
 
   if (sequelizeType instanceof JSONTYPE || sequelizeType instanceof JSONB) {
-      return GraphQLJSON;
+    return GraphQLJSON;
   }
 
   if (sequelizeType instanceof VIRTUAL) {
