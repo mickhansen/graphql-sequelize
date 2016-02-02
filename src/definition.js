@@ -6,11 +6,11 @@ export const GraphQLJSON = new GraphQLScalarType({
   description: 'The `JSON` scalar type represents `JSON` object.',
   serialize(value) {
     if (!value) return null;
-    if (typeof value == 'object') return value;
+    if (typeof value === 'object') return value;
 
     try {
       return JSON.parse(value);
-    } catch(err) {
+    } catch (err) {
       return null;
     }
   },
