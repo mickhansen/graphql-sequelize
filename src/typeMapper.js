@@ -7,6 +7,8 @@ import {
    GraphQLList
  } from 'graphql';
 
+import {GraphQLJSON} from './definition';
+
 /**
  * Checks the type of the sequelize data type and
  * returns the corresponding type in GraphQL
@@ -32,6 +34,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     DATEONLY,
     TIME,
     ARRAY,
+    JSON: JSONTYPE,
+    JSONB,
     VIRTUAL
   } = sequelizeTypes;
 
@@ -81,6 +85,10 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
         return obj;
       }, {})
     });
+  }
+
+  if (sequelizeType instanceof JSONTYPE || sequelizeType instanceof JSONB) {
+    return GraphQLJSON;
   }
 
   if (sequelizeType instanceof VIRTUAL) {

@@ -5,7 +5,8 @@ var chai = require('chai')
   , helper = require('./helper')
   , sequelize = helper.sequelize
   , Sequelize = require('sequelize')
-  , attributeFields = require('../../src/attributeFields');
+  , attributeFields = require('../../src/attributeFields')
+  , GraphQLJSON = require('../../src/definition').GraphQLJSON;
 
 import {
   GraphQLString,
@@ -68,6 +69,12 @@ describe('attributeFields', function () {
       },
       dateonly:{
         type:Sequelize.DATEONLY
+      },
+      json: {
+        type: Sequelize.JSON
+      },
+      jsonb: {
+        type: Sequelize.JSONB
       }
 
     }, {
@@ -80,7 +87,7 @@ describe('attributeFields', function () {
 
 
     expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal', 'enum',
-        'enumTwo', 'list', 'virtualInteger', 'virtualBoolean','date','time','dateonly']);
+        'enumTwo', 'list', 'virtualInteger', 'virtualBoolean','date','time','dateonly', 'json', 'jsonb']);
 
 
     expect(fields.id.type).to.be.an.instanceOf(GraphQLNonNull);
@@ -114,22 +121,26 @@ describe('attributeFields', function () {
     expect(fields.time.type).to.equal(GraphQLString);
 
     expect(fields.dateonly.type).to.equal(GraphQLString);
+
+    expect(fields.json.type).to.equal(GraphQLJSON);
+
+    expect(fields.jsonb.type).to.equal(GraphQLJSON);
   });
 
   it('should be possible to rename fields with a object map',function () {
     var fields = attributeFields(Model,{map:{"id":"mappedId"}});
-    expect(Object.keys(fields)).to.deep.equal(['mappedId', 'email', 'firstName', 'lastName', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean']);
+    expect(Object.keys(fields)).to.deep.equal(['mappedId', 'email', 'firstName', 'lastName', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean', 'json', 'jsonb']);
   });
   it('should be possible to rename fields with a function that maps keys',function () {
     var fields = attributeFields(Model,{map:function(k){
       return k+'s'
     }});
-    expect(Object.keys(fields)).to.deep.equal(['ids', 'emails', 'firstNames', 'lastNames', 'floats', 'decimals', 'enums', 'enumTwos', 'lists', 'virtualIntegers', 'virtualBooleans']);
+    expect(Object.keys(fields)).to.deep.equal(['ids', 'emails', 'firstNames', 'lastNames', 'floats', 'decimals', 'enums', 'enumTwos', 'lists', 'virtualIntegers', 'virtualBooleans', 'jsons', 'jsonbs']);
   });
 
   it('should be possible to exclude fields', function () {
     var fields = attributeFields(Model, {
-      exclude: ['id', 'email', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean','date','time','dateonly']
+      exclude: ['id', 'email', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean','date','time','dateonly', 'json', 'jsonb']
     });
 
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
