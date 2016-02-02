@@ -117,14 +117,23 @@ describe('attributeFields', function () {
   });
 
   it('should be possible to rename fields with a object map',function () {
-    var fields = attributeFields(Model,{map:{"id":"mappedId"}});
-    expect(Object.keys(fields)).to.deep.equal(['mappedId', 'email', 'firstName', 'lastName', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean']);
+    var fields = attributeFields(Model, {map: {"id":"mappedId"}});
+    expect(Object.keys(fields)).to.deep.equal([
+      'mappedId', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal',
+      'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean', 'date',
+      'time', 'dateonly'
+    ]);
   });
+
   it('should be possible to rename fields with a function that maps keys',function () {
-    var fields = attributeFields(Model,{map:function(k){
-      return k+'s'
-    }});
-    expect(Object.keys(fields)).to.deep.equal(['ids', 'emails', 'firstNames', 'lastNames', 'floats', 'decimals', 'enums', 'enumTwos', 'lists', 'virtualIntegers', 'virtualBooleans']);
+    var fields = attributeFields(Model, {
+      map: k => k + 's'
+    });
+    expect(Object.keys(fields)).to.deep.equal([
+      'ids', 'emails', 'firstNames', 'lastNames', 'chars', 'floats', 'decimals',
+      'enums', 'enumTwos', 'lists', 'virtualIntegers', 'virtualBooleans',
+      'dates', 'times', 'dateonlys'
+    ]);
   });
 
   it('should be possible to exclude fields', function () {

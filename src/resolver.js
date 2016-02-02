@@ -78,7 +78,7 @@ function resolverFactory(target, options) {
     if (includeResult.order) {
       findOptions.order = (findOptions.order || []).concat(includeResult.order);
     }
-    findOptions.attributes = _.unique(findOptions.attributes.concat(includeResult.attributes));
+    findOptions.attributes = _.uniq(findOptions.attributes.concat(includeResult.attributes));
 
     findOptions.root = root;
     findOptions.logging = findOptions.logging || root.logging;

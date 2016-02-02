@@ -116,7 +116,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
         );
 
         includeOptions.include = (includeOptions.include || []).concat(nestedResult.include);
-        includeOptions.attributes = _.unique(includeOptions.attributes.concat(nestedResult.attributes));
+        includeOptions.attributes = _.uniq(includeOptions.attributes.concat(nestedResult.attributes));
 
         result.include.push(_.assign({association: association}, includeOptions));
       }
