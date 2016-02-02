@@ -53,6 +53,6 @@
   "dependencies": {
     "babel-runtime": "^6.0.8",
     "graphql-relay": "^0.3.6",
-    "lodash": "^3.10.0"
+    "lodash": "^4.2.0"
   }
 }
