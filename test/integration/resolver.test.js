@@ -7,7 +7,8 @@ var chai = require('chai')
   , Sequelize = require('sequelize')
   , sinon = require('sinon')
   , sequelize = helper.sequelize
-  , Promise = helper.Promise;
+  , Promise = helper.Promise
+  , GraphQLJSON = require('../../src/definition').GraphQLJSON;
 
 import {
   graphql,
@@ -41,7 +42,9 @@ describe('resolver', function () {
         get: function() {
           return 'lol';
         }
-      }
+      },
+      profile_json: Sequelize.JSON,
+      profile_jsonb: Sequelize.JSONB
     }, {
       timestamps: false
     });
@@ -141,6 +144,12 @@ describe('resolver', function () {
         },
         myVirtual: {
           type: GraphQLString
+        },
+        profile_json: {
+          type: GraphQLJSON
+        },
+        profile_jsonb: {
+          type: GraphQLJSON
         },
         tasks: {
           type: new GraphQLList(taskType),
@@ -245,6 +254,14 @@ describe('resolver', function () {
           User.create({
             id: 1,
             name: 'b'+Math.random().toString(),
+            profile_json: {
+              firstname: 'b' + Math.random().toString(),
+              lastname: 'b' + Math.random().toString()
+            },
+            profile_jsonb: {
+              firstname: 'b' + Math.random().toString(),
+              lastname: 'b' + Math.random().toString()
+            },
             tasks: [
               {
                 id: ++taskId,
@@ -271,6 +288,14 @@ describe('resolver', function () {
           User.create({
             id: 2,
             name: 'a'+Math.random().toString(),
+            profile_json: {
+              firstname: 'a' + Math.random().toString(),
+              lastname: 'a' + Math.random().toString()
+            },
+            profile_jsonb: {
+              firstname: 'a' + Math.random().toString(),
+              lastname: 'a' + Math.random().toString()
+            },
             tasks: [
               {
                 id: ++taskId,
@@ -303,6 +328,8 @@ describe('resolver', function () {
         user(id: ${user.id}) {
           name
           myVirtual
+          profile_json
+          profile_jsonb
         }
       }
     `).then(function (result) {
@@ -311,7 +338,9 @@ describe('resolver', function () {
       expect(result.data).to.deep.equal({
         user: {
           name: user.name,
-          myVirtual: 'lol'
+          myVirtual: 'lol',
+          profile_json: user.profile_json,
+          profile_jsonb: user.profile_jsonb
         }
       });
     });
@@ -402,6 +431,8 @@ describe('resolver', function () {
       {
         users {
           name
+          profile_json
+          profile_jsonb
         }
       }
     `).then(function (result) {
@@ -409,7 +440,11 @@ describe('resolver', function () {
 
       expect(result.data.users).to.have.length.above(0);
       expect(result.data).to.deep.equal({
-        users: users.map(user => ({name: user.name}))
+        users: users.map(user => ({
+          name: user.name,
+          profile_json: user.profile_json,
+          profile_jsonb: user.profile_jsonb
+        }))
       });
     });
   });
