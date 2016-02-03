@@ -81,7 +81,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
 
       if (association.associationType === 'BelongsTo') {
         result.attributes.push(association.foreignKey);
-      } else {
+      } else if (association.source.primaryKeyAttribute) {
         result.attributes.push(association.source.primaryKeyAttribute);
       }
 
@@ -102,7 +102,9 @@ export default function generateIncludes(simpleAST, type, root, options) {
           delete includeOptions.order;
         }
 
-        includeOptions.attributes.push(association.target.primaryKeyAttribute);
+        if (association.target.primaryKeyAttribute) {
+          includeOptions.attributes.push(association.target.primaryKeyAttribute);
+        }
 
         if (association.associationType === 'HasMany') {
           includeOptions.attributes.push(association.foreignKey);

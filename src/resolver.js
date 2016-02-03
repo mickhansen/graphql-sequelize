@@ -65,7 +65,9 @@ function resolverFactory(target, options) {
       findOptions.attributes = targetAttributes;
     }
 
-    findOptions.attributes.push(model.primaryKeyAttribute);
+    if (model.primaryKeyAttribute) {
+      findOptions.attributes.push(model.primaryKeyAttribute);
+    }
 
     includeResult = generateIncludes(
       simpleAST,
