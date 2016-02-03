@@ -7,11 +7,13 @@ module.exports = function (Model) {
     , attribute = Model.rawAttributes[key]
     , type;
 
-  type = new GraphQLNonNull(typeMapper.toGraphQL(attribute.type, Model.sequelize.constructor));
+  if (key && attribute) {
+    type = new GraphQLNonNull(typeMapper.toGraphQL(attribute.type, Model.sequelize.constructor));
 
-  result[key] = {
-    type: type
-  };
+    result[key] = {
+      type: type
+    };
+  }
 
   return result;
 };
