@@ -187,6 +187,51 @@ userType = new GraphQLObjectType({
   })
 });
 ```
+### Providing custom types
+
+`attributeFields` uses the graphql-sequelize `typeMapper` to map Sequelize types to GraphQL types. You can supply your own
+mapping function to override this behavior using the `mapType` export.
+
+```js
+var Model = sequelize.define('User', {
+  email: {
+    type: Sequelize.STRING,
+    allowNull: false
+  },
+  isValid: {
+    type: Sequelize.BOOLEAN,
+    allowNull: false
+  }
+});
+
+import {attributeFields,typeMapper} from 'graphql-sequelize';
+typeMapper.mapType((type) => {s
+   //map bools as strings
+   if (type instanceof Sequelize.BOOLEAN) {
+     return GraphQLString
+   }
+   //use default for everything else
+   return false
+});
+
+//map fields
+attributeFields(Model);
+
+/*
+{
+  id: {
+    type: new GraphQLNonNull(GraphQLInt)
+  },
+  email: {
+    type: new GraphQLNonNull(GraphQLString)
+  },
+  isValid: {
+      type: new GraphQLNonNull(GraphQLString)
+  },
+}
+*/
+
+```
 
 ### Renaming generated fields
 

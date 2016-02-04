@@ -1,11 +1,21 @@
 import {
-  GraphQLInt,
-  GraphQLString,
+   GraphQLInt,
+   GraphQLString,
    GraphQLBoolean,
    GraphQLFloat,
    GraphQLEnumType,
    GraphQLList
  } from 'graphql';
+
+let customTypeMapper;
+/**
+ * A function to set a custom mapping of types
+ * @param {Function} mapFunc
+ */
+export function mapType(mapFunc) {
+  customTypeMapper = mapFunc;
+}
+
 
 /**
  * Checks the type of the sequelize data type and
@@ -15,6 +25,14 @@ import {
  * @return {Function} GraphQL type declaration
  */
 export function toGraphQL(sequelizeType, sequelizeTypes) {
+
+  // did the user supply a mapping function?
+  // use their mapping, if it returns truthy
+  // else use our defaults
+  if (customTypeMapper) {
+    let result = customTypeMapper(sequelizeType);
+    if (result) return result;
+  }
 
   const {
     BOOLEAN,
@@ -34,6 +52,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     ARRAY,
     VIRTUAL
   } = sequelizeTypes;
+
+
 
   // Regex for finding special characters
   const specialChars = /[^a-z\d_]/i;
