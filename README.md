@@ -336,7 +336,8 @@ fullName: {
 
 ### defaultArgs
 
-`defaultArgs(Model)` will return an object containing an arg with a key and type matching your models primary key.
+`defaultArgs(Model)` will return an object containing an arg with a key and type matching your models primary key and 
+the "where" argument for passing complex query operations described [here](http://docs.sequelizejs.com/en/latest/docs/querying/)
 
 ```js
 var Model = sequelize.define('User', {
@@ -364,7 +365,10 @@ defaultArgs(Model);
 /*
 {
   project_id: {
-    type: new GraphQLNonNull(GraphQLString)
+    type: GraphQLString
+  },
+   where: {
+      type JSONType
   }
 }
 */
@@ -381,12 +385,15 @@ defaultArgs(Model);
   },
   order: {
     type: GraphQLString
+  },
+  where: {
+    type JSONType 
   }
 }
 ```
 
 Which when added to args will let the resolver automatically support limit and ordering in args for graphql queries.
-Should be used with fields of type `GraphQLList`
+Should be used with fields of type `GraphQLList`.
 
 ```js
 import {defaultListArgs} from 'graphql-sequelize'

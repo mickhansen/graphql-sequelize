@@ -1,5 +1,5 @@
 import * as typeMapper from './typeMapper';
-import { GraphQLNonNull } from 'graphql';
+import JSONType from './types/jsonType';
 
 module.exports = function (Model) {
   var result = {}
@@ -8,12 +8,17 @@ module.exports = function (Model) {
     , type;
 
   if (key && attribute) {
-    type = new GraphQLNonNull(typeMapper.toGraphQL(attribute.type, Model.sequelize.constructor));
-
+    type = typeMapper.toGraphQL(attribute.type, Model.sequelize.constructor);
     result[key] = {
       type: type
     };
   }
+
+  // add where
+  result.where = {
+    type: JSONType,
+    description: 'A JSON object conforming the the shape specified in http://docs.sequelizejs.com/en/latest/docs/querying/'
+  };
 
   return result;
 };

@@ -12,6 +12,7 @@
     "lint": "eslint src",
     "build": "rm -rf lib/* && babel src --ignore test --optional runtime --out-dir lib",
     "test": "npm run test-unit && npm run test-docker",
+    "test-watch": "npm run test-unit -- --watch",
     "test-unit": "mocha $npm_package_options_mocha test/unit/*.test.js test/unit/**/*.test.js",
     "build-docker": "docker-compose build",
     "test-docker": "docker-compose run dev /bin/sh -c \"npm run test-integration\"",

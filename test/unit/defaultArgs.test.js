@@ -1,16 +1,17 @@
 'use strict';
 
-var chai = require('chai')
-  , expect = chai.expect
-  , helper = require('./helper')
-  , sequelize = helper.sequelize
-  , Sequelize = require('sequelize')
-  , defaultArgs = require('../../src/defaultArgs');
+
+import chai, {expect} from "chai";
+import helper,{sequelize} from "./helper";
+import Sequelize from "sequelize";
+import JSONType from "../../src/types/jsonType";
+import defaultArgs from "../../src/defaultArgs";
 
 import {
   GraphQLString,
   GraphQLInt,
-  GraphQLNonNull
+  GraphQLNonNull,
+  GraphQLScalarType
 } from 'graphql';
 
 describe('defaultArgs', function () {
@@ -18,20 +19,19 @@ describe('defaultArgs', function () {
     var Model
       , args;
 
-    Model = sequelize.define(Math.random().toString(), {});
+    Model = sequelize.define('DefaultArgModel', {});
 
     args = defaultArgs(Model);
 
     expect(args).to.have.ownProperty('id');
-    expect(args.id.type).to.be.an.instanceOf(GraphQLNonNull);
-    expect(args.id.type.ofType).to.equal(GraphQLInt);
+    expect(args.id.type).to.equal(GraphQLInt);
   });
 
   it('should return a key for a string primary key', function () {
     var Model
       , args;
 
-    Model = sequelize.define(Math.random().toString(), {
+    Model = sequelize.define('DefaultArgModel', {
       modelId: {
         type: Sequelize.STRING,
         primaryKey: true
@@ -40,15 +40,14 @@ describe('defaultArgs', function () {
 
     args = defaultArgs(Model);
 
-    expect(args.modelId.type).to.be.an.instanceOf(GraphQLNonNull);
-    expect(args.modelId.type.ofType).to.equal(GraphQLString);
+    expect(args.modelId.type).to.equal(GraphQLString);
   });
 
   it('should return a key for a string primary key', function () {
     var Model
       , args;
 
-    Model = sequelize.define(Math.random().toString(), {
+    Model = sequelize.define('DefaultArgModel', {
       uuid: {
         type: Sequelize.UUID,
         primaryKey: true
@@ -57,7 +56,29 @@ describe('defaultArgs', function () {
 
     args = defaultArgs(Model);
 
-    expect(args.uuid.type).to.be.an.instanceOf(GraphQLNonNull);
-    expect(args.uuid.type.ofType).to.equal(GraphQLString);
+    expect(args.uuid.type).to.equal(GraphQLString);
   });
+
+  describe('will have an "where" argument', function () {
+
+    it('that is an GraphQLScalarType', function () {
+      var Model
+        , args;
+
+      Model = sequelize.define('DefaultArgModel', {
+        modelId: {
+          type: Sequelize.STRING,
+          primaryKey: true
+        }
+      });
+
+      args = defaultArgs(Model);
+
+      expect(args).to.have.ownProperty('where');
+      expect(args.where.type).to.be.an.instanceOf(GraphQLScalarType);
+    });
+
+  });
+
+
 });

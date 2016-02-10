@@ -1,13 +1,18 @@
 'use strict';
 
-var chai = require('chai')
-  , expect = chai.expect
-  , defaultListArgs = require('../../src/defaultListArgs');
+import chai, {expect} from "chai";
+import helper,{sequelize} from "./helper";
+import Sequelize from "sequelize";
+import defaultListArgs from "../../src/defaultListArgs";
+
 
 import {
   GraphQLString,
-  GraphQLInt
+  GraphQLInt,
+  GraphQLNonNull,
+  GraphQLScalarType
 } from 'graphql';
+
 
 describe('defaultListArgs', function () {
   it('should return a limit key', function () {
@@ -23,4 +28,26 @@ describe('defaultListArgs', function () {
     expect(args).to.have.ownProperty('order');
     expect(args.order.type).to.equal(GraphQLString);
   });
+
+  describe('will have an "where" argument', function () {
+
+    it('that is an GraphQLScalarType', function () {
+      var Model
+        , args;
+
+      Model = sequelize.define('DefaultArgModel', {
+        modelId: {
+          type: Sequelize.STRING,
+          primaryKey: true
+        }
+      });
+
+      args = defaultListArgs(Model);
+
+      expect(args).to.have.ownProperty('where');
+      expect(args.where.type).to.be.an.instanceOf(GraphQLScalarType);
+    });
+
+  });
+
 });
