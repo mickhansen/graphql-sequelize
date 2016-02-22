@@ -128,8 +128,6 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     });
   }
 
-  let defaultOrderBy = orderByEnum._values[0].value;
-
   before = before || ((options) => options);
 
   let $connectionArgs = {
@@ -143,20 +141,30 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     return orderBy[0][0];
   };
 
-  let toCursor = function (value, orderBy) {
-    let id = value.get(model.primaryKeyAttribute);
-    let orderValue = value.get(orderByAttribute(orderBy));
-    return base64(PREFIX + id + SEPERATOR + orderValue);
+  /**
+   * Creates a cursor given a item returned from the Database
+   * @param  {Object}   item   sequelize model instance
+   * @param  {Integer}  index  the index of this item within the results, 0 indexed
+   * @return {String}          The Base64 encoded cursor string
+   */
+  let toCursor = function (item, index) {
+    let id = item.get(model.primaryKeyAttribute);
+    return base64(PREFIX + id + SEPERATOR + index);
   };
 
+  /**
+   * Decode a cursor into its component parts
+   * @param  {String} cursor Base64 encoded cursor
+   * @return {Object}        Object containing ID and index
+   */
   let fromCursor = function (cursor) {
     cursor = unbase64(cursor);
     cursor = cursor.substring(PREFIX.length, cursor.length);
-    let [id, orderValue] = cursor.split(SEPERATOR);
+    let [id, index] = cursor.split(SEPERATOR);
 
     return {
       id,
-      orderValue
+      index
     };
   };
 
@@ -171,13 +179,12 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     return result;
   };
 
-  let resolveEdge = function (item, args = {}, source) {
-    if (!args.orderBy) {
-      args.orderBy = [defaultOrderBy];
-    }
-
+  let resolveEdge = function (item, index, queriedCursor, args = {}, source) {
+    let startIndex = 0;
+    if (queriedCursor) startIndex = Number(queriedCursor.index);
+    if (startIndex !== 0) startIndex++;
     return {
-      cursor: toCursor(item, args.orderBy),
+      cursor: toCursor(item, index + startIndex),
       node: item,
       source: source
     };
@@ -187,11 +194,10 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     handleConnection: false,
     include: true,
     list: true,
-    before: function (options, args, context, info) {
+    before: function (options, args, context) {
       if (args.first || args.last) {
         options.limit = parseInt(args.first || args.last, 10);
       }
-
       if (!args.orderBy) {
         args.orderBy = [orderByEnum._values[0].value];
       } else if (typeof args.orderBy === 'string') {
@@ -233,43 +239,22 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
 
       if (args.after || args.before) {
         let cursor = fromCursor(args.after || args.before);
-        let orderValue = cursor.orderValue;
+        let startIndex = Number(cursor.index);
 
-        if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
-          orderValue = new Date(orderValue);
-        }
+        if (startIndex > 0) options.offset = startIndex + 1;
+      }
+      options.attributes = _.uniq(options.attributes);
+      return before(options, args, root, context);
+    },
+    after: function (values, args, root, {source}) {
+      var cursor = null;
 
-        let slicingWhere = {
-          $or: [
-            {
-              [orderAttribute]: {
-                [orderDirection === 'ASC' ? '$gt' : '$lt']: orderValue
-              }
-            },
-            {
-              [orderAttribute]: {
-                $eq: orderValue
-              },
-              [model.primaryKeyAttribute]: {
-                $gt: cursor.id
-              }
-            }
-          ]
-        };
-
-        // TODO, do a proper merge that won't kill another $or
-        _.assign(options.where, slicingWhere);
+      if (args.after || args.before) {
+        cursor = fromCursor(args.after || args.before);
       }
 
-      // apply uniq to the attributes
-      options.attributes = _.uniq(options.attributes);
-
-
-      return before(options, args, context, info);
-    },
-    after: function (values, args, context, {source}) {
-      let edges = values.map((value) => {
-        return resolveEdge(value, args, source);
+      let edges = values.map((value, idx) => {
+        return resolveEdge(value, idx, cursor, args, source);
       });
 
       let firstEdge = edges[0];
@@ -282,6 +267,11 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       if (model.sequelize.dialect.name === 'postgres' && (args.first || args.last)) {
         if (fullCount === null || fullCount === undefined) throw new Error('No fullcount available');
       }
+      let hasMorePages = false;
+      if (args.first || args.last) {
+        let index = cursor ? Number(cursor.index) : 0;
+        hasMorePages = index + 1 + parseInt(args.first || args.last, 10) < fullCount;
+      }
 
       return {
         source,
@@ -291,8 +281,8 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
         pageInfo: {
           startCursor: firstEdge ? firstEdge.cursor : null,
           endCursor: lastEdge ? lastEdge.cursor : null,
-          hasPreviousPage: args.last !== null && args.last !== undefined ? fullCount > parseInt(args.last, 10) : false,
-          hasNextPage: args.first !== null && args.first !== undefined ? fullCount > parseInt(args.first, 10) : false,
+          hasPreviousPage: hasMorePages,
+          hasNextPage: hasMorePages
         }
       };
     }
