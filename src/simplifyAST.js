@@ -1,13 +1,21 @@
-import _ from 'lodash';
-
 function deepMerge(a, b) {
-  return _.merge(a, b, function (a, b) {
-    if (a && a.fields && b && b.fields) {
-      a.fields = deepMerge(a.fields, b.fields);
-      return a;
+  Object.keys(b).forEach(function (key) {
+    if (['fields', 'args'].indexOf(key) !== -1) return;
+
+    if (a[key] && b[key]) {
+      a[key] = deepMerge(a[key], b[key]);
+    } else {
+      a[key] = b[key];
     }
-    return a && a.fields && a || b && b.fields && b;
   });
+
+  if (a.fields && b.fields) {
+    a.fields = deepMerge(a.fields, b.fields);
+  } else if (a.fields || b.fields) {
+    a.fields = a.fields || b.fields;
+  }
+
+  return a;
 }
 
 function hasFragments(info) {
