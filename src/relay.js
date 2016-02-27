@@ -20,14 +20,14 @@ import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 
 class NodeTypeMapper {
-  constructor( sequelize ) {
+  constructor(sequelize) {
     this.models = Object.keys(sequelize.models);
     this.models.forEach(model => {
       this[model] = null;
     });
   }
 
-  mapTypes( types ) {
+  mapTypes(types) {
     Object.keys(types).forEach(type => {
       this[type] = types[type];
     });
@@ -51,8 +51,8 @@ export function idFetcher(sequelize, nodeTypeMapper) {
 export function typeResolver(nodeTypeMapper) {
   return obj => {
     var name = obj.Model
-               ? obj.Model.options.name.singular
-               : obj.name;
+      ? obj.Model.options.name.singular
+      : obj.name;
 
     return nodeTypeMapper[name];
   };
@@ -81,7 +81,7 @@ export function sequelizeNodeInterface(sequelize) {
 
 export function nodeAST(connectionAST) {
   return connectionAST.fields.edges &&
-         connectionAST.fields.edges.fields.node;
+    connectionAST.fields.edges.fields.node;
 }
 
 export function nodeType(connectionType) {
@@ -92,12 +92,12 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
   const {
     edgeType,
     connectionType
-  } = connectionDefinitions({
-    name,
-    nodeType,
-    connectionFields,
-    edgeFields
-  });
+    } = connectionDefinitions({
+      name,
+      nodeType,
+      connectionFields,
+      edgeFields
+    });
 
   const model = target.target ? target.target : target;
   const SEPERATOR = '$';
@@ -239,6 +239,10 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
         // TODO, do a proper merge that won't kill another $or
         _.assign(options.where, slicingWhere);
       }
+
+      // apply uniq to the attributes
+      options.attributes = _.uniq(options.attributes);
+
 
       return before(options, args, root, context);
     },

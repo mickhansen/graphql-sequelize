@@ -6,11 +6,12 @@ import Sequelize from 'sequelize';
 import sinon from 'sinon';
 import attributeFields from '../../../src/attributeFields';
 import resolver from '../../../src/resolver';
+import {uniq} from 'lodash';
 
 const {
   sequelize,
   Promise
-} = helper;
+  } = helper;
 
 import {
   sequelizeConnection
@@ -41,13 +42,9 @@ if (helper.sequelize.dialect.name === 'postgres') {
       before(async function () {
         var self = this;
 
-        this.User = sequelize.define('user', {
+        this.User = sequelize.define('user', {});
 
-        });
-
-        this.Project = sequelize.define('project', {
-
-        });
+        this.Project = sequelize.define('project', {});
 
         this.Task = sequelize.define('task', {
           name: Sequelize.STRING,
@@ -56,9 +53,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           timestamps: true
         });
 
-        this.ProjectMember = sequelize.define('projectMember', {
-
-        });
+        this.ProjectMember = sequelize.define('projectMember', {});
 
         this.User.Tasks = this.User.hasMany(this.Task, {as: 'tasks', foreignKey: 'userId'});
         this.User.Projects = this.User.belongsToMany(this.Project, {as: 'projects', through: this.ProjectMember});
@@ -92,7 +87,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           connectionFields: () => ({
             totalCount: {
               type: GraphQLInt,
-              resolve: function(connection, args, {rootValue}) {
+              resolve: function (connection, args, {rootValue}) {
                 self.projectTaskConnectionFieldSpy(connection);
                 return connection.source.countTasks({
                   where: connection.where,
@@ -132,7 +127,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           connectionFields: () => ({
             totalCount: {
               type: GraphQLInt,
-              resolve: function(connection, args, {rootValue}) {
+              resolve: function (connection, args, {rootValue}) {
                 self.userTaskConnectionFieldSpy(connection);
                 return connection.source.countTasks({
                   where: connection.where,
@@ -162,7 +157,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           edgeFields: {
             isOwner: {
               type: GraphQLBoolean,
-              resolve: function(edge) {
+              resolve: function (edge) {
                 return edge.node.ownerId === edge.source.id;
               }
             }
@@ -191,7 +186,6 @@ if (helper.sequelize.dialect.name === 'postgres') {
             }
           }
         });
-
         this.viewerTaskConnection = sequelizeConnection({
           name: 'Viewer' + this.Task.name,
           nodeType: this.taskType,
@@ -218,7 +212,6 @@ if (helper.sequelize.dialect.name === 'postgres') {
             }
           }
         });
-
         this.schema = new GraphQLSchema({
           query: new GraphQLObjectType({
             name: 'RootQueryType',
@@ -230,7 +223,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
                     type: new GraphQLNonNull(GraphQLInt)
                   }
                 },
-                resolve: resolver(this.User,{filterAttributes:false})
+                resolve: resolver(this.User, {filterAttributes: false})
               },
               viewer: {
                 type: this.viewerType,
@@ -252,18 +245,72 @@ if (helper.sequelize.dialect.name === 'postgres') {
           this.Project.create({}),
           this.Project.create({})
         );
-        
+
         this.userA = await this.User.create({
           [this.User.Tasks.as]: [
-            {id: ++this.taskId, name: 'AAA', createdAt: new Date(now - 45000), projectId: this.projectA.get('id'), completed: false},
-            {id: ++this.taskId, name: 'ABA', createdAt: new Date(now - 40000), projectId: this.projectA.get('id'), completed: true},
-            {id: ++this.taskId, name: 'ABC', createdAt: new Date(now - 35000), projectId: this.projectA.get('id'), completed: true},
-            {id: ++this.taskId, name: 'ABC', createdAt: new Date(now - 30000), projectId: this.projectA.get('id'), completed: false},
-            {id: ++this.taskId, name: 'BAA', createdAt: new Date(now - 25000), projectId: this.projectA.get('id'), completed: false},
-            {id: ++this.taskId, name: 'BBB', createdAt: new Date(now - 20000), projectId: this.projectB.get('id'), completed: true},
-            {id: ++this.taskId, name: 'CAA', createdAt: new Date(now - 15000), projectId: this.projectB.get('id'), completed: true},
-            {id: ++this.taskId, name: 'CCC', createdAt: new Date(now - 10000), projectId: this.projectB.get('id'), completed: false},
-            {id: ++this.taskId, name: 'DDD', createdAt: new Date(now - 5000), projectId: this.projectB.get('id'), completed: false}
+            {
+              id: ++this.taskId,
+              name: 'AAA',
+              createdAt: new Date(now - 45000),
+              projectId: this.projectA.get('id'),
+              completed: false
+            },
+            {
+              id: ++this.taskId,
+              name: 'ABA',
+              createdAt: new Date(now - 40000),
+              projectId: this.projectA.get('id'),
+              completed: true
+            },
+            {
+              id: ++this.taskId,
+              name: 'ABC',
+              createdAt: new Date(now - 35000),
+              projectId: this.projectA.get('id'),
+              completed: true
+            },
+            {
+              id: ++this.taskId,
+              name: 'ABC',
+              createdAt: new Date(now - 30000),
+              projectId: this.projectA.get('id'),
+              completed: false
+            },
+            {
+              id: ++this.taskId,
+              name: 'BAA',
+              createdAt: new Date(now - 25000),
+              projectId: this.projectA.get('id'),
+              completed: false
+            },
+            {
+              id: ++this.taskId,
+              name: 'BBB',
+              createdAt: new Date(now - 20000),
+              projectId: this.projectB.get('id'),
+              completed: true
+            },
+            {
+              id: ++this.taskId,
+              name: 'CAA',
+              createdAt: new Date(now - 15000),
+              projectId: this.projectB.get('id'),
+              completed: true
+            },
+            {
+              id: ++this.taskId,
+              name: 'CCC',
+              createdAt: new Date(now - 10000),
+              projectId: this.projectB.get('id'),
+              completed: false
+            },
+            {
+              id: ++this.taskId,
+              name: 'DDD',
+              createdAt: new Date(now - 5000),
+              projectId: this.projectB.get('id'),
+              completed: false
+            }
           ]
         }, {
           include: [this.User.Tasks]
@@ -284,6 +331,88 @@ if (helper.sequelize.dialect.name === 'postgres') {
         );
       });
 
+      it('should not duplicate attributes', async function () {
+        let sqlSpy = sinon.spy();
+
+        let projectConnectionAttributesUnique;
+
+        const userProjectConnection = sequelizeConnection({
+          name: 'userProject',
+          nodeType: this.projectType,
+          target: this.User.Projects,
+          before(options){
+            // compare a uniq set of attributes against what is returned by the sequelizeConnection resolver
+            let getUnique = uniq(options.attributes);
+            projectConnectionAttributesUnique = getUnique.length === options.attributes.length;
+          }
+        });
+
+
+        const userType = new GraphQLObjectType({
+          name: this.User.name,
+          fields: {
+            ...attributeFields(this.User),
+            id: globalIdField(this.User.name),
+            projects: {
+              type: userProjectConnection.connectionType,
+              args: userProjectConnection.connectionArgs,
+              resolve: userProjectConnection.resolve
+            }
+          }
+        });
+
+        const schema = new GraphQLSchema({
+          query: new GraphQLObjectType({
+            name: 'RootQueryType',
+            fields: {
+              user: {
+                type: userType,
+                args: {
+                  id: {
+                    type: new GraphQLNonNull(GraphQLInt)
+                  }
+                },
+                resolve: resolver(this.User, {filterAttributes: false})
+              },
+              viewer: {
+                type: this.viewerType,
+                resolve: function (source, args, info) {
+                  return info.rootValue.viewer;
+                }
+              }
+            }
+          })
+        });
+
+        let result = await graphql(schema, `
+          {
+            user(id: ${this.userA.id}) {
+              projects {
+                edges {
+                  node {
+                    tasks {
+                      edges {
+                        cursor
+                        node {
+                          id
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `, {
+          logging: sqlSpy
+        });
+
+
+        expect(projectConnectionAttributesUnique).to.equal(true);
+
+      });
+
       it('should support in-query slicing and pagination with first and orderBy', async function () {
         let firstThree = this.userA.tasks.slice(this.userA.tasks.length - 3, this.userA.tasks.length);
         let nextThree = this.userA.tasks.slice(this.userA.tasks.length - 6, this.userA.tasks.length - 3);
@@ -293,7 +422,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
         expect(nextThree.length).to.equal(3);
         expect(lastThree.length).to.equal(3);
 
-        let verify = function(result, expectedTasks) {
+        let verify = function (result, expectedTasks) {
           if (result.errors) throw new Error(result.errors[0].stack);
 
           var resultTasks = result.data.user.tasks.edges.map(function (edge) {
@@ -316,7 +445,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           return graphql(this.schema, `
             {
               user(id: ${this.userA.id}) {
-                tasks(first: 3, ${after ? 'after: "'+after+'", ' : ''} orderBy: LATEST) {
+                tasks(first: 3, ${after ? 'after: "' + after + '", ' : ''} orderBy: LATEST) {
                   edges {
                     cursor
                     node {
@@ -404,7 +533,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
         expect(nextThree.length).to.equal(3);
         expect(lastThree.length).to.equal(3);
 
-        let verify = function(result, expectedTasks) {
+        let verify = function (result, expectedTasks) {
           if (result.errors) throw new Error(result.errors[0].stack);
 
           var resultTasks = result.data.user.tasks.edges.map(function (edge) {
@@ -427,7 +556,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           return graphql(this.schema, `
             {
               user(id: ${this.userA.id}) {
-                tasks(last: 3, ${before ? 'before: "'+before+'", ' : ''} orderBy: LATEST) {
+                tasks(last: 3, ${before ? 'before: "' + before + '", ' : ''} orderBy: LATEST) {
                   edges {
                     cursor
                     node {
@@ -500,6 +629,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
         expect(firstResult.data.user.tasks.edges[2].node.name).to.equal('ABC');
         expect(firstResult.data.user.tasks.edges[2].node.name).to.equal(secondResult.data.user.tasks.edges[0].node.name);
       });
+
 
       it('should support prefetching two nested connections', async function () {
         let sqlSpy = sinon.spy();
