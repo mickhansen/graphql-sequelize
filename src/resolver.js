@@ -59,8 +59,8 @@ function resolverFactory(target, options) {
 
     if (options.filterAttributes) {
       findOptions.attributes = Object.keys(fields)
-                             .map(key => fields[key].key || key)
-                             .filter(inList.bind(null, targetAttributes));
+        .map(key => fields[key].key || key)
+        .filter(inList.bind(null, targetAttributes));
     } else {
       findOptions.attributes = targetAttributes;
     }
@@ -95,6 +95,7 @@ function resolverFactory(target, options) {
       findOptions.order = [model.primaryKeyAttribute, 'ASC'];
     }
 
+
     if (association) {
       return source[association.accessors.get](findOptions).then(function (result) {
         if (options.handleConnection && isConnection(info.returnType)) {
@@ -107,6 +108,7 @@ function resolverFactory(target, options) {
         });
       });
     }
+
     return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
       return options.after(result, args, root, {
         ast: simpleAST,

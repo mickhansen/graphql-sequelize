@@ -1,3 +1,5 @@
+import {replaceWhereOperators} from './replaceWhereOperators';
+
 export default function argsToFindOptions(args, target) {
   var result = {}
     , targetAttributes = Object.keys(target.rawAttributes);
@@ -24,6 +26,12 @@ export default function argsToFindOptions(args, target) {
           result.order = [[args[key], 'ASC']];
         }
       }
+
+      if (key === 'where' && args[key]) {
+        // setup where
+        result.where = replaceWhereOperators(args.where);
+      }
+
     });
   }
 

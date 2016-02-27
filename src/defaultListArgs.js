@@ -1,4 +1,5 @@
 import { GraphQLInt, GraphQLString } from 'graphql';
+import JSONType from './types/jsonType';
 
 module.exports = function () {
   return {
@@ -7,6 +8,11 @@ module.exports = function () {
     },
     order: {
       type: GraphQLString
+    },
+    where: {
+      type: JSONType,
+      description: 'A JSON object conforming the the shape specified in http://docs.sequelizejs.com/en/latest/docs/querying/'
     }
   };
+
 };
