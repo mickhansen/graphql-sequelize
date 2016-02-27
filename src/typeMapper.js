@@ -63,8 +63,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof FLOAT ||
       sequelizeType instanceof DOUBLE) return GraphQLFloat;
 
-  if (sequelizeType instanceof INTEGER ||
-      sequelizeType instanceof BIGINT) {
+  if (sequelizeType instanceof INTEGER) {
     return GraphQLInt;
   }
 
@@ -75,6 +74,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
       sequelizeType instanceof DATE ||
       sequelizeType instanceof DATEONLY ||
       sequelizeType instanceof TIME ||
+      sequelizeType instanceof BIGINT ||
       sequelizeType instanceof DECIMAL) {
     return GraphQLString;
   }
