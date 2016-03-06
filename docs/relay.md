@@ -5,6 +5,9 @@
 relay will perform certain queries on a root "node" type.
 graphql-sequelize will automatically map these node lookups to findById calls.
 
+If you wish to use non-sequelize entities, or if you want to override the default
+behaviour for sequelize models, you can specify a resolve function.
+
 ```js
 import {relay: {sequelizeNodeInterface}} from 'graphql-sequelize';
 import sequelize from './your-sequelize-instance';
@@ -31,7 +34,16 @@ const userType = new GraphQLObjectType({
 });
 
 nodeTypeMapper.mapTypes({
-  [User.name]: userType
+  [User.name]: userType,
+
+  //Non-sequelize models can be added as well
+  SomeOther: {
+    type: SomeOtherType, //Specify graphql type to map to
+    resolve(globalId) { //Specify function to get entity from id
+      const { id } = fromGlobalId(globalId);
+      return getSomeOther(id);
+    }
+  }
 });
 
 const schema = new GraphQLSchema({
@@ -154,11 +166,11 @@ const userType = new GraphQLObjectType({
     }
   }
 }
-  
+
 fragment totalCount on userTaskConnection {
    total
 }
-  
+
 fragment getCreated on userTaskEdge {
   wasCreatedByUser
 }
