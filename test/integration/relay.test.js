@@ -31,6 +31,7 @@ import {
 import {
   globalIdField,
   toGlobalId,
+  fromGlobalId,
   connectionDefinitions,
   connectionArgs,
   connectionFromArray
@@ -42,6 +43,13 @@ function generateTask(id) {
     name: Math.random().toString()
   }
 }
+
+const generateCustom = Promise.method(id => {
+  return {
+    id,
+    value: `custom type ${ id }`
+  };
+});
 
 describe('relay', function () {
   var User
@@ -152,12 +160,30 @@ describe('relay', function () {
       interfaces: [nodeInterface]
     });
 
+    const customType = new GraphQLObjectType({
+      name: 'Custom',
+      description: 'Custom type to test custom idFetcher',
+      fields: {
+        id: globalIdField('Custom'),
+        value: {
+          type: GraphQLString,
+        }
+      },
+      interfaces: [nodeInterface]
+    });
 
     nodeTypeMapper.mapTypes({
-      [User.name]: userType,
-      [Project.name]: projectType,
-      [Task.name]: taskType,
-      'Viewer': viewerType
+      [User.name]: { type: userType },
+      [Project.name]: { type: projectType},
+      [Task.name]: { type: taskType },
+      Viewer: { type: viewerType },
+      [customType.name]: {
+        type: customType,
+        resolve(globalId) {
+          const { id } = fromGlobalId(globalId);
+          return generateCustom(id);
+        }
+      }
     });
 
 
@@ -212,6 +238,15 @@ describe('relay', function () {
             resolve: resolver(Project, {
               include: false
             })
+          },
+          custom: {
+            type: customType,
+            args: {
+              id: {
+                type: new GraphQLNonNull(GraphQLInt)
+              }
+            },
+            resolve: generateCustom
           },
           node: nodeField
         }
@@ -288,6 +323,28 @@ describe('relay', function () {
     `).then(result => {
       expect(result.data.node.id).to.equal(globalId);
       expect(result.data.node.name).to.equal(user.name);
+    });
+  });
+
+  describe('node queries', function() {
+    it('should allow returning a custom entity', function() {
+      generateCustom(1).then(custom => {
+        const globalId = toGlobalId('Custom', custom.id);
+
+        return graphql(schema, `
+          {
+            node(id: "${globalId}") {
+              id
+              ... on Custom {
+                value
+              }
+            }
+          }
+        `).then(result => {
+          expect(result.data.node.id).to.equal(globalId);
+          expect(result.data.node.value).to.equal(custom.value);
+        });
+      });
     });
   });
 
