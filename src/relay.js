@@ -19,42 +19,58 @@ import {
 import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 
-class NodeTypeMapper {
-  constructor(sequelize) {
-    this.models = Object.keys(sequelize.models);
-    this.models.forEach(model => {
-      this[model] = null;
-    });
+export class NodeTypeMapper {
+  constructor() {
+    this.map = { };
   }
 
   mapTypes(types) {
-    Object.keys(types).forEach(type => {
-      this[type] = types[type];
+    Object.entries(types).forEach(([k, v]) => {
+      this.map[k] = v.type
+        ? v
+        : { type: v };
     });
+  }
+
+  item(type) {
+    return this.map[type];
   }
 }
 
 export function idFetcher(sequelize, nodeTypeMapper) {
-  return globalId => {
-    let {type, id} = fromGlobalId(globalId);
-    const models = Object.keys(sequelize.models);
-    if (models.some(model => model === type)) {
-      return sequelize.models[type].findById(id);
+  return async globalId => {
+    const {type, id} = fromGlobalId(globalId);
+
+    const nodeType = nodeTypeMapper.item(type);
+    if (nodeType && typeof nodeType.resolve === 'function') {
+      const res = await Promise.resolve(nodeType.resolve(globalId));
+      res.__graphqlType__ = type;
+      return res;
     }
-    if (nodeTypeMapper[type]) {
-      return nodeTypeMapper[type];
-    }
-    return null;
+
+    const model = Object.keys(sequelize.models).find(model => model === type);
+    return model
+      ? sequelize.models[model].findById(id)
+      : nodeType
+        ? nodeType.type
+        : null;
   };
 }
 
 export function typeResolver(nodeTypeMapper) {
   return obj => {
-    var name = obj.Model
-      ? obj.Model.options.name.singular
-      : obj.name;
+    var type = obj.__graphqlType__
+               || (obj.Model
+                 ? obj.Model.options.name.singular
+                 : obj.name);
 
-    return nodeTypeMapper[name];
+    if (!type) {
+      throw new Error(`Unable to determine type of ${ typeof obj }. ` +
+        `Either specify a resolve function in 'NodeTypeMapper' object, or specify '__graphqlType__' property on object.`);
+    }
+
+    const nodeType = nodeTypeMapper.item(type);
+    return nodeType && nodeType.type || null;
   };
 }
 
@@ -67,7 +83,7 @@ export function handleConnection(values, args) {
 }
 
 export function sequelizeNodeInterface(sequelize) {
-  let nodeTypeMapper = new NodeTypeMapper(sequelize);
+  let nodeTypeMapper = new NodeTypeMapper();
   const nodeObjects = nodeDefinitions(
     idFetcher(sequelize, nodeTypeMapper),
     typeResolver(nodeTypeMapper)
@@ -92,12 +108,12 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
   const {
     edgeType,
     connectionType
-    } = connectionDefinitions({
-      name,
-      nodeType,
-      connectionFields,
-      edgeFields
-    });
+  } = connectionDefinitions({
+    name,
+    nodeType,
+    connectionFields,
+    edgeFields
+  });
 
   const model = target.target ? target.target : target;
   const SEPERATOR = '$';
