@@ -221,6 +221,11 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
           model.sequelize.literal('COUNT(*) OVER()'),
           'full_count'
         ]);
+      } else if (model.sequelize.dialect.name === 'mssql' && options.limit) {
+        options.attributes.push([
+          model.sequelize.literal('COUNT(1) OVER()'),
+          'full_count'
+        ]);
       }
 
       options.where = argsToWhere(args);
