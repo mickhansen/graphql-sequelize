@@ -70,7 +70,6 @@ You can also add any non-model mapping you'd like to `mapTypes'.
 
 ## connections
 
-Preliminary design, not implemented yet.
 graphql-sequelize's sequelizeConnection will automatically handle pagination via cursors, first, last, before, after and orderBy.
 
 ```js
