@@ -28,6 +28,12 @@ describe('resolver', function () {
     , labelType
     , schema;
 
+  /**
+   * Setup the a) testing db schema and b) the according GraphQL types
+   *
+   * The schema consists of a User that has Tasks.
+   * A Task belongs to a Project, which can have Labels.
+   */
   before(function () {
     sequelize.modelManager.models = [];
     sequelize.models = {};
@@ -204,6 +210,11 @@ describe('resolver', function () {
     });
   });
 
+  /**
+   * Now fill the testing DB with fixture values
+   * We'll have projectA & projectB with two random labels each,
+   * and two users each with some tasks that belong to those projects.
+   */
   before(function () {
     var taskId = 0
       , projectId = 0;
@@ -298,6 +309,7 @@ describe('resolver', function () {
     return graphql(schema, `
       {
         user(id: ${user.id}) {
+          id
           name
           myVirtual
         }
@@ -307,6 +319,7 @@ describe('resolver', function () {
 
       expect(result.data).to.deep.equal({
         user: {
+          id: user.id,
           name: user.name,
           myVirtual: 'lol'
         }
@@ -395,6 +408,7 @@ describe('resolver', function () {
   it('should resolve an array result with a single model', function () {
     var users = this.users;
 
+
     return graphql(schema, `
       {
         users {
@@ -405,13 +419,15 @@ describe('resolver', function () {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length.above(0);
-      expect(result.data).to.deep.equal({
-        users: users.map(user => ({name: user.name}))
-      });
+
+      const usersNames = users.map(user => ({name: user.name}));
+      // As the GraphQL query doesn't specify an ordering,
+      // the order of the two lists can not be asserted.
+      expect(result.data.users).to.deep.have.members(usersNames);
     });
   });
 
-  it('should allow ammending the find for a array result with a single model', function () {
+  it('should allow amending the find for a array result with a single model', function () {
     var user = this.userA
       , schema;
 
@@ -802,7 +818,7 @@ describe('resolver', function () {
   });
 
   it('should resolve a plain result with a single hasMany association', function () {
-    var user = this.userB;
+    const user = this.userB;
 
     return graphql(schema, `
       {
@@ -819,14 +835,15 @@ describe('resolver', function () {
     }).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
 
+      expect(result.data.user.name).to.equal(user.name);
+
       expect(result.data.user.tasks).to.have.length.above(0);
-      expect(result.data).to.deep.equal({
-        user: {
-          name: user.name,
-          tasks: user.tasks.map(task => ({title: task.title, taskVirtual: 'tasktask'}))
-        }
-      });
+      // As the order of user.tasks is nondeterministic, we only assert on equal members
+      // of both the user's tasks and the tasks the graphql query responded with.
+      const userTasks = user.tasks.map(task => ({title: task.title, taskVirtual: 'tasktask'}));
+      expect(result.data.user.tasks).to.deep.have.members(userTasks);
     });
+
   });
 
   it('should resolve a plain result with a single limited hasMany association', function () {
