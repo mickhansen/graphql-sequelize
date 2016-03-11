@@ -1,13 +1,11 @@
 'use strict';
 
-var chai = require('chai')
-  , expect = chai.expect
-  , resolver = require('../../src/resolver')
-  , helper = require('./helper')
-  , Sequelize = require('sequelize')
-  , sinon = require('sinon')
-  , sequelize = helper.sequelize
-  , Promise = helper.Promise;
+import {expect} from 'chai';
+import sinon from 'sinon';
+import Sequelize from 'sequelize';
+
+import {sequelize, Promise} from './helper';
+import resolver from '../../src/resolver';
 
 import {
   graphql,
@@ -38,7 +36,7 @@ describe('resolver', function () {
       name: Sequelize.STRING,
       myVirtual: {
         type: Sequelize.VIRTUAL,
-        get: function() {
+        get: function () {
           return 'lol';
         }
       }
@@ -55,7 +53,7 @@ describe('resolver', function () {
       },
       taskVirtual: {
         type: Sequelize.VIRTUAL,
-        get: function() {
+        get: function () {
           return 'tasktask';
         }
       }
@@ -159,7 +157,7 @@ describe('resolver', function () {
             }
           },
           resolve: resolver(User.Tasks, {
-            before: function(options, args) {
+            before: function (options, args) {
               if (args.first) {
                 options.order = options.order || [];
                 options.order.push(['created_at', 'ASC']);
@@ -207,15 +205,14 @@ describe('resolver', function () {
   });
 
   before(function () {
-    var userId = 0
-      , taskId = 0
+    var taskId = 0
       , projectId = 0;
 
     return this.sequelize.sync({force: true}).bind(this).then(function () {
       return Promise.join(
         Project.create({
           id: ++projectId,
-          name: 'b'+Math.random().toString(),
+          name: 'b' + Math.random().toString(),
           labels: [
             {name: Math.random().toString()},
             {name: Math.random().toString()}
@@ -227,7 +224,7 @@ describe('resolver', function () {
         }),
         Project.create({
           id: ++projectId,
-          name: 'a'+Math.random().toString(),
+          name: 'a' + Math.random().toString(),
           labels: [
             {name: Math.random().toString()},
             {name: Math.random().toString()}
@@ -244,7 +241,7 @@ describe('resolver', function () {
         return Promise.join(
           User.create({
             id: 1,
-            name: 'b'+Math.random().toString(),
+            name: 'b' + Math.random().toString(),
             tasks: [
               {
                 id: ++taskId,
@@ -270,7 +267,7 @@ describe('resolver', function () {
           }),
           User.create({
             id: 2,
-            name: 'a'+Math.random().toString(),
+            name: 'a' + Math.random().toString(),
             tasks: [
               {
                 id: ++taskId,
@@ -381,7 +378,7 @@ describe('resolver', function () {
           }
 
           rest: tasks(offset: 1, limit: 99) {
-            title     
+            title
           }
         }
       }
@@ -433,7 +430,7 @@ describe('resolver', function () {
               }
             },
             resolve: resolver(User, {
-              before: function(options, args, root) {
+              before: function (options, args, root) {
                 options.where = options.where || {};
                 options.where.name = root.name;
                 return options;
@@ -479,11 +476,11 @@ describe('resolver', function () {
               }
             },
             resolve: resolver(User, {
-              after: function(result, args, root) {
+              after: function (result) {
                 return result.map(function () {
                   return {
                     name: '11!!'
-                  }
+                  };
                 });
               }
             })
@@ -503,8 +500,8 @@ describe('resolver', function () {
 
       expect(result.data.users).to.have.length(users.length);
       result.data.users.forEach(function (user) {
-        expect(user.name).to.equal('11!!')
-      })
+        expect(user.name).to.equal('11!!');
+      });
     });
   });
 
@@ -544,13 +541,13 @@ describe('resolver', function () {
             var $resolver = resolver(User.Tasks)
               , $proxy;
 
-            $proxy = function() {
-              return $resolver.apply(null, Array.prototype.slice.call(arguments))
+            $proxy = function () {
+              return $resolver.apply(null, Array.prototype.slice.call(arguments));
             };
 
             $proxy.$proxy = $resolver;
             return $proxy;
-          })()
+          }())
         }
       }
     });
@@ -723,17 +720,17 @@ describe('resolver', function () {
               }
             }
           }),
-          resolve: (function() {
+          resolve: (function () {
             var $resolver;
 
-            $resolver = function(source) {
+            $resolver = function (source) {
               return source;
             };
 
             $resolver.$passthrough = true;
 
             return $resolver;
-          })()
+          }())
         }
       }
     });
@@ -791,8 +788,6 @@ describe('resolver', function () {
   });
 
   it('should resolve an array result with a single model and limit', function () {
-    var users = this.users;
-
     return graphql(schema, `
       {
         users(limit: 1) {
@@ -810,7 +805,7 @@ describe('resolver', function () {
     var user = this.userB;
 
     return graphql(schema, `
-      { 
+      {
         user(id: ${user.id}) {
           name
           tasks {
@@ -838,7 +833,7 @@ describe('resolver', function () {
     var user = this.userB;
 
     return graphql(schema, `
-      { 
+      {
         user(id: ${user.id}) {
           name
           tasks(limit: 1) {
@@ -858,7 +853,7 @@ describe('resolver', function () {
 
     return graphql(schema, `
       {
-        users(order: "id") { 
+        users(order: "id") {
           name
           tasks(order: "id") {
             title
@@ -878,7 +873,7 @@ describe('resolver', function () {
           return {
             name: user.name,
             tasks: user.tasks.map(task => ({title: task.title}))
-          }
+          };
         })
       });
     });
@@ -889,7 +884,7 @@ describe('resolver', function () {
 
     return graphql(schema, `
       {
-        users { 
+        users {
           name
           tasks(limit: 1) {
             title
@@ -908,11 +903,11 @@ describe('resolver', function () {
 
   it('should resolve a array result with a single limited hasMany association with a nested belongsTo relation', function () {
     var users = this.users
-      , sqlSpy = sinon.spy()
+      , sqlSpy = sinon.spy();
 
     return graphql(schema, `
       {
-        users { 
+        users {
           tasks(limit: 2) {
             title
             project {
@@ -940,11 +935,11 @@ describe('resolver', function () {
 
   it('should resolve a array result with a single hasMany association with a nested belongsTo relation', function () {
     var users = this.users
-      , sqlSpy = sinon.spy()
+      , sqlSpy = sinon.spy();
 
     return graphql(schema, `
       {
-        users { 
+        users {
           tasks {
             title
             project {
@@ -970,13 +965,14 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a array result with a single hasMany association with a nested belongsTo relation with a nested hasMany relation', function () {
+  it('should resolve a array result with a single hasMany association' +
+     'with a nested belongsTo relation with a nested hasMany relation', function () {
     var users = this.users
-      , sqlSpy = sinon.spy()
+      , sqlSpy = sinon.spy();
 
     return graphql(schema, `
       {
-        users { 
+        users {
           tasks {
             title
             project {
@@ -1056,7 +1052,7 @@ describe('resolver', function () {
       resolver.filterAttributes = this.defaultValue;
     });
 
-    it('should be able to disable via a global option', async function ()  {
+    it('should be able to disable via a global option', async function () {
       resolver.filterAttributes = false;
 
       var user = this.userB
@@ -1094,9 +1090,9 @@ describe('resolver', function () {
       });
     });
 
-    it('should be able to disable via a resolver option', async function ()  {
+    it('should be able to disable via a resolver option', async function () {
       resolver.filterAttributes = true;
-      
+
       var user = this.userB
         , schema;
 
