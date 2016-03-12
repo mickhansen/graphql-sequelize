@@ -1,7 +1,7 @@
 # graphql-sequelize
 
 [![NPM](https://img.shields.io/npm/v/graphql-sequelize.svg)](https://www.npmjs.com/package/graphql-sequelize)
-[![Build Status](https://travis-ci.org/mickhansen/graphql-sequelize.svg?branch=master)](https://travis-ci.org/mickhansen/graphql-sequelize) 
+[![Build Status](https://travis-ci.org/mickhansen/graphql-sequelize.svg?branch=master)](https://travis-ci.org/mickhansen/graphql-sequelize)
 [![Slack Status](http://sequelize-slack.herokuapp.com/badge.svg)](http://sequelize-slack.herokuapp.com)
 
 - [Installation](#installation)
@@ -26,6 +26,9 @@ The graphql-sequelize resolver will by default only select those attributes requ
 
 If you have non-database values that depend on other values you can either solve this by using virtual attributes with dependencies on your model or disable attribute filtering via `resolver.filterAttributes = false` or for specific resolvers with `resolver(target, {filterAttributes: false})`.
 
+#### Default attributes
+When filtering attributes you might need some fields every time, regardless of wether they have been requested in the query. You can specify those fields with the `defaultAttributes` resolver option like `resolver(target, {defaultAttributes: ['default', 'field', 'names']})`. A common use case would be the need to fetch a `userId` for every query and every resource of your domain model for permission checking -- in that case you would write your `resolver` functions like `resolver(target, {defaultAttributes: ['userId']})`.
+
 ### Features
 
 - Automatically converts args to where if arg keys matches model attributes
@@ -38,7 +41,7 @@ If you have non-database values that depend on other values you can either solve
 
 [Relay documentation](docs/relay.md)
 
-### Examples 
+### Examples
 
 ```js
 import {resolver} from 'graphql-sequelize';
@@ -236,7 +239,7 @@ attributeFields(Model);
 ### Renaming generated fields
 
 attributeFields accepts a ```map``` option to customize the way the attribute fields are named. The ```map``` option accepts
-an object or a function that returns a string. 
+an object or a function that returns a string.
 
 ```js
 
@@ -336,12 +339,12 @@ fullName: {
 
 ### defaultArgs
 
-`defaultArgs(Model)` will return an object containing an arg with a key and type matching your models primary key and 
+`defaultArgs(Model)` will return an object containing an arg with a key and type matching your models primary key and
 the "where" argument for passing complex query operations described [here](http://docs.sequelizejs.com/en/latest/docs/querying/)
 
 ```js
 var Model = sequelize.define('User', {
-  
+
 });
 
 defaultArgs(Model);
@@ -387,7 +390,7 @@ defaultArgs(Model);
     type: GraphQLString
   },
   where: {
-    type JSONType 
+    type JSONType
   }
 }
 ```

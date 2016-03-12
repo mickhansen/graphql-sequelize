@@ -4,9 +4,17 @@ import simplifyAST from './simplifyAST';
 import generateIncludes from './generateIncludes';
 import argsToFindOptions from './argsToFindOptions';
 import { isConnection, handleConnection, nodeAST, nodeType } from './relay';
+import invariant from 'invariant';
 
 function inList(list, attribute) {
   return ~list.indexOf(attribute);
+}
+
+function validateOptions(options) {
+  invariant(
+    !options.defaultAttributes || Array.isArray(options.defaultAttributes),
+    'options.defaultAttributes must be an array of field names.'
+  );
 }
 
 function resolverFactory(target, options) {
@@ -25,6 +33,8 @@ function resolverFactory(target, options) {
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
   if (options.filterAttributes === undefined) options.filterAttributes = resolverFactory.filterAttributes;
+
+  validateOptions(options);
 
   resolver = function (source, args, info) {
     var root = info.rootValue || {}
@@ -61,6 +71,11 @@ function resolverFactory(target, options) {
       findOptions.attributes = Object.keys(fields)
         .map(key => fields[key].key || key)
         .filter(inList.bind(null, targetAttributes));
+
+      if (options.defaultAttributes) {
+        findOptions.attributes = findOptions.attributes.concat(options.defaultAttributes);
+      }
+
     } else {
       findOptions.attributes = targetAttributes;
     }

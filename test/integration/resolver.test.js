@@ -1,10 +1,10 @@
 'use strict';
 
-import {expect} from 'chai';
+import { expect } from 'chai';
 import sinon from 'sinon';
 import Sequelize from 'sequelize';
 
-import {sequelize, Promise} from './helper';
+import { sequelize, Promise } from './helper';
 import resolver from '../../src/resolver';
 
 import {
@@ -46,8 +46,6 @@ describe('resolver', function () {
           return 'lol';
         }
       }
-    }, {
-      timestamps: false
     });
 
     Task = sequelize.define('task', {
@@ -309,7 +307,6 @@ describe('resolver', function () {
     return graphql(schema, `
       {
         user(id: ${user.id}) {
-          id
           name
           myVirtual
         }
@@ -319,7 +316,6 @@ describe('resolver', function () {
 
       expect(result.data).to.deep.equal({
         user: {
-          id: user.id,
           name: user.name,
           myVirtual: 'lol'
         }
@@ -407,7 +403,6 @@ describe('resolver', function () {
 
   it('should resolve an array result with a single model', function () {
     var users = this.users;
-
 
     return graphql(schema, `
       {
@@ -1143,6 +1138,63 @@ describe('resolver', function () {
         if (result.errors) throw new Error(result.errors[0].stack);
 
         expect(result.data.user.fullName).to.equal(user.get('name'));
+      });
+    });
+  });
+
+  describe('defaultAttributes', () => {
+    it('should only accept an array as input', () => {
+      const f = () => resolver(User, {
+        defaultAttributes: 'not_an_array',
+      });
+      expect(f).to.throw();
+    });
+
+    it('should automatically include fields specified in that array', function () {
+      const user = this.userA;
+      const sqlSpy = sinon.spy();
+
+      const makeSchema = (defaultAttributes) => {
+        return new GraphQLSchema({
+          query: new GraphQLObjectType({
+            name: 'RootQueryType',
+            fields: {
+              user: {
+                type: userType,
+                args: { id: { type: GraphQLInt } },
+                resolve: resolver(User, {
+                  filterAttributes: true,
+                  defaultAttributes,
+                })
+              }
+            }
+          })
+        });
+      };
+
+      const normalSchema = makeSchema();
+
+      const defaultAttributes = ['createdAt'];
+      const schemaWithDefaultAttributes = makeSchema(defaultAttributes);
+
+      const query = `{ user(id: ${user.id}) { name } } `;
+
+      return graphql(normalSchema, query, {logging: sqlSpy}).then(function () {
+        const [sqlQuery] = sqlSpy.args[0];
+        // As we have
+        //   1) `filterAttributes` set to true,
+        //   2) no `defaultAttributes` defined and
+        //   3) `createdAt` hasn't been requested in the graphql query,
+        // `createdAt` should not be fetched
+        expect(sqlQuery).to.not.contain('createdAt');
+
+        return graphql(schemaWithDefaultAttributes, query, {logging: sqlSpy});
+      }).then(function (result) {
+        // With the schema that defined `createdAt` as a default attribute for
+        // user, it should be fetched
+        const [sqlQuery] = sqlSpy.args[1];
+        expect(sqlQuery).to.contain('createdAt');
+        expect(result.data.user.createdAt);
       });
     });
   });
