@@ -39,7 +39,7 @@ nodeTypeMapper.mapTypes({
   //Non-sequelize models can be added as well
   SomeOther: {
     type: SomeOtherType, //Specify graphql type to map to
-    resolve(globalId) { //Specify function to get entity from id
+    resolve(globalId, context) { //Specify function to get entity from id
       const { id } = fromGlobalId(globalId);
       return getSomeOther(id);
     }

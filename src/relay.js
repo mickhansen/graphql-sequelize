@@ -38,12 +38,12 @@ export class NodeTypeMapper {
 }
 
 export function idFetcher(sequelize, nodeTypeMapper) {
-  return async globalId => {
+  return async (globalId, context) => {
     const {type, id} = fromGlobalId(globalId);
 
     const nodeType = nodeTypeMapper.item(type);
     if (nodeType && typeof nodeType.resolve === 'function') {
-      const res = await Promise.resolve(nodeType.resolve(globalId));
+      const res = await Promise.resolve(nodeType.resolve(globalId, context));
       res.__graphqlType__ = type;
       return res;
     }
