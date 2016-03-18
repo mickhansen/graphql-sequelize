@@ -765,7 +765,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
                 edges {
                   ...projectOwner
                   node {
-                    id 
+                    id
                   }
                 }
               }

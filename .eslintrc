@@ -88,7 +88,7 @@
     "no-self-compare": 0,
     "no-sequences": 2,
     "no-throw-literal": 2,
-    "no-unused-expressions": 2,
+    "no-unused-expressions": 0,
     "no-void": 2,
     "no-warning-comments": 0,
     "no-with": 2,
@@ -246,5 +246,15 @@
     "wrap-regex": 0,
     "no-var": 0,
     "max-len": [2, 130, 4]
+  },
+  "globals": {
+    "it": false,
+    "afterEach": false,
+    "beforeEach": false,
+    "before": false,
+    "after": false,
+    "describe": false,
+    "expect": false,
+    "assert": false
   }
 }
