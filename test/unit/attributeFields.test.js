@@ -14,7 +14,8 @@ import {
   GraphQLNonNull,
   GraphQLBoolean,
   GraphQLEnumType,
-  GraphQLList
+  GraphQLList,
+  GraphQLScalarType
 } from 'graphql';
 
 import {
@@ -24,6 +25,8 @@ import {
 describe('attributeFields', function () {
   var Model;
   var modelName = Math.random().toString();
+  var customScalarType;
+
   before(function () {
     Model = sequelize.define(modelName, {
       email: {
@@ -72,6 +75,21 @@ describe('attributeFields', function () {
 
     }, {
       timestamps: false
+    });
+
+    customScalarType = new GraphQLScalarType({
+      name: 'GraphQLDate',
+      serialize (value) {
+        return value;
+      },
+      parseValue (value) {
+        return value;
+      },
+      parseLiteral (ast) {
+        const {kind, value} = ast;
+
+        return value;
+      }
     });
   });
 
@@ -238,6 +256,20 @@ describe('attributeFields', function () {
       expect(fields.id.resolve({
         email: 'idris@example.com'
       })).to.equal(toGlobalId(ModelWithoutId.name, 'idris@example.com'));
+    });
+
+    it('should be possible map custom types', function () {
+      var fields = attributeFields(Model, {
+        globalId: true,
+        typeMapper: (key, sequelizeType, sequelizeTypes) => {
+          if (key === 'date') {
+            return customScalarType;
+          }
+        },
+      });
+
+      expect(fields.date.type.name).to.equal('GraphQLDate');
+      expect(fields.enum.type).to.be.an.instanceOf(GraphQLEnumType);
     });
   });
 });

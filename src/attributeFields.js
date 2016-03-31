@@ -21,8 +21,14 @@ module.exports = function (Model, options) {
       }
     }
 
+    let graphQLType;
+    if (options.typeMapper) {
+      graphQLType = options.typeMapper(key, type, Model.sequelize.constructor);
+    }
+    graphQLType = graphQLType || typeMapper.toGraphQL(type, Model.sequelize.constructor);
+
     memo[key] = {
-      type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
+      type: graphQLType
     };
 
     if (memo[key].type instanceof GraphQLEnumType ) {
