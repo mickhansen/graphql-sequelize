@@ -31,13 +31,15 @@ module.exports = function (Model, options) {
       type: graphQLType
     };
 
-    if (memo[key].type instanceof GraphQLEnumType ) {
-      memo[key].type.name = `${Model.name}${key}EnumType`;
+    if (graphQLType instanceof GraphQLEnumType ) {
+      graphQLType.name = `${Model.name}${key}EnumType`;
     }
 
     if (attribute.allowNull === false || attribute.primaryKey === true) {
-      memo[key].type = new GraphQLNonNull(memo[key].type);
+      graphQLType = new GraphQLNonNull(graphQLType);
     }
+
+    memo[key].type = graphQLType;
 
     return memo;
   }, {});
