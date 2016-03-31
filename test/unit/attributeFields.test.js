@@ -36,8 +36,8 @@ describe('attributeFields', function () {
       lastName: {
         type: Sequelize.STRING
       },
-      char:{
-        type:Sequelize.CHAR
+      char: {
+        type: Sequelize.CHAR
       },
       float: {
         type: Sequelize.FLOAT
@@ -60,14 +60,14 @@ describe('attributeFields', function () {
       virtualBoolean: {
         type: new Sequelize.VIRTUAL(Sequelize.BOOLEAN)
       },
-      date:{
-        type:Sequelize.DATE
+      date: {
+        type: Sequelize.DATE
       },
-      time:{
-        type:Sequelize.TIME
+      time: {
+        type: Sequelize.TIME
       },
-      dateonly:{
-        type:Sequelize.DATEONLY
+      dateonly: {
+        type: Sequelize.DATEONLY
       }
 
     }, {
@@ -117,7 +117,7 @@ describe('attributeFields', function () {
   });
 
   it('should be possible to rename fields with a object map',function () {
-    var fields = attributeFields(Model, {map: {"id":"mappedId"}});
+    var fields = attributeFields(Model, {map: {'id': 'mappedId'}});
     expect(Object.keys(fields)).to.deep.equal([
       'mappedId', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal',
       'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean', 'date',
