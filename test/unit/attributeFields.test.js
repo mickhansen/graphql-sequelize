@@ -208,6 +208,20 @@ describe('attributeFields', function () {
     expect(fields.enumTwo.type.getValues()[0].value).to.equal('foo_bar');
   });
 
+  it('should be possible map custom types', function () {
+    var fields = attributeFields(Model, {
+      globalId: true,
+      typeMapper: (key, sequelizeType, sequelizeTypes) => {
+        if (key === 'date') {
+          return customScalarType;
+        }
+      },
+    });
+
+    expect(fields.date.type.name).to.equal('GraphQLDate');
+    expect(fields.enum.type).to.be.an.instanceOf(GraphQLEnumType);
+  });
+
   describe('with non-default primary key', function () {
     var ModelWithoutId;
     var modelName = Math.random().toString();
@@ -256,20 +270,6 @@ describe('attributeFields', function () {
       expect(fields.id.resolve({
         email: 'idris@example.com'
       })).to.equal(toGlobalId(ModelWithoutId.name, 'idris@example.com'));
-    });
-
-    it('should be possible map custom types', function () {
-      var fields = attributeFields(Model, {
-        globalId: true,
-        typeMapper: (key, sequelizeType, sequelizeTypes) => {
-          if (key === 'date') {
-            return customScalarType;
-          }
-        },
-      });
-
-      expect(fields.date.type.name).to.equal('GraphQLDate');
-      expect(fields.enum.type).to.be.an.instanceOf(GraphQLEnumType);
     });
   });
 });
