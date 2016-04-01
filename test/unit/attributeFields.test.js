@@ -15,7 +15,8 @@ import {
   GraphQLBoolean,
   GraphQLEnumType,
   GraphQLList,
-  GraphQLScalarType
+  GraphQLScalarType,
+  GraphQLObjectType,
 } from 'graphql';
 
 import {
@@ -270,6 +271,55 @@ describe('attributeFields', function () {
       expect(fields.id.resolve({
         email: 'idris@example.com'
       })).to.equal(toGlobalId(ModelWithoutId.name, 'idris@example.com'));
+    });
+  });
+
+  describe('with JSON type', function () {
+    const modelName = Math.random().toString();
+    const rgbaTypeName = 'rgba';
+
+    let ModelWithJSONB;
+    let rgbaType;
+
+    before(function () {
+      ModelWithJSONB = sequelize.define(modelName, {
+        email: {
+          primaryKey: true,
+          type: Sequelize.STRING,
+        },
+        color: {
+          type: Sequelize.JSONB
+        },
+      }, {
+        timestamps: false
+      });
+      rgbaType = new GraphQLObjectType({
+        name: rgbaTypeName,
+        fields: {
+          red: new GraphQLNonNull(GraphQLInt),
+          green: new GraphQLNonNull(GraphQLInt),
+          blue: new GraphQLNonNull(GraphQLInt),
+          alpha: new GraphQLNonNull(GraphQLInt),
+        },
+      });
+    });
+
+    it('should be able to be handled by custom mapper', function () {
+      const fields = attributeFields(ModelWithJSONB, {
+        typeMapper: (key, sequelizeType, sequelizeTypes) => {
+          if (key === 'color') {
+            return rgbaType;
+          }
+        }
+      });
+
+      expect(Object.keys(fields)).to.deep.equal(['email', 'color']);
+
+      expect(fields.email.type).to.be.an.instanceOf(GraphQLNonNull);
+      expect(fields.email.type.ofType).to.equal(GraphQLString);
+
+      expect(fields.color.type).to.be.an.instanceOf(GraphQLObjectType);
+      expect(fields.color.type.name).to.eq(rgbaTypeName);
     });
   });
 });
