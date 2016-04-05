@@ -272,6 +272,15 @@ describe('attributeFields', function () {
         email: 'idris@example.com'
       })).to.equal(toGlobalId(ModelWithoutId.name, 'idris@example.com'));
     });
+
+    it('should be possible to bypass NonNull', function () {
+      var fields = attributeFields(Model, {
+        allowNull: true,
+      });
+
+      expect(fields.email.type).to.not.be.an.instanceOf(GraphQLNonNull);
+      expect(fields.email.type).to.equal(GraphQLString);
+    });
   });
 
   describe('with JSON type', function () {

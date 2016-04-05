@@ -2,9 +2,7 @@ import * as typeMapper from './typeMapper';
 import { GraphQLNonNull, GraphQLEnumType } from 'graphql';
 import { globalIdField } from 'graphql-relay';
 
-module.exports = function (Model, options) {
-  options = options || {};
-
+module.exports = function (Model, options = {}) {
   var result = Object.keys(Model.rawAttributes).reduce(function (memo, key) {
     if (options.exclude && ~options.exclude.indexOf(key)) return memo;
     if (options.only && !~options.only.indexOf(key)) return memo;
@@ -35,8 +33,10 @@ module.exports = function (Model, options) {
       graphQLType.name = `${Model.name}${key}EnumType`;
     }
 
-    if (attribute.allowNull === false || attribute.primaryKey === true) {
-      graphQLType = new GraphQLNonNull(graphQLType);
+    if (!options.allowNull) {
+      if (attribute.allowNull === false || attribute.primaryKey === true) {
+        graphQLType = new GraphQLNonNull(graphQLType);
+      }
     }
 
     memo[key].type = graphQLType;
