@@ -376,8 +376,8 @@ if (helper.sequelize.dialect.name === 'postgres') {
               },
               viewer: {
                 type: this.viewerType,
-                resolve: function (source, args, info) {
-                  return info.rootValue.viewer;
+                resolve: function (source, args, {viewer}) {
+                  return viewer;
                 }
               }
             }

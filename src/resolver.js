@@ -36,15 +36,16 @@ function resolverFactory(target, options) {
 
   validateOptions(options);
 
-  resolver = function (source, args, info) {
-    var root = info.rootValue || {}
-      , ast = info.fieldASTs
+  resolver = function (source, args, context, info) {
+    var ast = info.fieldASTs
       , type = info.returnType
       , list = options.list || type instanceof GraphQLList
       , includeResult
       , simpleAST = simplifyAST(ast[0], info)
       , fields = simpleAST.fields
       , findOptions = argsToFindOptions(args, model);
+
+    context = context || info.rootValue || {};
 
     if (isConnection(info.returnType)) {
       simpleAST = nodeAST(simpleAST);
@@ -60,7 +61,7 @@ function resolverFactory(target, options) {
         return handleConnection(source.get(association.as), args);
       }
 
-      return options.after(source.get(association.as), args, root, {
+      return options.after(source.get(association.as), args, context, {
         ast: simpleAST,
         type: type,
         source: source
@@ -87,7 +88,7 @@ function resolverFactory(target, options) {
     includeResult = generateIncludes(
       simpleAST,
       type,
-      root,
+      context,
       options
     );
 
@@ -97,10 +98,10 @@ function resolverFactory(target, options) {
     }
     findOptions.attributes = _.uniq(findOptions.attributes.concat(includeResult.attributes));
 
-    findOptions.root = root;
-    findOptions.logging = findOptions.logging || root.logging;
+    findOptions.root = context;
+    findOptions.logging = findOptions.logging || context.logging;
 
-    findOptions = options.before(findOptions, args, root, {
+    findOptions = options.before(findOptions, args, context, {
       ast: simpleAST,
       type: type,
       source: source
@@ -116,7 +117,7 @@ function resolverFactory(target, options) {
         if (options.handleConnection && isConnection(info.returnType)) {
           result = handleConnection(result, args);
         }
-        return options.after(result, args, root, {
+        return options.after(result, args, context, {
           ast: simpleAST,
           type: type,
           source: source
@@ -125,7 +126,7 @@ function resolverFactory(target, options) {
     }
 
     return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
-      return options.after(result, args, root, {
+      return options.after(result, args, context, {
         ast: simpleAST,
         type: type,
         source: source

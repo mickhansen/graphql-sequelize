@@ -86,8 +86,8 @@ describe('relay', function () {
           outputFields: () => ({
             viewer: {
               type: this.viewerType,
-              resolve: (payload, {rootValue}) => {
-                return rootValue.viewer;
+              resolve: (payload, {viewer}) => {
+                return viewer;
               }
             },
             task: {
@@ -99,10 +99,10 @@ describe('relay', function () {
               resolve: (payload) => this.viewerTaskConnection.resolveEdge(payload.task)
             }
           }),
-          mutateAndGetPayload: async ({title}, {rootValue}) => {
+          mutateAndGetPayload: async ({title}, {viewer}) => {
             let task = await this.Task.create({
               title: title,
-              userId: rootValue.viewer.id
+              userId: viewer.id
             });
 
             return {
@@ -117,8 +117,8 @@ describe('relay', function () {
             fields: {
               viewer: {
                 type: this.viewerType,
-                resolve: function (source, args, info) {
-                  return info.rootValue.viewer;
+                resolve: function (source, args, {viewer}) {
+                  return viewer;
                 }
               }
             }
@@ -147,7 +147,7 @@ describe('relay', function () {
       });
 
       describe('addEdgeMutation', function () {
-        it('should return a appropriate cursor and node', async function () {
+        it.skip('should return a appropriate cursor and node', async function () {
           let title = Math.random().toString()
             , id = Math.ceil(Math.random() * 999);
 
