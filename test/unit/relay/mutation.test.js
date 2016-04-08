@@ -147,7 +147,7 @@ describe('relay', function () {
       });
 
       describe('addEdgeMutation', function () {
-        it.skip('should return a appropriate cursor and node', async function () {
+        it('should return a appropriate cursor and node', async function () {
           let title = Math.random().toString()
             , id = Math.ceil(Math.random() * 999);
 
@@ -173,7 +173,7 @@ describe('relay', function () {
                 }
               }
             }
-          `, {
+          `, null, {
             viewer: this.viewer
           });
 

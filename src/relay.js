@@ -187,7 +187,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     handleConnection: false,
     include: true,
     list: true,
-    before: function (options, args, root, context) {
+    before: function (options, args, context, info) {
       if (args.first || args.last) {
         options.limit = parseInt(args.first || args.last, 10);
       }
@@ -265,9 +265,9 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       options.attributes = _.uniq(options.attributes);
 
 
-      return before(options, args, root, context);
+      return before(options, args, context, info);
     },
-    after: function (values, args, root, {source}) {
+    after: function (values, args, context, {source}) {
       let edges = values.map((value) => {
         return resolveEdge(value, args, source);
       });
@@ -298,9 +298,9 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     }
   });
 
-  let resolver = (source, args, info) => {
+  let resolver = (source, args, context, info) => {
     if (simplifyAST(info.fieldASTs[0], info).fields.edges) {
-      return $resolver(source, args, info);
+      return $resolver(source, args, context, info);
     }
 
     return {

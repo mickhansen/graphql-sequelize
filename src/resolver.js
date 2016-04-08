@@ -45,7 +45,7 @@ function resolverFactory(target, options) {
       , fields = simpleAST.fields
       , findOptions = argsToFindOptions(args, model);
 
-    context = context || info.rootValue || {};
+    context = context || {};
 
     if (isConnection(info.returnType)) {
       simpleAST = nodeAST(simpleAST);
@@ -62,6 +62,7 @@ function resolverFactory(target, options) {
       }
 
       return options.after(source.get(association.as), args, context, {
+        ...info,
         ast: simpleAST,
         type: type,
         source: source
@@ -99,9 +100,11 @@ function resolverFactory(target, options) {
     findOptions.attributes = _.uniq(findOptions.attributes.concat(includeResult.attributes));
 
     findOptions.root = context;
+    findOptions.context = context;
     findOptions.logging = findOptions.logging || context.logging;
 
     findOptions = options.before(findOptions, args, context, {
+      ...info,
       ast: simpleAST,
       type: type,
       source: source
@@ -118,6 +121,7 @@ function resolverFactory(target, options) {
           result = handleConnection(result, args);
         }
         return options.after(result, args, context, {
+          ...info,
           ast: simpleAST,
           type: type,
           source: source
@@ -127,6 +131,7 @@ function resolverFactory(target, options) {
 
     return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
       return options.after(result, args, context, {
+        ...info,
         ast: simpleAST,
         type: type,
         source: source
