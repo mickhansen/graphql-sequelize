@@ -87,11 +87,11 @@ if (helper.sequelize.dialect.name === 'postgres') {
           connectionFields: () => ({
             totalCount: {
               type: GraphQLInt,
-              resolve: function (connection, args, {rootValue}) {
+              resolve: function (connection, args, {logging}) {
                 self.projectTaskConnectionFieldSpy(connection);
                 return connection.source.countTasks({
                   where: connection.where,
-                  logging: rootValue.logging
+                  logging: logging
                 });
               }
             }
@@ -127,11 +127,11 @@ if (helper.sequelize.dialect.name === 'postgres') {
           connectionFields: () => ({
             totalCount: {
               type: GraphQLInt,
-              resolve: function (connection, args, {rootValue}) {
+              resolve: function (connection, args, {logging}) {
                 self.userTaskConnectionFieldSpy(connection);
                 return connection.source.countTasks({
                   where: connection.where,
-                  logging: rootValue.logging
+                  logging: logging
                 });
               }
             }
@@ -227,8 +227,8 @@ if (helper.sequelize.dialect.name === 'postgres') {
               },
               viewer: {
                 type: this.viewerType,
-                resolve: function (source, args, info) {
-                  return info.rootValue.viewer;
+                resolve: function (source, args, {viewer}) {
+                  return viewer;
                 }
               },
             }
@@ -376,8 +376,8 @@ if (helper.sequelize.dialect.name === 'postgres') {
               },
               viewer: {
                 type: this.viewerType,
-                resolve: function (source, args, info) {
-                  return info.rootValue.viewer;
+                resolve: function (source, args, {viewer}) {
+                  return viewer;
                 }
               }
             }
@@ -404,7 +404,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `, {
+        `, null, {
           logging: sqlSpy
         });
 
@@ -460,7 +460,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
                 }
               }
             }
-          `);
+          `, null, {});
         };
 
         let firstResult = await query();
@@ -491,7 +491,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `);
+        `, null, {});
 
         if (result.errors) throw new Error(result.errors[0].stack);
 
@@ -518,7 +518,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `);
+        `, null, {});
 
         if (result.errors) throw new Error(result.errors[0].stack);
         expect(result.data.user.tasks.edges[0].node.title).to.equal('CAA');
@@ -571,7 +571,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
                 }
               }
             }
-          `);
+          `, null, {});
         };
 
         let firstResult = await query();
@@ -605,7 +605,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `);
+        `, null, {});
 
         let secondResult = await graphql(this.schema, `
           {
@@ -624,7 +624,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `);
+        `, null, {});
 
         expect(firstResult.data.user.tasks.edges[2].node.name).to.equal('ABC');
         expect(firstResult.data.user.tasks.edges[2].node.name).to.equal(secondResult.data.user.tasks.edges[0].node.name);
@@ -654,7 +654,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `, {
+        `, null, {
           logging: sqlSpy
         });
 
@@ -687,7 +687,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `, {
+        `, null, {
           logging: sqlSpy
         });
 
@@ -717,7 +717,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `, {
+        `, null, {
           logging: sqlSpy
         });
 
@@ -744,7 +744,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `, {
+        `, null, {
           logging: sqlSpy
         });
 
@@ -775,7 +775,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           fragment projectOwner on userProjectEdge {
             isOwner
           }
-        `, {
+        `, null, {
           logging: sqlSpy
         });
 
@@ -796,7 +796,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `, {
+        `, null, {
           logging: sqlSpy
         });
 
@@ -827,7 +827,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `, {});
+        `, null, {});
 
         if (result.errors) throw new Error(result.errors[0].stack);
         expect(result.data.user).not.to.be.null;
@@ -864,7 +864,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           }
-        `, {
+        `, null, {
           viewer: viewer
         });
 

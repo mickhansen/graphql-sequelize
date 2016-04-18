@@ -6,7 +6,7 @@ function inList(list, attribute) {
   return ~list.indexOf(attribute);
 }
 
-export default function generateIncludes(simpleAST, type, root, options) {
+export default function generateIncludes(simpleAST, type, context, options) {
   var result = {include: [], attributes: [], order: []};
 
   type = type.ofType || type;
@@ -46,7 +46,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
       var dummyResult = generateIncludes(
         fieldAST,
         fieldType,
-        root,
+        context,
         options
       );
 
@@ -73,7 +73,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
       }
 
       if (includeResolver.$before) {
-        includeOptions = includeResolver.$before(includeOptions, args, root, {
+        includeOptions = includeResolver.$before(includeOptions, args, context, {
           ast: fieldAST,
           type: type
         });
@@ -113,7 +113,7 @@ export default function generateIncludes(simpleAST, type, root, options) {
         nestedResult = generateIncludes(
           fieldAST,
           fieldType,
-          root,
+          context,
           includeResolver.$options
         );
 

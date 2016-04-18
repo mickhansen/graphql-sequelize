@@ -554,7 +554,7 @@ describe('relay', function () {
           }
         }
       }
-    `, {
+    `, null, {
       logging: sqlSpy
     }).then(result => {
       if (result.errors) throw new Error(result.errors[0].stack);
@@ -599,7 +599,7 @@ describe('relay', function () {
           }
         }
       }
-    `, {
+    `, null, {
       logging: sqlSpy
     }).then(result => {
       if (result.errors) throw new Error(result.errors[0].stack);

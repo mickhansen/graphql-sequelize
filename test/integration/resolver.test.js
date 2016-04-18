@@ -441,9 +441,9 @@ describe('resolver', function () {
               }
             },
             resolve: resolver(User, {
-              before: function (options, args, root) {
+              before: function (options, args, {name}) {
                 options.where = options.where || {};
-                options.where.name = root.name;
+                options.where.name = name;
                 return options;
               }
             })
@@ -458,7 +458,7 @@ describe('resolver', function () {
           name
         }
       }
-    `, {
+    `, null, {
       name: user.name
     }).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
@@ -592,7 +592,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, {
+    `, null, {
       logging: spy
     }).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
@@ -674,7 +674,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, {
+    `, null, {
       logging: spy
     }).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
@@ -780,7 +780,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, {
+    `, null, {
       logging: spy
     }).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
@@ -825,7 +825,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, {
+    `, null, {
       yolo: 'swag'
     }).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
@@ -928,7 +928,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, {
+    `, null, {
       logging: sqlSpy
     }).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
@@ -960,7 +960,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, {
+    `, null, {
       logging: sqlSpy
     }).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
@@ -996,7 +996,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, {
+    `, null, {
       logging: sqlSpy
     }).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
@@ -1179,7 +1179,7 @@ describe('resolver', function () {
 
       const query = `{ user(id: ${user.id}) { name } } `;
 
-      return graphql(normalSchema, query, {logging: sqlSpy}).then(function () {
+      return graphql(normalSchema, query, null, {logging: sqlSpy}).then(function () {
         const [sqlQuery] = sqlSpy.args[0];
         // As we have
         //   1) `filterAttributes` set to true,
@@ -1188,7 +1188,7 @@ describe('resolver', function () {
         // `createdAt` should not be fetched
         expect(sqlQuery).to.not.contain('createdAt');
 
-        return graphql(schemaWithDefaultAttributes, query, {logging: sqlSpy});
+        return graphql(schemaWithDefaultAttributes, query, null, {logging: sqlSpy});
       }).then(function (result) {
         // With the schema that defined `createdAt` as a default attribute for
         // user, it should be fetched
