@@ -1,6 +1,6 @@
 {
   "name": "graphql-sequelize",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "GraphQL & Relay for MySQL & Postgres via Sequelize",
   "main": "lib/index.js",
   "options": {
