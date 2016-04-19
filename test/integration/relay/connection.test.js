@@ -8,6 +8,7 @@ import attributeFields from '../../../src/attributeFields';
 import resolver from '../../../src/resolver';
 import {uniq} from 'lodash';
 
+
 const {
   sequelize,
   Promise
@@ -18,13 +19,10 @@ import {
 } from '../../../src/relay';
 
 import {
-  GraphQLString,
   GraphQLInt,
-  GraphQLFloat,
   GraphQLNonNull,
   GraphQLBoolean,
   GraphQLEnumType,
-  GraphQLList,
   GraphQLObjectType,
   GraphQLSchema,
   graphql
@@ -121,9 +119,19 @@ if (helper.sequelize.dialect.name === 'postgres') {
             values: {
               ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
               LATEST: {value: ['createdAt', 'DESC']},
+              CUSTOM: {value: ['updatedAt', 'DESC']},
               NAME: {value: ['name', 'ASC']}
             }
           }),
+          before: (options) => {
+            if (options.order[0][0] === 'updatedAt') {
+              options.order = Sequelize.literal(`
+                CASE
+                  WHEN completed = true THEN "createdAt"
+                  ELSE "updatedAt" End ASC`);
+            }
+            return options;
+          },
           connectionFields: () => ({
             totalCount: {
               type: GraphQLInt,
@@ -193,12 +201,12 @@ if (helper.sequelize.dialect.name === 'postgres') {
           orderBy: new GraphQLEnumType({
             name: 'Viewer' + this.Task.name + 'ConnectionOrder',
             values: {
-              ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
+              ID: {value: [this.Task.primaryKeyAttribute, 'ASC']}
             }
           }),
-          before: (options, args, root) => {
+          before: (options, args, context, {viewer}) => {
             options.where = options.where || {};
-            options.where.userId = root.viewer.get('id');
+            options.where.userId = viewer.get('id');
             return options;
           }
         });
@@ -340,7 +348,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           name: 'userProject',
           nodeType: this.projectType,
           target: this.User.Projects,
-          before(options){
+          before(options) {
             // compare a uniq set of attributes against what is returned by the sequelizeConnection resolver
             let getUnique = uniq(options.attributes);
             projectConnectionAttributesUnique = getUnique.length === options.attributes.length;
@@ -384,7 +392,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           })
         });
 
-        let result = await graphql(schema, `
+        await graphql(schema, `
           {
             user(id: ${this.userA.id}) {
               projects {
@@ -461,6 +469,96 @@ if (helper.sequelize.dialect.name === 'postgres') {
               }
             }
           `, null, {});
+        };
+
+        let firstResult = await query();
+        verify(firstResult, firstThree);
+        expect(firstResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+
+        let nextResult = await query(firstResult.data.user.tasks.pageInfo.endCursor);
+        verify(nextResult, nextThree);
+        expect(nextResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+
+        let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor);
+        verify(lastResult, lastThree);
+        expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+      });
+
+      it('should support in-query slicing and pagination with first and CUSTOM orderBy', async function () {
+        const correctOrder = await graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              tasks(first: 9, orderBy: CUSTOM) {
+                edges {
+                  cursor
+                  node {
+                    id
+                    name
+                  }
+                }
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
+              }
+            }
+          }
+        `);
+        const reordered = correctOrder.data.user.tasks.edges.map(({node}) => {
+          const targetId = fromGlobalId(node.id).id;
+          return this.userA.tasks.find(task => {
+            return task.id === Number(targetId);
+          });
+        });
+
+        let lastThree = reordered.slice(this.userA.tasks.length - 3, this.userA.tasks.length);
+        let nextThree = reordered.slice(this.userA.tasks.length - 6, this.userA.tasks.length - 3);
+        let firstThree = reordered.slice(this.userA.tasks.length - 9, this.userA.tasks.length - 6);
+
+        expect(firstThree.length).to.equal(3);
+        expect(nextThree.length).to.equal(3);
+        expect(lastThree.length).to.equal(3);
+
+
+        let verify = function (result, expectedTasks) {
+          if (result.errors) throw new Error(result.errors[0].stack);
+
+          var resultTasks = result.data.user.tasks.edges.map(function (edge) {
+            return edge.node;
+          });
+
+          let resultIds = resultTasks.map((task) => {
+            return parseInt(fromGlobalId(task.id).id, 10);
+          }).sort();
+
+          let expectedIds = expectedTasks.map(function (task) {
+            return task.get('id');
+          }).sort();
+
+          expect(resultTasks.length).to.equal(3);
+          expect(resultIds).to.deep.equal(expectedIds);
+        };
+
+        let query = (after) => {
+          return graphql(this.schema, `
+            {
+              user(id: ${this.userA.id}) {
+                tasks(first: 3, ${after ? 'after: "' + after + '", ' : ''} orderBy: CUSTOM) {
+                  edges {
+                    cursor
+                    node {
+                      id
+                      name
+                    }
+                  }
+                  pageInfo {
+                    hasNextPage
+                    endCursor
+                  }
+                }
+              }
+            }
+          `);
         };
 
         let firstResult = await query();
