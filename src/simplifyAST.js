@@ -2,7 +2,7 @@ function deepMerge(a, b) {
   Object.keys(b).forEach(function (key) {
     if (['fields', 'args'].indexOf(key) !== -1) return;
 
-    if (a[key] && b[key]) {
+    if (a[key] && b[key] && typeof a[key] === 'object' && typeof b[key] === 'object') {
       a[key] = deepMerge(a[key], b[key]);
     } else {
       a[key] = b[key];
