@@ -194,7 +194,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
     handleConnection: false,
     include: true,
     list: true,
-    before: function (options, args, context) {
+    before: function (options, args, context, info) {
       if (args.first || args.last) {
         options.limit = parseInt(args.first || args.last, 10);
       }
@@ -244,7 +244,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
         if (startIndex > 0) options.offset = startIndex + 1;
       }
       options.attributes = _.uniq(options.attributes);
-      return before(options, args, root, context);
+      return before(options, args, root, context, info);
     },
     after: function (values, args, root, {source}) {
       var cursor = null;
