@@ -103,38 +103,37 @@ function resolverFactory(target, options) {
     findOptions.context = context;
     findOptions.logging = findOptions.logging || context.logging;
 
-    findOptions = options.before(findOptions, args, context, {
+    return Promise.resolve(options.before(findOptions, args, context, {
       ...info,
       ast: simpleAST,
       type: type,
       source: source
-    });
+    })).then(function (findOptions) {
+      if (!findOptions.order) {
+        findOptions.order = [model.primaryKeyAttribute, 'ASC'];
+      }
 
-    if (!findOptions.order) {
-      findOptions.order = [model.primaryKeyAttribute, 'ASC'];
-    }
+      if (association) {
+        return source[association.accessors.get](findOptions).then(function (result) {
+          if (options.handleConnection && isConnection(info.returnType)) {
+            result = handleConnection(result, args);
+          }
+          return options.after(result, args, context, {
+            ...info,
+            ast: simpleAST,
+            type: type,
+            source: source
+          });
+        });
+      }
 
-
-    if (association) {
-      return source[association.accessors.get](findOptions).then(function (result) {
-        if (options.handleConnection && isConnection(info.returnType)) {
-          result = handleConnection(result, args);
-        }
+      return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
         return options.after(result, args, context, {
           ...info,
           ast: simpleAST,
           type: type,
           source: source
         });
-      });
-    }
-
-    return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
-      return options.after(result, args, context, {
-        ...info,
-        ast: simpleAST,
-        type: type,
-        source: source
       });
     });
   };
