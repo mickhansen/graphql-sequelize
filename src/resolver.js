@@ -86,29 +86,29 @@ function resolverFactory(target, options) {
       findOptions.attributes.push(model.primaryKeyAttribute);
     }
 
-    includeResult = generateIncludes(
+    return generateIncludes(
       simpleAST,
       type,
       context,
       options
-    );
+    ).then(function (includeResult) {
+      findOptions.include = includeResult.include;
+      if (includeResult.order) {
+        findOptions.order = (findOptions.order || []).concat(includeResult.order);
+      }
+      findOptions.attributes = _.uniq(findOptions.attributes.concat(includeResult.attributes));
 
-    findOptions.include = includeResult.include;
-    if (includeResult.order) {
-      findOptions.order = (findOptions.order || []).concat(includeResult.order);
-    }
-    findOptions.attributes = _.uniq(findOptions.attributes.concat(includeResult.attributes));
+      findOptions.root = context;
+      findOptions.context = context;
+      findOptions.logging = findOptions.logging || context.logging;
 
-    findOptions.root = context;
-    findOptions.context = context;
-    findOptions.logging = findOptions.logging || context.logging;
-
-    return Promise.resolve(options.before(findOptions, args, context, {
-      ...info,
-      ast: simpleAST,
-      type: type,
-      source: source
-    })).then(function (findOptions) {
+      return options.before(findOptions, args, context, {
+        ...info,
+        ast: simpleAST,
+        type: type,
+        source: source
+      });
+    }).then(function (findOptions) {
       if (!findOptions.order) {
         findOptions.order = [model.primaryKeyAttribute, 'ASC'];
       }
@@ -116,24 +116,19 @@ function resolverFactory(target, options) {
       if (association) {
         return source[association.accessors.get](findOptions).then(function (result) {
           if (options.handleConnection && isConnection(info.returnType)) {
-            result = handleConnection(result, args);
+            return handleConnection(result, args);
           }
-          return options.after(result, args, context, {
-            ...info,
-            ast: simpleAST,
-            type: type,
-            source: source
-          });
+          return result;
         });
       }
 
-      return model[list ? 'findAll' : 'findOne'](findOptions).then(function (result) {
-        return options.after(result, args, context, {
-          ...info,
-          ast: simpleAST,
-          type: type,
-          source: source
-        });
+      return model[list ? 'findAll' : 'findOne'](findOptions);
+    }).then(function (result) {
+      return options.after(result, args, context, {
+        ...info,
+        ast: simpleAST,
+        type: type,
+        source: source
       });
     });
   };

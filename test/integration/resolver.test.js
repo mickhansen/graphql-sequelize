@@ -1058,9 +1058,8 @@ describe('resolver', function () {
               }
             },
             resolve: resolver(User, {
-              before: async function (options) {
-                await Promise.delay(100);
-                return options;
+              before: function (options) {
+                return Promise.resolve(options);
               },
               after: async function (result) {
                 await Promise.delay(100);
