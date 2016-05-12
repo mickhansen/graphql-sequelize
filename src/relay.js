@@ -244,9 +244,9 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
         if (startIndex > 0) options.offset = startIndex + 1;
       }
       options.attributes = _.uniq(options.attributes);
-      return before(options, args, root, context, info);
+      return before(options, args, context, info);
     },
-    after: function (values, args, root, {source}) {
+    after: function (values, args, context, {source}) {
       var cursor = null;
 
       if (args.after || args.before) {
