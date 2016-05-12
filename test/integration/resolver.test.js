@@ -1039,6 +1039,58 @@ describe('resolver', function () {
     });
   });
 
+  it('should allow async before and after', function () {
+    var users = this.users
+      , schema;
+
+    schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'RootQueryType',
+        fields: {
+          users: {
+            type: new GraphQLList(userType),
+            args: {
+              limit: {
+                type: GraphQLInt
+              },
+              order: {
+                type: GraphQLString
+              }
+            },
+            resolve: resolver(User, {
+              before: function (options) {
+                return Promise.resolve(options);
+              },
+              after: async function (result) {
+                await Promise.delay(100);
+                return result.map(function () {
+                  return {
+                    name: 'Delayed!'
+                  };
+                });
+              }
+            })
+          }
+        }
+      })
+    });
+
+    return graphql(schema, `
+      {
+        users {
+          name
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data.users).to.have.length(users.length);
+      result.data.users.forEach(function (user) {
+        expect(user.name).to.equal('Delayed!');
+      });
+    });
+  });
+
   describe('filterAttributes', function () {
     beforeEach(function () {
       this.defaultValue = resolver.filterAttributes;
