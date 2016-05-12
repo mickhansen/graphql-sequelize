@@ -204,7 +204,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
               ID: {value: [this.Task.primaryKeyAttribute, 'ASC']}
             }
           }),
-          before: (options, args, context, {viewer}) => {
+          before: (options, args, {viewer}) => {
             options.where = options.where || {};
             options.where.userId = viewer.get('id');
             return options;
