@@ -39,7 +39,7 @@
     "lodash": "^4.0.0"
   },
   "peerDependencies": {
-    "graphql": "^0.5.0"
+    "graphql": "^0.6.0"
   },
   "devDependencies": {
     "babel": "^5.8.29",
