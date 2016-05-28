@@ -1,15 +1,12 @@
 'use strict';
 
-var chai = require('chai')
-  , expect = chai.expect
-  , resolver = require('../../src/resolver')
-  , helper = require('./helper')
-  , sequelize = helper.sequelize
-  , Sequelize = require('sequelize')
-  , Promise = helper.Promise
-  , sinon = require('sinon')
-  , attributeFields = require('../../src/attributeFields')
-  , _ = require('lodash');
+import { expect } from 'chai';
+import resolver from '../../src/resolver';
+import { sequelize, Promise } from './helper';
+import Sequelize from 'sequelize';
+import sinon from 'sinon';
+import attributeFields from '../../src/attributeFields';
+import _ from 'lodash';
 
 import {
   GraphQLString,
