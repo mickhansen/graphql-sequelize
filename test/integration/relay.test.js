@@ -282,7 +282,7 @@ describe('relay', function () {
     return this.project.setUsers([this.userA.id, this.userB.id]);
   });
 
-  it('should support unassociated GraphQL types', function() {
+  it('should support unassociated GraphQL types', function () {
     var globalId = toGlobalId('Viewer');
     return graphql(schema, `
       {
@@ -296,7 +296,7 @@ describe('relay', function () {
 
   });
 
-  it('should return userA when running a node query', function() {
+  it('should return userA when running a node query', function () {
     var user = this.userA
       , globalId = toGlobalId('User', user.id);
 
@@ -315,8 +315,8 @@ describe('relay', function () {
     });
   });
 
-  describe('node queries', function() {
-    it('should allow returning a custom entity', function() {
+  describe('node queries', function () {
+    it('should allow returning a custom entity', function () {
       generateCustom(1).then(custom => {
         const globalId = toGlobalId('Custom', custom.id);
 
@@ -337,7 +337,7 @@ describe('relay', function () {
     });
   });
 
-  it('should support first queries on connections', function() {
+  it('should support first queries on connections', function () {
     var user = this.userB;
 
     return graphql(schema, `
@@ -373,7 +373,7 @@ describe('relay', function () {
     });
   });
 
-  it('should support last queries on connections', function() {
+  it('should support last queries on connections', function () {
     var user = this.userB;
 
     return graphql(schema, `
@@ -410,7 +410,7 @@ describe('relay', function () {
   });
 
   // these two tests are not determenistic on postgres currently
-  it.skip('should support after queries on connections', function() {
+  it.skip('should support after queries on connections', function () {
     var user = this.userA;
 
     return graphql(schema, `
