@@ -270,11 +270,11 @@ describe('relay', function () {
           include: [User.Tasks]
         })
       ).bind(this).spread(function (project, userA, userB) {
-          this.project = project;
-          this.userA = userA;
-          this.userB = userB;
-          this.users = [userA, userB];
-        });
+        this.project = project;
+        this.userA = userA;
+        this.userB = userB;
+        this.users = [userA, userB];
+      });
     });
   });
 
