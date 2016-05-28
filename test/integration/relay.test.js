@@ -17,7 +17,8 @@ import {
 } from 'graphql';
 
 import {
-  sequelizeNodeInterface
+  sequelizeNodeInterface,
+  sequelizeConnection
 } from '../../src/relay';
 
 import {
@@ -45,8 +46,10 @@ const generateCustom = Promise.method(id => {
 describe('relay', function () {
   var User
     , Task
+    , Thing
     , userType
     , taskType
+    , thingType
     , nodeInterface
     , Project
     , projectType
@@ -81,7 +84,16 @@ describe('relay', function () {
       timestamps: false
     });
 
+    Thing = sequelize.define('Thing', {
+      specialId: {
+        type: Sequelize.STRING
+      }
+    }, {
+      timestamps: false
+    });
+
     User.Tasks = User.hasMany(Task, {as: 'taskItems'}); // Specifically different from connection type name
+    User.Things = User.hasMany(Thing, {as: 'things'});
     Project.Users = Project.hasMany(User, {as: 'users'});
 
 
@@ -89,6 +101,21 @@ describe('relay', function () {
     nodeInterface = node.nodeInterface;
     nodeField = node.nodeField;
     var nodeTypeMapper = node.nodeTypeMapper;
+
+    thingType = new GraphQLObjectType({
+      name: 'Thing',
+      fields: {
+        id: globalIdField('Thing', instance => instance.specialId),
+      },
+      interfaces: [nodeInterface]
+    });
+
+    var thingConnection = sequelizeConnection({
+      name: 'Thing',
+      nodeType: thingType,
+      target: User.Things,
+      defaultAttributes: ['specialId']
+    });
 
     taskType = new GraphQLObjectType({
       name: 'Task',
@@ -114,6 +141,11 @@ describe('relay', function () {
           type: taskConnection.connectionType,
           args: connectionArgs,
           resolve: resolver(User.Tasks)
+        },
+        things: {
+          type: thingConnection.connectionType,
+          args: thingConnection.connectionArgs,
+          resolve: thingConnection.resolve
         }
       },
       interfaces: [nodeInterface]
@@ -165,6 +197,7 @@ describe('relay', function () {
       [User.name]: { type: userType },
       [Project.name]: { type: projectType},
       [Task.name]: { type: taskType },
+      [Thing.name]: { type: thingType },
       Viewer: { type: viewerType },
       [customType.name]: {
         type: customType,
@@ -258,16 +291,18 @@ describe('relay', function () {
         User.create({
           id: userId++,
           name: 'a' + Math.random().toString(),
-          [User.Tasks.as]: [generateTask(taskId++), generateTask(taskId++), generateTask(taskId++)]
+          [User.Tasks.as]: [generateTask(taskId++), generateTask(taskId++), generateTask(taskId++)],
+          [User.Things.as]: [{ specialId: 'foobar' }]
         }, {
-          include: [User.Tasks]
+          include: [User.Tasks, User.Things]
         }),
         User.create({
           id: userId++,
           name: 'b' + Math.random().toString(),
-          [User.Tasks.as]: [generateTask(taskId++), generateTask(taskId++)]
+          [User.Tasks.as]: [generateTask(taskId++), generateTask(taskId++)],
+          [User.Things.as]: [{ specialId: 'foobar' }]
         }, {
-          include: [User.Tasks]
+          include: [User.Tasks, User.Things]
         })
       ).bind(this).spread(function (project, userA, userB) {
         this.project = project;
@@ -605,6 +640,40 @@ describe('relay', function () {
       expect(userB.tasks.edges[0].node.name).to.be.ok;
 
       expect(sqlSpy).to.have.been.calledTwice;
+    });
+  });
+
+  it('should support defaultAttributes on connections', async function () {
+    const user = this.userB;
+
+    const result = await graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          things {
+            edges {
+              node {
+                id
+              }
+            }
+          }
+        }
+      }
+    `);
+
+    if (result.errors) throw new Error(result.errors[0].stack);
+
+    expect(result.data).to.deep.equal({
+      user: {
+        things: {
+          edges: [
+            {
+              node: {
+                id: toGlobalId('Thing', 'foobar'),
+              }
+            }
+          ]
+        }
+      }
     });
   });
 
