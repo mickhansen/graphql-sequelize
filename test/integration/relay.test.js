@@ -5,16 +5,11 @@ import resolver from '../../src/resolver';
 import { sequelize, Promise } from './helper';
 import Sequelize from 'sequelize';
 import sinon from 'sinon';
-import attributeFields from '../../src/attributeFields';
-import _ from 'lodash';
 
 import {
   GraphQLString,
   GraphQLInt,
-  GraphQLFloat,
   GraphQLNonNull,
-  GraphQLBoolean,
-  GraphQLEnumType,
   GraphQLList,
   GraphQLObjectType,
   GraphQLSchema,
@@ -31,7 +26,6 @@ import {
   fromGlobalId,
   connectionDefinitions,
   connectionArgs,
-  connectionFromArray
 } from 'graphql-relay';
 
 function generateTask(id) {
@@ -53,12 +47,10 @@ describe('relay', function () {
     , Task
     , userType
     , taskType
-    , taskConnection
     , nodeInterface
     , Project
     , projectType
     , viewerType
-    , userConnection
     , nodeField
     , schema;
 
@@ -529,8 +521,7 @@ describe('relay', function () {
   });
 
   it('should resolve nested connections', function () {
-    var project = this.project
-      , sqlSpy = sinon.spy();
+    var sqlSpy = sinon.spy();
 
     return graphql(schema, `
       {
@@ -574,8 +565,7 @@ describe('relay', function () {
   });
 
   it('should resolve nested connections with a include: false top level node', function () {
-    var project = this.project
-      , sqlSpy = sinon.spy();
+    var sqlSpy = sinon.spy();
 
     return graphql(schema, `
       {
