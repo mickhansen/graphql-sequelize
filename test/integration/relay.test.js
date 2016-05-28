@@ -32,7 +32,7 @@ function generateTask(id) {
   return {
     id: id,
     name: Math.random().toString()
-  }
+  };
 }
 
 const generateCustom = Promise.method(id => {
@@ -445,7 +445,7 @@ describe('relay', function () {
             }
           }
         }
-      `)
+      `);
     })
     .then(function (result) {
       expect(result.data.user.tasks.edges[0].node.name).to.equal(user.taskItems[1].name);
