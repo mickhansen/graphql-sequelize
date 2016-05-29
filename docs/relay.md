@@ -174,3 +174,40 @@ fragment getCreated on userTaskEdge {
   wasCreatedByUser
 }
 ```
+
+You can pass custom args in your connection definition and they will
+automaticly be turned into where arguments. These can be further modified
+using the `where` option in `sequelizeConnection`.
+
+```js
+const userTaskConnection = sequelizeConnection({
+  name: 'userTask',
+  nodeType: taskType,
+  target: User.Tasks,
+  where: function (key, value) {
+    if (key === 'titleStartsWith') {
+      return { title: { $like: `${value}%` } };
+    } else {
+      return {[key]: value};
+    }
+  },
+});
+const userType = new GraphQLObjectType({
+  name: User.name,
+  fields: {
+    id: globalIdField(User.name),
+    name: {
+      type: GraphQLString
+    },
+    tasks: {
+      type: userTaskConnection.connectionType,
+      args: {
+        ...userTaskConnection.connectionArgs, // <-- Load the defaults
+        titleStartsWith: { // <-- Extend further yourself
+          type: GraphQLString,
+        }
+      },
+      resolve: userTaskConnection.resolve
+    }
+  }
+});
