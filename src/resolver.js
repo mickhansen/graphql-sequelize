@@ -108,7 +108,7 @@ function resolverFactory(target, options) {
         source: source
       });
     }).then(function (findOptions) {
-      if (!findOptions.order) {
+      if (list && !findOptions.order) {
         findOptions.order = [model.primaryKeyAttribute, 'ASC'];
       }
 

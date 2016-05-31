@@ -10,7 +10,7 @@
     "prepublish": "npm run check && npm run build",
     "check": "npm run lint && npm run test-unit",
     "lint": "eslint src",
-    "build": "rm -rf lib/* && babel src --ignore test --optional runtime --out-dir lib",
+    "build": "rm -rf lib/* && babel src --ignore test --out-dir lib",
     "test": "npm run test-unit && npm run test-docker",
     "test-watch": "npm run test-unit -- --watch",
     "test-unit": "mocha $npm_package_options_mocha test/unit/*.test.js test/unit/**/*.test.js",
@@ -33,7 +33,6 @@
   },
   "homepage": "https://github.com/mickhansen/graphql-sequelize",
   "dependencies": {
-    "babel-runtime": "^6.0.8",
     "graphql-relay": "^0.4.2",
     "invariant": "2.2.1",
     "lodash": "^4.0.0"
@@ -42,10 +41,13 @@
     "graphql": "^0.5.0 || ^0.6.0"
   },
   "devDependencies": {
-    "babel": "^5.8.29",
-    "babel-core": "^5.8.31",
+    "babel-cli": "^6.9.0",
     "babel-eslint": "^6.0.3",
-    "bluebird": "^3.1.4",
+    "babel-plugin-transform-object-rest-spread": "^6.8.0",
+    "babel-preset-async-to-bluebird": "^1.1.0",
+    "babel-preset-es2015-node4": "^2.1.0",
+    "babel-register": "^6.9.0",
+    "bluebird": "^3.4.0",
     "chai": "^3.0.0",
     "chai-as-promised": "^5.1.0",
     "eslint": "^1.7.3",

@@ -1,6 +1,4 @@
-require('babel/register')({
-  optional: ['runtime', 'bluebirdCoroutines']
-});
+require('babel-register');
 
 var chai = require('chai');
 

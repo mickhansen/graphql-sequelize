@@ -25,7 +25,8 @@ export class NodeTypeMapper {
   }
 
   mapTypes(types) {
-    Object.entries(types).forEach(([k, v]) => {
+    Object.keys(types).forEach((k) => {
+      let v = types[k];
       this.map[k] = v.type
         ? v
         : { type: v };
