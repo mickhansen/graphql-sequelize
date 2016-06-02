@@ -268,10 +268,19 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       if (model.sequelize.dialect.name === 'postgres' && (args.first || args.last)) {
         if (fullCount === null || fullCount === undefined) throw new Error('No fullcount available');
       }
-      let hasMorePages = false;
+      let hasNextPage = false;
+      let hasPreviousPage = false;
       if (args.first || args.last) {
+        const count = parseInt(args.first || args.last, 10);
         let index = cursor ? Number(cursor.index) : 0;
-        hasMorePages = index + 1 + parseInt(args.first || args.last, 10) < fullCount;
+        if (index !== 0) index++;
+
+        hasNextPage = index + 1 + count <= fullCount;
+        hasPreviousPage = index - count >= 0;
+
+        if (args.last) {
+          [hasNextPage, hasPreviousPage] = [hasPreviousPage, hasNextPage];
+        }
       }
 
       return {
@@ -282,8 +291,8 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
         pageInfo: {
           startCursor: firstEdge ? firstEdge.cursor : null,
           endCursor: lastEdge ? lastEdge.cursor : null,
-          hasPreviousPage: hasMorePages,
-          hasNextPage: hasMorePages
+          hasNextPage: hasNextPage,
+          hasPreviousPage: hasPreviousPage
         }
       };
     }

@@ -463,6 +463,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
                   }
                   pageInfo {
                     hasNextPage
+                    hasPreviousPage
                     endCursor
                   }
                 }
@@ -474,14 +475,17 @@ if (helper.sequelize.dialect.name === 'postgres') {
         let firstResult = await query();
         verify(firstResult, firstThree);
         expect(firstResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+        expect(firstResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
 
         let nextResult = await query(firstResult.data.user.tasks.pageInfo.endCursor);
         verify(nextResult, nextThree);
         expect(nextResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+        expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
 
         let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor);
         verify(lastResult, lastThree);
         expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+        expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
       });
 
       it('should support in-query slicing and pagination with first and CUSTOM orderBy', async function () {
@@ -553,6 +557,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
                   }
                   pageInfo {
                     hasNextPage
+                    hasPreviousPage
                     endCursor
                   }
                 }
@@ -564,18 +569,23 @@ if (helper.sequelize.dialect.name === 'postgres') {
         let firstResult = await query();
         verify(firstResult, firstThree);
         expect(firstResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+        expect(firstResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
 
         let nextResult = await query(firstResult.data.user.tasks.pageInfo.endCursor);
         verify(nextResult, nextThree);
         expect(nextResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+        expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
 
         let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor);
         verify(lastResult, lastThree);
         expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+        expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
       });
 
       it('should support pagination with where', async function () {
         const completedTasks = this.userA.tasks.filter(task => task.completed)
+
+        expect(completedTasks.length).to.equal(4);
 
         let firstThree = completedTasks.slice(0, 3);
         let nextThree = completedTasks.slice(3, 6);
@@ -616,6 +626,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
                   }
                   pageInfo {
                     hasNextPage
+                    hasPreviousPage
                     endCursor
                   }
                 }
@@ -628,10 +639,12 @@ if (helper.sequelize.dialect.name === 'postgres') {
         let firstResult = await query();
         verify(firstResult, firstThree);
         expect(firstResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+        expect(firstResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
 
         let nextResult = await query(firstResult.data.user.tasks.pageInfo.endCursor);
         verify(nextResult, nextThree);
         expect(nextResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+        expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
       });
 
       it('should support in-query slicing with user provided args/where', async function () {
@@ -723,6 +736,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
                     }
                   }
                   pageInfo {
+                    hasNextPage
                     hasPreviousPage
                     endCursor
                   }
@@ -734,14 +748,17 @@ if (helper.sequelize.dialect.name === 'postgres') {
 
         let firstResult = await query();
         verify(firstResult, firstThree);
+        expect(firstResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
         expect(firstResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
 
         let nextResult = await query(firstResult.data.user.tasks.pageInfo.endCursor);
         verify(nextResult, nextThree);
+        expect(nextResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
         expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
 
         let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor);
         verify(lastResult, lastThree);
+        expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
         expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
       });
 
