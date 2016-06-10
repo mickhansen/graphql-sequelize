@@ -1,7 +1,13 @@
-language: node_js
+sudo: false
 
+language: node_js
 node_js:
   - "4.0"
+  - "6.0"
+
+cache:
+  directories:
+    - node_modules
 
 addons:
   postgresql: "9.4"
