@@ -1,12 +1,11 @@
 'use strict';
 
+import { sequelize, Promise } from '../support/helper'
+
 var chai = require('chai')
   , expect = chai.expect
   , resolver = require('../../src/resolver')
-  , helper = require('./helper')
-  , sequelize = helper.sequelize
   , Sequelize = require('sequelize')
-  , Promise = helper.Promise
   , sinon = require('sinon')
   , attributeFields = require('../../src/attributeFields')
   , _ = require('lodash');
@@ -264,7 +263,7 @@ describe('relay', function () {
       , projectId = 1
       , taskId = 1;
 
-    return this.sequelize.sync({force: true}).bind(this).then(function () {
+    return sequelize.sync({force: true}).bind(this).then(function () {
       return Promise.join(
         Project.create({
           id: projectId++,

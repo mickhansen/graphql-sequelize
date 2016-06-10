@@ -1,18 +1,12 @@
 'use strict';
 
 import {expect} from 'chai';
-import helper from '../helper';
 import Sequelize from 'sequelize';
 import sinon from 'sinon';
 import attributeFields from '../../../src/attributeFields';
 import resolver from '../../../src/resolver';
 import {uniq} from 'lodash';
-
-
-const {
-  sequelize,
-  Promise
-  } = helper;
+import { Promise, sequelize } from '../../support/helper'
 
 import {
   sequelizeConnection
@@ -34,7 +28,7 @@ import {
   fromGlobalId
 } from 'graphql-relay';
 
-if (helper.sequelize.dialect.name === 'postgres') {
+if (sequelize.dialect.name === 'postgres') {
   describe('relay', function () {
     describe('connection', function () {
       before(async function () {
@@ -243,7 +237,7 @@ if (helper.sequelize.dialect.name === 'postgres') {
           })
         });
 
-        await this.sequelize.sync({force: true});
+        await sequelize.sync({force: true});
 
         let now = new Date(2015, 10, 17, 3, 24, 0, 0);
 

@@ -2,10 +2,10 @@
 
 var chai = require('chai')
   , expect = chai.expect
-  , helper = require('./helper')
-  , sequelize = helper.sequelize
   , Sequelize = require('sequelize')
   , attributeFields = require('../../src/attributeFields');
+
+import { sequelize } from '../support/helper'
 
 import {
   GraphQLString,

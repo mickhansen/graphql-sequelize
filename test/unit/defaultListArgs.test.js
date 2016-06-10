@@ -1,10 +1,10 @@
 'use strict';
 
 import chai, {expect} from "chai";
-import helper,{sequelize} from "./helper";
 import Sequelize from "sequelize";
 import defaultListArgs from "../../src/defaultListArgs";
 
+import { sequelize } from '../support/helper'
 
 import {
   GraphQLString,
@@ -12,7 +12,6 @@ import {
   GraphQLNonNull,
   GraphQLScalarType
 } from 'graphql';
-
 
 describe('defaultListArgs', function () {
   it('should return a limit key', function () {

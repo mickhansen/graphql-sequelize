@@ -1,15 +1,10 @@
 'use strict';
 
 import {expect} from 'chai';
-import helper from '../helper';
 import Sequelize from 'sequelize';
 import sinon from 'sinon';
 import attributeFields from '../../../src/attributeFields';
-
-const {
-  sequelize,
-  Promise
-} = helper;
+import { sequelize } from '../../support/helper'
 
 import {
   sequelizeConnection

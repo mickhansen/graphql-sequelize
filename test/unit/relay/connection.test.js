@@ -1,10 +1,7 @@
 import Sequelize from 'sequelize';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import helper from '../helper';
-const {
-  sequelize
-} = helper;
+import { sequelize } from '../../support/helper'
 import attributeFields from '../../../src/attributeFields';
 
 import {
@@ -20,7 +17,6 @@ import {
 import {
   sequelizeConnection
 } from '../../../src/relay';
-
 
 describe('relay', function () {
   describe('connections', function () {
