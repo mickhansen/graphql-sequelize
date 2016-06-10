@@ -44,3 +44,37 @@ export function createSequelize () {
     logging: false
   });
 }
+
+export function beforeRemoveAllTables () {
+  before(function () {
+    if (sequelize.dialect.name === 'mysql') {
+      this.timeout(10000);
+      return removeAllTables(sequelize);
+    }
+  })
+}
+
+// Not nice too, MySQL does not supports same name for foreign keys
+// Solution ? Force remove all tables!
+export function removeAllTables (sequelize) {
+  function getTables () {
+    return sequelize.query('show tables')
+      .then(tables => tables[0].map((table, i) => table.Tables_in_test));
+  }
+
+  return getTables()
+    .then(tables => {
+      return Promise.all(tables.map(table => {
+        return sequelize.query('drop table ' + table)
+          .catch(err => {});
+      }))
+    })
+    .then(() => {
+      return getTables();
+    })
+    .then(tables => {
+      if (tables.length) {
+        return removeAllTables(sequelize);
+      }
+    });
+}

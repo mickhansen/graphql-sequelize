@@ -1,6 +1,6 @@
 'use strict';
 
-import { sequelize, Promise } from '../support/helper'
+import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper'
 
 import { expect } from 'chai';
 import sinon from 'sinon';
@@ -19,6 +19,8 @@ import {
 } from 'graphql';
 
 describe('resolver', function () {
+  beforeRemoveAllTables();
+
   var User
     , Task
     , Project

@@ -1,6 +1,6 @@
 'use strict';
 
-import { sequelize, Promise } from '../support/helper'
+import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper'
 
 var chai = require('chai')
   , expect = chai.expect
@@ -51,6 +51,8 @@ const generateCustom = Promise.method(id => {
 });
 
 describe('relay', function () {
+  beforeRemoveAllTables();
+
   var User
     , Task
     , userType
