@@ -15,7 +15,7 @@
     "test-watch": "npm run test-unit -- --watch",
     "test-unit": "mocha $npm_package_options_mocha test/unit/*.test.js test/unit/**/*.test.js",
     "build-docker": "docker-compose build",
-    "test-docker": "docker-compose run dev /bin/sh -c \"npm run test-integration\"",
+    "test-docker": "DIALECT=${DIALECT:=postgres} docker-compose run dev /bin/sh -c \"npm run test-integration\"",
     "test-integration": "mocha $npm_package_options_mocha test/integration/*.test.js test/integration/**/*.test.js"
   },
   "repository": {
@@ -54,6 +54,7 @@
     "graphql": "^0.6.0",
     "istanbul": "^0.4.0",
     "mocha": "^2.2.5",
+    "mysql": "^2.11.1",
     "pg": "^5.0.0",
     "pg-hstore": "^2.3.2",
     "sequelize": "^3.16.0",

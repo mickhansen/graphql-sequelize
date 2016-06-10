@@ -9,11 +9,19 @@ cache:
   directories:
     - node_modules
 
+env:
+  - DIALECT=mysql
+  - DIALECT=postgres
+
+services:
+  - mysql
 addons:
   postgresql: "9.4"
 
 before_script:
-  - psql -c 'create database graphql_sequelize_test;' -U postgres
+  - if [[ "$DIALECT" == "postgres" ]]; then psql -c "drop database if exists test;" -U postgres; fi
+  - if [[ "$DIALECT" == "postgres" ]]; then psql -c "create database test;" -U postgres; fi
+  - if [[ "$DIALECT" == "mysql" ]]; then mysql -e "create database IF NOT EXISTS test;" -uroot; fi
 
 script:
   - "npm run check && npm run test-integration"
