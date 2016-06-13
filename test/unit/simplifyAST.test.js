@@ -72,6 +72,32 @@ describe('simplifyAST', function () {
     });
   });
 
+  it('should simplify a basic structure with array args', function () {
+    expect(simplifyAST(parse(`
+      {
+        luke: human(id: ["1000", "1003"]) {
+          name
+        }
+      }
+    `))).to.deep.equal({
+      args: {},
+      fields: {
+        luke: {
+          key: "human",
+          args: {
+            id: ["1000", "1003"]
+          },
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            }
+          }
+        }
+      }
+    })
+  });
+
   it('should simplify a basic structure with an inline fragment', function () {
     expect(simplifyAST(parse(`
       {
