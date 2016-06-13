@@ -39,7 +39,8 @@ describe('relay', function () {
 
       this.Task = sequelize.define('task', {
         name: Sequelize.STRING,
-        completed: Sequelize.BOOLEAN
+        completed: Sequelize.BOOLEAN,
+        otherDate: Sequelize.DATE
       }, {
         timestamps: true
       });
@@ -118,10 +119,17 @@ describe('relay', function () {
         }),
         before: (options) => {
           if (options.order[0][0] === 'updatedAt') {
-            options.order = Sequelize.literal(`
-              CASE
-                WHEN completed = true THEN "createdAt"
-                ELSE "updatedAt" End ASC`);
+            if (sequelize.dialect.name === 'postgres') {
+              options.order = Sequelize.literal(`
+                CASE
+                  WHEN completed = true THEN "createdAt"
+                  ELSE "otherDate" End ASC`);
+            } else {
+              options.order = Sequelize.literal(`
+                CASE
+                  WHEN completed = true THEN \`createdAt\`
+                  ELSE \`otherDate\` End ASC`);
+            }
           }
           return options;
         },
@@ -253,6 +261,7 @@ describe('relay', function () {
             id: ++this.taskId,
             name: 'AAA',
             createdAt: new Date(now - 45000),
+            otherDate: new Date(now - 45000),
             projectId: this.projectA.get('id'),
             completed: false
           },
@@ -260,6 +269,7 @@ describe('relay', function () {
             id: ++this.taskId,
             name: 'ABA',
             createdAt: new Date(now - 40000),
+            otherDate: new Date(now - 40000),
             projectId: this.projectA.get('id'),
             completed: true
           },
@@ -267,6 +277,7 @@ describe('relay', function () {
             id: ++this.taskId,
             name: 'ABC',
             createdAt: new Date(now - 35000),
+            otherDate: new Date(now - 35000),
             projectId: this.projectA.get('id'),
             completed: true
           },
@@ -274,6 +285,7 @@ describe('relay', function () {
             id: ++this.taskId,
             name: 'ABC',
             createdAt: new Date(now - 30000),
+            otherDate: new Date(now - 30000),
             projectId: this.projectA.get('id'),
             completed: false
           },
@@ -281,6 +293,7 @@ describe('relay', function () {
             id: ++this.taskId,
             name: 'BAA',
             createdAt: new Date(now - 25000),
+            otherDate: new Date(now - 25000),
             projectId: this.projectA.get('id'),
             completed: false
           },
@@ -288,6 +301,7 @@ describe('relay', function () {
             id: ++this.taskId,
             name: 'BBB',
             createdAt: new Date(now - 20000),
+            otherDate: new Date(now - 20000),
             projectId: this.projectB.get('id'),
             completed: true
           },
@@ -295,6 +309,7 @@ describe('relay', function () {
             id: ++this.taskId,
             name: 'CAA',
             createdAt: new Date(now - 15000),
+            otherDate: new Date(now - 15000),
             projectId: this.projectB.get('id'),
             completed: true
           },
@@ -302,6 +317,7 @@ describe('relay', function () {
             id: ++this.taskId,
             name: 'CCC',
             createdAt: new Date(now - 10000),
+            otherDate: new Date(now - 10000),
             projectId: this.projectB.get('id'),
             completed: false
           },
@@ -309,6 +325,7 @@ describe('relay', function () {
             id: ++this.taskId,
             name: 'DDD',
             createdAt: new Date(now - 5000),
+            otherDate: new Date(now - 5000),
             projectId: this.projectB.get('id'),
             completed: false
           }
