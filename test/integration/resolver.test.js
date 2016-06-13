@@ -174,6 +174,21 @@ describe('resolver', function () {
               return options;
             }
           })
+        },
+        tasksByIds: {
+          type: new GraphQLList(taskType),
+          args: {
+            ids: {
+              type: new GraphQLList(GraphQLInt)
+            }
+          },
+          resolve: resolver(User.Tasks, {
+            before: (options, args) => {
+              options.where = options.where || {};
+              options.where.id = { $in: args.ids };
+              return options;
+            }
+          })
         }
       }
     });
@@ -1088,6 +1103,24 @@ describe('resolver', function () {
       result.data.users.forEach(function (user) {
         expect(user.name).to.equal('Delayed!');
       });
+    });
+  });
+
+  it('should resolve args from array to before', function () {
+    var user = this.userB;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.get('id')}) {
+          tasksByIds(ids: [${user.tasks[0].get('id')}]) {
+            id
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data.user.tasksByIds.length).to.equal(1);
     });
   });
 

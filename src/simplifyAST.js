@@ -64,7 +64,11 @@ module.exports = function simplifyAST(ast, info, parent) {
     }
 
     simpleAST.fields[key].args = selection.arguments.reduce(function (args, arg) {
-      args[arg.name.value] = arg.value.value;
+      if (arg.value.values) {
+        args[arg.name.value] = arg.value.values.map(value => value.value);
+      } else {
+        args[arg.name.value] = arg.value.value;
+      }
       return args;
     }, {});
 
