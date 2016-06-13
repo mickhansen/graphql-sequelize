@@ -40,7 +40,7 @@ function resolverFactory(target, options) {
     var ast = info.fieldASTs
       , type = info.returnType
       , list = options.list || type instanceof GraphQLList
-      , simpleAST = simplifyAST(ast[0], info)
+      , simpleAST = simplifyAST(ast, info)
       , fields = simpleAST.fields
       , findOptions = argsToFindOptions(args, model);
 

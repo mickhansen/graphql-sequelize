@@ -31,7 +31,16 @@ module.exports = function simplifyAST(ast, info, parent) {
   info = info || {};
 
   if (ast.selectionSet) selections = ast.selectionSet.selections;
-  if (Array.isArray(ast)) selections = ast;
+  if (Array.isArray(ast)) {
+    let simpleAST = {};
+    ast.forEach(ast => {
+      simpleAST = deepMerge(
+        simpleAST, simplifyAST(ast, info)
+      );
+    });
+
+    return simpleAST;
+  }
 
   if (isFragment(info, ast)) {
     return simplifyAST(info.fragments[ast.name.value], info);

@@ -157,8 +157,8 @@ describe('relay', function () {
           resolve: () => 'Viewer!'
         },
         allProjects: {
-            type: new GraphQLList(projectType),
-            resolve: resolver(Project)
+          type: new GraphQLList(projectType),
+          resolve: resolver(Project)
         }
       }),
       interfaces: [nodeInterface]
@@ -350,7 +350,7 @@ describe('relay', function () {
         });
       });
     });
-    
+
     it('should merge nested queries from multiple fragments', function() {
       var globalId = toGlobalId('Viewer');
       return graphql(schema, `
@@ -365,7 +365,7 @@ describe('relay', function () {
           allProjects {
             id
           }
-        }        
+        }
         fragment F1 on Viewer {
           allProjects {
             id
@@ -373,6 +373,8 @@ describe('relay', function () {
           }
         }
       `).then(result => {
+        if (result.errors) throw result.errors[0]
+
         expect(result.data.node.allProjects[0].id).to.not.be.null;
         expect(result.data.node.allProjects[0].name).to.not.be.null;
       });
