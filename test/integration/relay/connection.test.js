@@ -846,7 +846,27 @@ describe('relay', function () {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(sqlSpy.callCount).to.equal(1);
-      expect(result.data.user.projects.edges[1].node.tasks.edges[2].node.name).to.equal('CCC');
+
+      const nodeNames = result.data.user.projects.edges.map(edge => {
+        return edge.node.tasks.edges.map(edge => {
+          return edge.node.name
+        }).sort()
+      });
+      expect(nodeNames).to.deep.equal([
+        [
+          'AAA',
+          'ABA',
+          'ABC',
+          'ABC',
+          'BAA'
+        ],
+        [
+          'BBB',
+          'CAA',
+          'CCC',
+          'DDD'
+        ]
+      ]);
     });
 
     it('should support paging a nested connection', async function () {
