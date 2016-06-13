@@ -155,6 +155,10 @@ describe('relay', function () {
         name: {
           type: GraphQLString,
           resolve: () => 'Viewer!'
+        },
+        allProjects: {
+            type: new GraphQLList(projectType),
+            resolve: resolver(Project)
         }
       }),
       interfaces: [nodeInterface]
@@ -344,6 +348,33 @@ describe('relay', function () {
           expect(result.data.node.id).to.equal(globalId);
           expect(result.data.node.value).to.equal(custom.value);
         });
+      });
+    });
+    
+    it('should merge nested queries from multiple fragments', function() {
+      var globalId = toGlobalId('Viewer');
+      return graphql(schema, `
+        {
+          node(id: "${globalId}") {
+            id
+            ... F0
+            ... F1
+          }
+        }
+        fragment F0 on Viewer {
+          allProjects {
+            id
+          }
+        }        
+        fragment F1 on Viewer {
+          allProjects {
+            id
+            name
+          }
+        }
+      `).then(result => {
+        expect(result.data.node.allProjects[0].id).to.not.be.null;
+        expect(result.data.node.allProjects[0].name).to.not.be.null;
       });
     });
   });
