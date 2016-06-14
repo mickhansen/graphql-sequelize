@@ -12,11 +12,11 @@ export default function argsToFindOptions(args, target) {
       }
 
       if (key === 'limit' && args[key]) {
-        result.limit = args[key];
+        result.limit = parseInt(args[key], 10);
       }
 
       if (key === 'offset' && args[key]) {
-        result.offset = args[key];
+        result.offset = parseInt(args[key], 10);
       }
 
       if (key === 'order' && args[key]) {

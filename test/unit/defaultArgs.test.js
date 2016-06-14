@@ -2,10 +2,11 @@
 
 
 import chai, {expect} from "chai";
-import helper,{sequelize} from "./helper";
 import Sequelize from "sequelize";
 import JSONType from "../../src/types/jsonType";
 import defaultArgs from "../../src/defaultArgs";
+
+import { sequelize } from '../support/helper'
 
 import {
   GraphQLString,

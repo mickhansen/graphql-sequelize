@@ -2,8 +2,6 @@
 
 var chai = require('chai')
   , expect = chai.expect
-  , helper = require('./helper')
-  , sequelize = helper.sequelize
   , Sequelize = require('sequelize')
   , parser = require('graphql/language/parser').parse
   , parse = function (query) {

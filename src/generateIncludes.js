@@ -86,6 +86,10 @@ export default function generateIncludes(simpleAST, type, context, options) {
 
         let separate = includeOptions.limit && association.associationType === 'HasMany';
 
+        if (includeOptions.limit) {
+          includeOptions.limit = parseInt(includeOptions.limit, 10);
+        }
+
         if (include && (!includeOptions.limit || separate)) {
           if (includeOptions.order && !separate) {
             includeOptions.order.map(function (order) {

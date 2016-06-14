@@ -1,16 +1,23 @@
 dev:
   build: .
   links:
-  - db
+  - postgres
+  - mysql
   volumes:
   - .:/src/graphql-sequelize
   environment:
-    DB_DATABASE: graphql_sequelize_test
-    DB_USER: graphql_sequelize_test
-    DB_PASSWORD: graphql_sequelize_test
+    DIALECT: "${DIALECT}"
 
-db:
+postgres:
   image: postgres:9.4
   environment:
     POSTGRES_USER: graphql_sequelize_test
     POSTGRES_PASSWORD: graphql_sequelize_test
+
+mysql:
+  image: mysql:5.6
+  environment:
+    MYSQL_USER: test
+    MYSQL_PASSWORD: test
+    MYSQL_DATABASE: test
+    MYSQL_ALLOW_EMPTY_PASSWORD: 1

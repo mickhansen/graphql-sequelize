@@ -247,7 +247,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       options.attributes = _.uniq(options.attributes);
       return before(options, args, context, info);
     },
-    after: function (values, args, context, {source}) {
+    after: async function (values, args, context, {source}) {
       var cursor = null;
 
       if (args.after || args.before) {
@@ -265,9 +265,14 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
       if (!values[0]) {
         fullCount = 0;
       }
-      if (model.sequelize.dialect.name === 'postgres' && (args.first || args.last)) {
-        if (fullCount === null || fullCount === undefined) throw new Error('No fullcount available');
+
+      if ((args.first || args.last) && (fullCount === null || fullCount === undefined)) {
+        // In case of `OVER()` is not available, we need to get the full count from a second query.
+        fullCount = await model.count({
+          where: argsToWhere(args)
+        });
       }
+
       let hasNextPage = false;
       let hasPreviousPage = false;
       if (args.first || args.last) {

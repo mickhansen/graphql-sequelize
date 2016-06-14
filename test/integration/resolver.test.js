@@ -1,10 +1,11 @@
 'use strict';
 
+import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper'
+
 import { expect } from 'chai';
 import sinon from 'sinon';
 import Sequelize from 'sequelize';
 
-import { sequelize, Promise } from './helper';
 import resolver from '../../src/resolver';
 
 import {
@@ -18,6 +19,8 @@ import {
 } from 'graphql';
 
 describe('resolver', function () {
+  beforeRemoveAllTables();
+
   var User
     , Task
     , Project
@@ -232,7 +235,7 @@ describe('resolver', function () {
     var taskId = 0
       , projectId = 0;
 
-    return this.sequelize.sync({force: true}).bind(this).then(function () {
+    return sequelize.sync({force: true}).bind(this).then(function () {
       return Promise.join(
         Project.create({
           id: ++projectId,
