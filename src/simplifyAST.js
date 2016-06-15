@@ -26,6 +26,18 @@ function isFragment(info, ast) {
   return hasFragments(info) && info.fragments[ast.name.value] && ast.kind !== 'FragmentDefinition';
 }
 
+function simplifyValue(value, info) {
+  if (value.values) {
+    return value.values.map(value => simplifyValue(value, info));
+  }
+  if ('value' in value) {
+    return value.value;
+  }
+  if (value.name) {
+    return info.variableValues[value.name.value];
+  }
+}
+
 module.exports = function simplifyAST(ast, info, parent) {
   var selections;
   info = info || {};
@@ -73,11 +85,7 @@ module.exports = function simplifyAST(ast, info, parent) {
     }
 
     simpleAST.fields[key].args = selection.arguments.reduce(function (args, arg) {
-      if (arg.value.values) {
-        args[arg.name.value] = arg.value.values.map(value => value.value);
-      } else {
-        args[arg.name.value] = arg.value.value;
-      }
+      args[arg.name.value] = simplifyValue(arg.value, info);
       return args;
     }, {});
 
