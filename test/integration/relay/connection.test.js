@@ -118,7 +118,7 @@ describe('relay', function () {
           }
         }),
         before: (options) => {
-          if (options.order[0][0] === 'updatedAt') {
+          if (options.order && options.order[0][0] === 'updatedAt') {
             if (sequelize.dialect.name === 'postgres') {
               options.order = Sequelize.literal(`
                 CASE
