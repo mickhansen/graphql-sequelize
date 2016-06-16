@@ -27,6 +27,12 @@
     "sequelize"
   ],
   "author": "Mick Hansen <maker@mhansen.io>",
+  "contributors": [
+    {
+      "name": "Glavin Wiechert",
+      "url": "https://github.com/Glavin001"
+    }
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/mickhansen/graphql-sequelize/issues"

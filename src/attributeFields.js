@@ -33,6 +33,12 @@ module.exports = function (Model, options = {}) {
       }
     }
 
+    if (options.commentToDescription) {
+      if (typeof attribute.comment === 'string') {
+        memo[key].description = attribute.comment;
+      }
+    }
+
     return memo;
   }, {});
 

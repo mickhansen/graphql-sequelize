@@ -68,8 +68,11 @@ describe('attributeFields', function () {
       },
       dateonly:{
         type:Sequelize.DATEONLY
+      },
+      comment:{
+        type: Sequelize.STRING,
+        comment: 'This is a comment'
       }
-
     }, {
       timestamps: false
     });
@@ -80,7 +83,7 @@ describe('attributeFields', function () {
 
 
     expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal', 'enum',
-        'enumTwo', 'list', 'virtualInteger', 'virtualBoolean','date','time','dateonly']);
+        'enumTwo', 'list', 'virtualInteger', 'virtualBoolean','date','time','dateonly','comment']);
 
 
     expect(fields.id.type).to.be.an.instanceOf(GraphQLNonNull);
@@ -121,7 +124,7 @@ describe('attributeFields', function () {
     expect(Object.keys(fields)).to.deep.equal([
       'mappedId', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal',
       'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean', 'date',
-      'time', 'dateonly'
+      'time', 'dateonly', 'comment'
     ]);
   });
 
@@ -132,13 +135,17 @@ describe('attributeFields', function () {
     expect(Object.keys(fields)).to.deep.equal([
       'ids', 'emails', 'firstNames', 'lastNames', 'chars', 'floats', 'decimals',
       'enums', 'enumTwos', 'lists', 'virtualIntegers', 'virtualBooleans',
-      'dates', 'times', 'dateonlys'
+      'dates', 'times', 'dateonlys', 'comments'
     ]);
   });
 
   it('should be possible to exclude fields', function () {
     var fields = attributeFields(Model, {
-      exclude: ['id', 'email', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean','date','time','dateonly']
+      exclude: [
+        'id', 'email', 'char', 'float', 'decimal', 'enum',
+        'enumTwo', 'list', 'virtualInteger', 'virtualBoolean',
+        'date','time','dateonly','comment'
+      ]
     });
 
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
@@ -248,5 +255,14 @@ describe('attributeFields', function () {
       expect(fields.email.type).to.not.be.an.instanceOf(GraphQLNonNull);
       expect(fields.email.type).to.equal(GraphQLString);
     });
+
+    it('should be possible to comment attributes', function () {
+      var fields = attributeFields(Model, {
+        commentToDescription: true
+      });
+
+      expect(fields.comment.description).to.equal('This is a comment');
+    });
+
   });
 });
