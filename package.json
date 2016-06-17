@@ -27,6 +27,12 @@
     "sequelize"
   ],
   "author": "Mick Hansen <maker@mhansen.io>",
+  "contributors": [
+    {
+      "name": "graphql-sequelize community",
+      "url": "https://github.com/mickhansen/graphql-sequelize/graphs/contributors"
+    }
+  ],
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/mickhansen/graphql-sequelize/issues"
