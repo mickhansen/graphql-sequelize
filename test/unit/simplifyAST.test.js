@@ -73,17 +73,45 @@ describe('simplifyAST', function () {
   it('should simplify a basic structure with array args', function () {
     expect(simplifyAST(parse(`
       {
-        luke: human(id: ["1000", "1003"]) {
+        user(units: ["1", "2", ["3", ["4"], [["5"], "6"], "7"]]) {
           name
         }
       }
     `))).to.deep.equal({
       args: {},
       fields: {
-        luke: {
-          key: "human",
+        user: {
           args: {
-            id: ["1000", "1003"]
+            units: ["1", "2", ["3", ["4"], [["5"], "6"], "7"]]
+          },
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            }
+          }
+        }
+      }
+    })
+  });
+
+  it('should simplify a basic structure with variable args', function () {
+    expect(simplifyAST(parse(`
+      {
+        user(id: $id) {
+          name
+        }
+      }
+    `), {
+      variableValues: {
+        id: "1"
+      }
+    })).to.deep.equal({
+      args: {},
+      fields: {
+        user: {
+          args: {
+            id: "1"
           },
           fields: {
             name: {
