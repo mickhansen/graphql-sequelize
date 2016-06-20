@@ -73,6 +73,32 @@ describe('simplifyAST', function () {
   it('should simplify a basic structure with array args', function () {
     expect(simplifyAST(parse(`
       {
+        luke: human(id: ["1000", "1003"]) {
+          name
+        }
+      }
+    `))).to.deep.equal({
+      args: {},
+      fields: {
+        luke: {
+          key: "human",
+          args: {
+            id: ["1000", "1003"]
+          },
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            }
+          }
+        }
+      }
+    })
+  });
+
+  it('should simplify a basic structure with nested array args', function () {
+    expect(simplifyAST(parse(`
+      {
         user(units: ["1", "2", ["3", ["4"], [["5"], "6"], "7"]]) {
           name
         }
