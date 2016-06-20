@@ -96,6 +96,60 @@ describe('simplifyAST', function () {
     })
   });
 
+  it('should simplify a basic structure with nested array args', function () {
+    expect(simplifyAST(parse(`
+      {
+        user(units: ["1", "2", ["3", ["4"], [["5"], "6"], "7"]]) {
+          name
+        }
+      }
+    `))).to.deep.equal({
+      args: {},
+      fields: {
+        user: {
+          args: {
+            units: ["1", "2", ["3", ["4"], [["5"], "6"], "7"]]
+          },
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            }
+          }
+        }
+      }
+    })
+  });
+
+  it('should simplify a basic structure with variable args', function () {
+    expect(simplifyAST(parse(`
+      {
+        user(id: $id) {
+          name
+        }
+      }
+    `), {
+      variableValues: {
+        id: "1"
+      }
+    })).to.deep.equal({
+      args: {},
+      fields: {
+        user: {
+          args: {
+            id: "1"
+          },
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            }
+          }
+        }
+      }
+    })
+  });
+
   it('should simplify a basic structure with an inline fragment', function () {
     expect(simplifyAST(parse(`
       {
