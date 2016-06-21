@@ -26,12 +26,27 @@ function isFragment(info, ast) {
   return hasFragments(info) && info.fragments[ast.name.value] && ast.kind !== 'FragmentDefinition';
 }
 
+function simplifyObjectValue(objectValue) {
+  return objectValue.fields.reduce((memo, field) => {
+    memo[field.name.value] =
+      field.value.kind === 'IntValue' ? parseInt( field.value.value, 10 ) :
+      field.value.kind === 'FloatValue' ? parseFloat( field.value.value ) :
+      field.value.kind === 'ObjectValue' ? simplifyObjectValue( field.value ) :
+        field.value.value;
+
+    return memo;
+  }, {});
+}
+
 function simplifyValue(value, info) {
   if (value.values) {
     return value.values.map(value => simplifyValue(value, info));
   }
   if ('value' in value) {
     return value.value;
+  }
+  if (value.kind === 'ObjectValue') {
+    return simplifyObjectValue(value);
   }
   if (value.name) {
     return info.variableValues[value.name.value];
