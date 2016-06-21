@@ -96,6 +96,32 @@ describe('simplifyAST', function () {
     })
   });
 
+  it('should simplify a basic structure with object args', function () {
+    expect(simplifyAST(parse(`
+      {
+        luke: human(contact: { phone: "91264646" }) {
+          name
+        }
+      }
+    `))).to.deep.equal({
+      args: {},
+      fields: {
+        luke: {
+          key: "human",
+          args: {
+            contact: { phone: "91264646" }
+          },
+          fields: {
+            name: {
+              args: {},
+              fields: {}
+            }
+          }
+        }
+      }
+    })
+  });
+
   it('should simplify a basic structure with nested array args', function () {
     expect(simplifyAST(parse(`
       {
