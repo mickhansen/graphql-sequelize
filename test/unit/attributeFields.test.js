@@ -14,7 +14,9 @@ import {
   GraphQLNonNull,
   GraphQLBoolean,
   GraphQLEnumType,
-  GraphQLList
+  GraphQLList,
+  GraphQLObjectType,
+  GraphQLSchema
 } from 'graphql';
 
 import {
@@ -195,6 +197,44 @@ describe('attributeFields', function () {
     expect(fields.enumTwo.type.getValues()).to.not.be.undefined;
     expect(fields.enumTwo.type.getValues()[0].name).to.equal('foo_bar');
     expect(fields.enumTwo.type.getValues()[0].value).to.equal('foo_bar');
+  });
+
+  it('should not create multiple enum types with same name', function () {
+
+    var fields1 = attributeFields(Model);
+    var fields2 = attributeFields(Model);
+
+    var object1 = new GraphQLObjectType({
+      name: 'Object1',
+      fields: fields1
+    });
+    var object2 = new GraphQLObjectType({
+      name: 'Object2',
+      fields: fields2
+    });
+
+    var schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'RootQueryType',
+        fields: {
+          object1: {
+            type: object1,
+            resolve: function () {
+              return {};
+            }
+          },
+          object2: {
+            type: object2,
+            resolve: function () {
+              return {};
+            }
+          }
+        }
+      })
+    });
+
+    expect(schema).to.not.be.undefined;
+
   });
 
   describe('with non-default primary key', function () {
