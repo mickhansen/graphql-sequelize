@@ -26,13 +26,13 @@ module.exports = function (Model, options = {}) {
 
     if (memo[key].type instanceof GraphQLEnumType ) {
       var typeName = `${Model.name}${key}EnumType`;
-      // Check cache for existing type
+      /*
+      Cache enum types to prevent duplicate type name error
+      when calling attributeFields multiple times on the same model
+      */
       if (cache[typeName]) {
-        // Use cached type
-        // Prevent GraphQL error message
         memo[key].type = cache[typeName];
       } else {
-        // Not found in cache
         memo[key].type.name = typeName;
         cache[typeName] = memo[key].type;
       }
