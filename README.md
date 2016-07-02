@@ -165,6 +165,7 @@ attributeFields(Model, {
   globalId: true, // return an relay global id field - default: false
   map: {}, // rename fields - default: {}
   allowNull: false, // disable wrapping mandatory fields in `GraphQLNonNull` - default: false
+  commentToDescription: false, // convert model comment to GraphQL description - default: false
   cache: cache, // Cache enum types to prevent duplicate type name error - default: {}
 });
 
