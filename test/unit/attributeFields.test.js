@@ -14,7 +14,9 @@ import {
   GraphQLNonNull,
   GraphQLBoolean,
   GraphQLEnumType,
-  GraphQLList
+  GraphQLList,
+  GraphQLObjectType,
+  GraphQLSchema
 } from 'graphql';
 
 import {
@@ -195,6 +197,56 @@ describe('attributeFields', function () {
     expect(fields.enumTwo.type.getValues()).to.not.be.undefined;
     expect(fields.enumTwo.type.getValues()[0].name).to.equal('foo_bar');
     expect(fields.enumTwo.type.getValues()[0].value).to.equal('foo_bar');
+  });
+
+  it('should not create multiple enum types with same name when using cache', function () {
+
+    // Create Schema
+    var schemaFn = function (fields1, fields2) {
+      return function () {
+        var object1 = new GraphQLObjectType({
+          name: 'Object1',
+          fields: fields1
+        });
+        var object2 = new GraphQLObjectType({
+          name: 'Object2',
+          fields: fields2
+        });
+        return new GraphQLSchema({
+          query: new GraphQLObjectType({
+            name: 'RootQueryType',
+            fields: {
+              object1: {
+                type: object1,
+                resolve: function () {
+                  return {};
+                }
+              },
+              object2: {
+                type: object2,
+                resolve: function () {
+                  return {};
+                }
+              }
+            }
+          })
+        });
+      }
+    };
+
+    // Bad: Will create multiple/duplicate types with same name
+    var fields1a = attributeFields(Model);
+    var fields2a = attributeFields(Model);
+
+    expect(schemaFn(fields1a, fields2a)).to.throw(Error);
+
+    // Good: Will use cache and not create mutliple/duplicate types with same name
+    var cache = {};
+    var fields1b = attributeFields(Model, {cache: cache});
+    var fields2b = attributeFields(Model, {cache: cache});
+
+    expect(schemaFn(fields1b, fields2b)).to.not.throw(Error);
+
   });
 
   describe('with non-default primary key', function () {

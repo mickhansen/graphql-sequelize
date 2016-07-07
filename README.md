@@ -157,6 +157,7 @@ var Model = sequelize.define('User', {
 
 import {attributeFields} from 'graphql-sequelize';
 
+var cache = {}; // Reusable cache of enum types
 attributeFields(Model, {
   // ... options
   exclude: [], // array of model attributes to ignore - default: []
@@ -164,6 +165,8 @@ attributeFields(Model, {
   globalId: true, // return an relay global id field - default: false
   map: {}, // rename fields - default: {}
   allowNull: false, // disable wrapping mandatory fields in `GraphQLNonNull` - default: false
+  commentToDescription: false, // convert model comment to GraphQL description - default: false
+  cache: cache, // Cache enum types to prevent duplicate type name error - default: {}
 });
 
 /*

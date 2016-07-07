@@ -3,6 +3,7 @@ import { GraphQLNonNull, GraphQLEnumType } from 'graphql';
 import { globalIdField } from 'graphql-relay';
 
 module.exports = function (Model, options = {}) {
+  var cache = options.cache || {};
   var result = Object.keys(Model.rawAttributes).reduce(function (memo, key) {
     if (options.exclude && ~options.exclude.indexOf(key)) return memo;
     if (options.only && !~options.only.indexOf(key)) return memo;
@@ -24,7 +25,18 @@ module.exports = function (Model, options = {}) {
     };
 
     if (memo[key].type instanceof GraphQLEnumType ) {
-      memo[key].type.name = `${Model.name}${key}EnumType`;
+      var typeName = `${Model.name}${key}EnumType`;
+      /*
+      Cache enum types to prevent duplicate type name error
+      when calling attributeFields multiple times on the same model
+      */
+      if (cache[typeName]) {
+        memo[key].type = cache[typeName];
+      } else {
+        memo[key].type.name = typeName;
+        cache[typeName] = memo[key].type;
+      }
+
     }
 
     if (!options.allowNull) {
