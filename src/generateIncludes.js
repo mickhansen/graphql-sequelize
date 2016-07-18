@@ -2,6 +2,10 @@ import argsToFindOptions from './argsToFindOptions';
 import {isConnection, nodeAST, nodeType} from './relay';
 import _ from 'lodash';
 
+const GRAPHQL_NATIVE_KEYS = [
+  '__typename',
+];
+
 function inList(list, attribute) {
   return ~list.indexOf(attribute);
 }
@@ -13,6 +17,11 @@ export default function generateIncludes(simpleAST, type, context, options) {
   options = options || {};
 
   return Promise.all(Object.keys(simpleAST.fields).map(function (key) {
+    if (inList(GRAPHQL_NATIVE_KEYS, key)) {
+      // Skip native grahphql keys
+      return;
+    }
+
     var association
       , fieldAST = simpleAST.fields[key]
       , name = fieldAST.key || key

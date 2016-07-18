@@ -419,6 +419,27 @@ describe('resolver', function () {
     });
   });
 
+  it('should resolve a array result with a model and aliased includes and __typename', function () {
+    return graphql(schema, `
+      {
+        users {
+          name
+
+          first: tasks(limit: 1) {
+            title
+            __typename
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      result.data.users.forEach(function (user) {
+        expect(user.first[0].__typename).to.equal('Task');
+      });
+    });
+  });
+
   it('should resolve an array result with a single model', function () {
     var users = this.users;
 
