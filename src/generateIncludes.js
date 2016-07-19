@@ -28,7 +28,7 @@ export default function generateIncludes(simpleAST, type, context, options) {
       , fieldType = type._fields[name] && type._fields[name].type
       , includeOptions
       , args = fieldAST.args
-      , includeResolver = type._fields[name].resolve
+      , includeResolver = type._fields[name] && type._fields[name].resolve
       , allowedAttributes
       , include;
 
