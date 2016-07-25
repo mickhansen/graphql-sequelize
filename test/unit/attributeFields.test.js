@@ -153,9 +153,29 @@ describe('attributeFields', function () {
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
   });
 
+  it('should be able to exclude fields via a function', function () {
+    var fields = attributeFields(Model, {
+      exclude: field => ~[
+        'id', 'email', 'char', 'float', 'decimal', 'enum',
+        'enumTwo', 'list', 'virtualInteger', 'virtualBoolean',
+        'date','time','dateonly','comment'
+      ].indexOf(field)
+    });
+
+    expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
+  });
+
   it('should be possible to specify specific fields', function () {
     var fields = attributeFields(Model, {
       only: ['id', 'email', 'list']
+    });
+
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'list']);
+  });
+
+  it('should be possible to specify specific fields via a function', function () {
+    var fields = attributeFields(Model, {
+      only: field => ~['id', 'email', 'list'].indexOf(field),
     });
 
     expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'list']);

@@ -5,8 +5,14 @@ import { globalIdField } from 'graphql-relay';
 module.exports = function (Model, options = {}) {
   var cache = options.cache || {};
   var result = Object.keys(Model.rawAttributes).reduce(function (memo, key) {
-    if (options.exclude && ~options.exclude.indexOf(key)) return memo;
-    if (options.only && !~options.only.indexOf(key)) return memo;
+    if (options.exclude) {
+      if (typeof options.exclude === 'function' && options.exclude(key)) return memo;
+      if (Array.isArray(options.exclude) && ~options.exclude.indexOf(key)) return memo;
+    }
+    if (options.only) {
+      if (typeof options.only === 'function' && !options.only(key)) return memo;
+      if (Array.isArray(options.only) && !~options.only.indexOf(key)) return memo;
+    }
 
     var attribute = Model.rawAttributes[key]
       , type = attribute.type;
