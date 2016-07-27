@@ -6,7 +6,7 @@ import sinon from 'sinon';
 import attributeFields from '../../../src/attributeFields';
 import resolver from '../../../src/resolver';
 import {uniq} from 'lodash';
-import { Promise, sequelize } from '../../support/helper'
+import { Promise, sequelize } from '../../support/helper';
 
 import {
   sequelizeConnection
@@ -593,7 +593,7 @@ describe('relay', function () {
     });
 
     it('should support pagination with where', async function () {
-      const completedTasks = this.userA.tasks.filter(task => task.completed)
+      const completedTasks = this.userA.tasks.filter(task => task.completed);
 
       expect(completedTasks.length).to.equal(4);
 
@@ -847,11 +847,9 @@ describe('relay', function () {
 
       expect(sqlSpy.callCount).to.equal(1);
 
-      const nodeNames = result.data.user.projects.edges.map(edge => {
-        return edge.node.tasks.edges.map(edge => {
-          return edge.node.name
-        }).sort()
-      });
+      const nodeNames = result.data.user.projects.edges.map(
+        ({node: {tasks: {edges}}}) => edges.map(({node: {name}}) => name).sort()
+      );
       expect(nodeNames).to.deep.equal([
         [
           'AAA',
