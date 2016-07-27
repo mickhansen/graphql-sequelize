@@ -105,7 +105,17 @@ export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
 
-export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnum, before, connectionFields, edgeFields, where}) {
+export function sequelizeConnection({
+  name,
+  nodeType,
+  target,
+  orderBy: orderByEnum,
+  before,
+  after,
+  connectionFields,
+  edgeFields,
+  where
+}) {
   const {
     edgeType,
     connectionType
@@ -130,6 +140,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
   }
 
   before = before || ((options) => options);
+  after = after || ((result) => result);
 
   let $connectionArgs = {
     ...connectionArgs,
@@ -288,7 +299,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
         }
       }
 
-      return {
+      return after({
         source,
         args,
         where: argsToWhere(args),
@@ -299,7 +310,7 @@ export function sequelizeConnection({name, nodeType, target, orderBy: orderByEnu
           hasNextPage: hasNextPage,
           hasPreviousPage: hasPreviousPage
         }
-      };
+      });
     }
   });
 
