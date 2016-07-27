@@ -282,6 +282,13 @@ export function sequelizeConnection({
         fullCount = 0;
       }
 
+      if ((args.first || args.last) && (fullCount === null || fullCount === undefined)) {
+        // In case of `OVER()` is not available, we need to get the full count from a second query.
+        fullCount = await model.count({
+          where: argsToWhere(args)
+        });
+      }
+
       let startIndex = 0;
       if (cursor) {
         startIndex = Number(cursor.index);
@@ -298,13 +305,6 @@ export function sequelizeConnection({
 
       let firstEdge = edges[0];
       let lastEdge = edges[edges.length - 1];
-
-      if ((args.first || args.last) && (fullCount === null || fullCount === undefined)) {
-        // In case of `OVER()` is not available, we need to get the full count from a second query.
-        fullCount = await model.count({
-          where: argsToWhere(args)
-        });
-      }
 
       let hasNextPage = false;
       let hasPreviousPage = false;
