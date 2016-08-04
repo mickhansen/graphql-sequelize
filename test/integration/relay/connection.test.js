@@ -118,7 +118,7 @@ describe('relay', function () {
           }
         }),
         before: (options) => {
-          if (options.order[0][0] === 'updatedAt') {
+          if (options.order && options.order[0][0] === 'updatedAt') {
             if (sequelize.dialect.name === 'postgres') {
               options.order = Sequelize.literal(`
                 CASE
@@ -250,7 +250,10 @@ describe('relay', function () {
 
       this.taskId = 0;
 
-      [this.projectA, this.projectB] = await Promise.join(
+      [this.projectA, this.projectB, this.projectC, this.projectD, this.projectE] = await Promise.join(
+        this.Project.create({}),
+        this.Project.create({}),
+        this.Project.create({}),
         this.Project.create({}),
         this.Project.create({})
       );
@@ -334,6 +337,37 @@ describe('relay', function () {
         include: [this.User.Tasks]
       });
 
+      this.userB = await this.User.create({
+        [this.User.Tasks.as]: [
+          {
+            id: ++this.taskId,
+            name: 'ZAA',
+            createdAt: new Date(now - 45000),
+            otherDate: new Date(now - 45000),
+            projectId: this.projectA.get('id'),
+            completed: true
+          },
+          {
+            id: ++this.taskId,
+            name: 'ZAB',
+            createdAt: new Date(now - 45000),
+            otherDate: new Date(now - 45000),
+            projectId: this.projectA.get('id'),
+            completed: true
+          },
+          {
+            id: ++this.taskId,
+            name: 'ZAC',
+            createdAt: new Date(now - 45000),
+            otherDate: new Date(now - 45000),
+            projectId: this.projectA.get('id'),
+            completed: true
+          }
+        ]
+      }, {
+        include: [this.User.Tasks]
+      });
+
       await Promise.join(
         this.projectA.update({
           ownerId: this.userA.get('id')
@@ -344,6 +378,18 @@ describe('relay', function () {
         }),
         this.ProjectMember.create({
           projectId: this.projectB.get('id'),
+          userId: this.userA.get('id')
+        }),
+        this.ProjectMember.create({
+          projectId: this.projectC.get('id'),
+          userId: this.userA.get('id')
+        }),
+        this.ProjectMember.create({
+          projectId: this.projectD.get('id'),
+          userId: this.userA.get('id')
+        }),
+        this.ProjectMember.create({
+          projectId: this.projectE.get('id'),
           userId: this.userA.get('id')
         })
       );
@@ -657,6 +703,43 @@ describe('relay', function () {
       expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
     });
 
+    it('should support pagination on N:M', async function () {
+      let query = (after) => {
+        return graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              projects(first: 2, ${after ? 'after: "' + after + '", ' : ''}) {
+                edges {
+                  cursor
+                  node {
+                    id
+                  }
+                }
+                pageInfo {
+                  hasNextPage
+                  hasPreviousPage
+                  endCursor
+                }
+              }
+            }
+          }
+        `, null, {});
+      };
+
+
+      let firstResult = await query();
+      expect(firstResult.data.user.projects.pageInfo.hasNextPage).to.equal(true);
+      expect(firstResult.data.user.projects.pageInfo.hasPreviousPage).to.equal(false);
+
+      let nextResult = await query(firstResult.data.user.projects.pageInfo.endCursor);
+      expect(nextResult.data.user.projects.pageInfo.hasNextPage).to.equal(true);
+      expect(nextResult.data.user.projects.pageInfo.hasPreviousPage).to.equal(true);
+
+      let thirdResult = await query(nextResult.data.user.projects.pageInfo.endCursor);
+      expect(thirdResult.data.user.projects.pageInfo.hasNextPage).to.equal(false);
+      expect(thirdResult.data.user.projects.pageInfo.hasPreviousPage).to.equal(true);
+    });
+
     it('should support in-query slicing with user provided args/where', async function () {
       let result = await graphql(this.schema, `
         {
@@ -858,14 +941,20 @@ describe('relay', function () {
           'ABA',
           'ABC',
           'ABC',
-          'BAA'
+          'BAA',
+          'ZAA',
+          'ZAB',
+          'ZAC'
         ],
         [
           'BBB',
           'CAA',
           'CCC',
           'DDD'
-        ]
+        ],
+        [],
+        [],
+        []
       ]);
     });
 
@@ -955,7 +1044,7 @@ describe('relay', function () {
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
-      expect(result.data.user.projects.edges[0].node.tasks.totalCount).to.equal(5);
+      expect(result.data.user.projects.edges[0].node.tasks.totalCount).to.equal(8);
       expect(result.data.user.projects.edges[1].node.tasks.totalCount).to.equal(4);
       expect(this.projectTaskConnectionFieldSpy.firstCall.args[0].source.get('tasks')).to.be.undefined;
     });
@@ -987,7 +1076,7 @@ describe('relay', function () {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       let isOwner = result.data.user.projects.edges.map(edge => edge.isOwner);
-      expect(isOwner.sort()).to.deep.equal([true, false].sort());
+      expect(isOwner.sort()).to.deep.equal([true, false, false, false, false].sort());
     });
 
     it('should support connection fields with args/where', async function () {

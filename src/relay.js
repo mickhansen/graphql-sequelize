@@ -279,9 +279,15 @@ export function sequelizeConnection({
 
       if ((args.first || args.last) && (fullCount === null || fullCount === undefined)) {
         // In case of `OVER()` is not available, we need to get the full count from a second query.
-        fullCount = await model.count({
+        const options = await Promise.resolve(before({
           where: argsToWhere(args)
-        });
+        }));
+
+        if (target.count) {
+          fullCount = await target.count(source, options);
+        } else {
+          fullCount = await target.manyFromSource.count(source, options);
+        }
       }
 
       let hasNextPage = false;
