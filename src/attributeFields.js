@@ -7,11 +7,11 @@ module.exports = function (Model, options = {}) {
   var result = Object.keys(Model.rawAttributes).reduce(function (memo, key) {
     if (options.exclude) {
       if (typeof options.exclude === 'function' && options.exclude(key)) return memo;
-      if (Array.isArray(options.exclude) && ~options.exclude.indexOf(key)) return memo;
+      if (Array.isArray(options.exclude) && options.exclude.indexOf(key) !== -1) return memo;
     }
     if (options.only) {
       if (typeof options.only === 'function' && !options.only(key)) return memo;
-      if (Array.isArray(options.only) && !~options.only.indexOf(key)) return memo;
+      if (Array.isArray(options.only) && options.only.indexOf(key) !== -1) return memo;
     }
 
     var attribute = Model.rawAttributes[key]
