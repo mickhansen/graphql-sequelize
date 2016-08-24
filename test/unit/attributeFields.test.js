@@ -164,7 +164,27 @@ describe('attributeFields', function () {
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
   });
 
-  it('should be possible to specify specific fields', function () {
+  it('should gracefully handle empty exclude arrays', function () {
+    var fields = attributeFields(Model, {
+      exclude: []
+    });
+
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName',
+    'lastName', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger',
+    'virtualBoolean','date','time','dateonly','comment']);
+  });
+
+  it('should gracefully handle empty only arrays', function () {
+    var fields = attributeFields(Model, {
+      only: []
+    });
+
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName',
+    'lastName', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger',
+    'virtualBoolean','date','time','dateonly','comment']);
+  });
+
+  it('should be possible to specify fields to include in an array', function () {
     var fields = attributeFields(Model, {
       only: ['id', 'email', 'list']
     });
@@ -172,7 +192,7 @@ describe('attributeFields', function () {
     expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'list']);
   });
 
-  it('should be possible to specify specific fields via a function', function () {
+  it('should be possible to specify fields to include via a function', function () {
     var fields = attributeFields(Model, {
       only: field => ~['id', 'email', 'list'].indexOf(field),
     });
