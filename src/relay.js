@@ -191,12 +191,12 @@ export function sequelizeConnection({
     return result;
   };
 
-  let resolveEdge = function (item, index, queriedCursor, args = {}, source) {
-    let startIndex = 0;
-    if (queriedCursor) startIndex = Number(queriedCursor.index);
-    if (startIndex !== 0) startIndex++;
+  let resolveEdge = function (item, index, startIndex, args = {}, source) {
+    let cursorIndex = startIndex;
+    if (args.last) cursorIndex -= index;
+    else cursorIndex += index;
     return {
-      cursor: toCursor(item, index + startIndex),
+      cursor: toCursor(item, cursorIndex),
       node: item,
       source: source
     };
@@ -207,9 +207,6 @@ export function sequelizeConnection({
     include: true,
     list: true,
     before: function (options, args, context, info) {
-      if (args.first || args.last) {
-        options.limit = parseInt(args.first || args.last, 10);
-      }
       if (!args.orderBy) {
         args.orderBy = [orderByEnum._values[0].value];
       } else if (typeof args.orderBy === 'string') {
@@ -220,7 +217,12 @@ export function sequelizeConnection({
       let orderAttribute = orderByAttribute(orderBy);
       let orderDirection = args.orderBy[0][1];
 
-      if (args.last) {
+      if (!args.before && args.first) {
+        options.limit = parseInt(args.first, 10);
+      }
+
+      if (!args.after && !args.before && args.last) {
+        options.limit = parseInt(args.last, 10);
         orderDirection = orderDirection === 'ASC' ? 'DESC' : 'ASC';
       }
 
@@ -234,12 +236,12 @@ export function sequelizeConnection({
 
       options.attributes.push(orderAttribute);
 
-      if (model.sequelize.dialect.name === 'postgres' && options.limit) {
+      if (model.sequelize.dialect.name === 'postgres') {
         options.attributes.push([
           model.sequelize.literal('COUNT(*) OVER()'),
           'full_count'
         ]);
-      } else if (model.sequelize.dialect.name === 'mssql' && options.limit) {
+      } else if (model.sequelize.dialect.name === 'mssql') {
         options.attributes.push([
           model.sequelize.literal('COUNT(1) OVER()'),
           'full_count'
@@ -249,28 +251,31 @@ export function sequelizeConnection({
       options.where = argsToWhere(args);
       options.required = false;
 
-      if (args.after || args.before) {
-        let cursor = fromCursor(args.after || args.before);
-        let startIndex = Number(cursor.index);
+      let cursor = null;
+      if (args.after || args.before) cursor = fromCursor(args.after || args.before);
 
-        if (startIndex > 0) options.offset = startIndex + 1;
+      if (cursor) {
+        let startIndex = Number(cursor.index);
+        if (startIndex > 0) {
+          options[args.after ? 'offset' : 'limit'] = args.after ? startIndex + 1 : startIndex;
+        }
       }
+
       options.attributes = _.uniq(options.attributes);
       return before(options, args, context, info);
     },
     after: async function (values, args, context, {source}) {
       var cursor = null;
 
+      if (args.before && (args.last || args.first)) {
+        values.reverse();
+        values = values.slice(0, args.last || args.first);
+      }
+
       if (args.after || args.before) {
         cursor = fromCursor(args.after || args.before);
       }
 
-      let edges = values.map((value, idx) => {
-        return resolveEdge(value, idx, cursor, args, source);
-      });
-
-      let firstEdge = edges[0];
-      let lastEdge = edges[edges.length - 1];
       let fullCount = values[0] && values[0].dataValues.full_count && parseInt(values[0].dataValues.full_count, 10);
 
       if (!values[0]) {
@@ -290,19 +295,31 @@ export function sequelizeConnection({
         }
       }
 
+      let startIndex = 0;
+      if (cursor) {
+        startIndex = Number(cursor.index);
+        if (startIndex !== 0) {
+          if (args.first) startIndex++;
+          else if (args.last) startIndex--;
+        }
+      }
+      else if (args.last) startIndex = fullCount - 1;
+
+      let edges = values.map((value, idx) => {
+        return resolveEdge(value, idx, startIndex, args, source);
+      });
+
+      let firstEdge = edges[0];
+      let lastEdge = edges[edges.length - 1];
+
       let hasNextPage = false;
       let hasPreviousPage = false;
       if (args.first || args.last) {
         const count = parseInt(args.first || args.last, 10);
-        let index = cursor ? Number(cursor.index) : 0;
+        let index = startIndex;
         if (index !== 0) index++;
-
-        hasNextPage = index + 1 + count <= fullCount;
-        hasPreviousPage = index - count >= 0;
-
-        if (args.last) {
-          [hasNextPage, hasPreviousPage] = [hasPreviousPage, hasNextPage];
-        }
+        hasNextPage = index + count <= fullCount;
+        hasPreviousPage = index - count > 0;
       }
 
       return after({
