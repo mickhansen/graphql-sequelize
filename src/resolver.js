@@ -1,14 +1,10 @@
 import { GraphQLList } from 'graphql';
-import _ from 'lodash';
 import simplifyAST from './simplifyAST';
-import generateIncludes from './generateIncludes';
 import argsToFindOptions from './argsToFindOptions';
 import { isConnection, handleConnection, nodeAST, nodeType } from './relay';
-import invariant from 'invariant';
-
-function inList(list, attribute) {
-  return ~list.indexOf(attribute);
-}
+import invariant from 'assert';
+import Promise from 'bluebird';
+import dataLoaderSequelize from 'dataloader-sequelize';
 
 function validateOptions(options) {
   invariant(
@@ -18,6 +14,8 @@ function validateOptions(options) {
 }
 
 function resolverFactory(target, options) {
+  dataLoaderSequelize(target);
+
   var resolver
     , targetAttributes
     , isModel = !!target.getTableName
@@ -28,7 +26,8 @@ function resolverFactory(target, options) {
   targetAttributes = Object.keys(model.rawAttributes);
 
   options = options || {};
-  if (options.include === undefined) options.include = true;
+
+  invariant(options.include === undefined, 'Include support has been removed in favor of dataloader batching');
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
@@ -41,84 +40,52 @@ function resolverFactory(target, options) {
       , type = info.returnType
       , list = options.list || type instanceof GraphQLList
       , simpleAST = simplifyAST(ast, info)
-      , fields = simpleAST.fields
       , findOptions = argsToFindOptions(args, model);
 
     context = context || {};
 
     if (isConnection(info.returnType)) {
       simpleAST = nodeAST(simpleAST);
-      fields = simpleAST.fields;
 
       type = nodeType(type);
     }
 
     type = type.ofType || type;
 
-    if (association && source.get(association.as) !== undefined) {
-      if (options.handleConnection && isConnection(info.returnType)) {
-        return handleConnection(source.get(association.as), args);
-      }
+    findOptions.attributes = targetAttributes;
 
-      return options.after(source.get(association.as), args, context, {
-        ...info,
-        ast: simpleAST,
-        type: type,
-        source: source
-      });
-    }
+    findOptions.root = context;
+    findOptions.context = context;
+    findOptions.logging = findOptions.logging || context.logging;
 
-    if (options.filterAttributes) {
-      findOptions.attributes = Object.keys(fields)
-        .map(key => fields[key].key || key)
-        .filter(inList.bind(null, targetAttributes));
-
-      if (options.defaultAttributes) {
-        findOptions.attributes = findOptions.attributes.concat(options.defaultAttributes);
-      }
-
-    } else {
-      findOptions.attributes = targetAttributes;
-    }
-
-    if (model.primaryKeyAttribute) {
-      findOptions.attributes.push(model.primaryKeyAttribute);
-    }
-
-    return generateIncludes(
-      simpleAST,
-      type,
-      context,
-      options
-    ).then(function (includeResult) {
-      findOptions.include = includeResult.include;
-      if (includeResult.order) {
-        findOptions.order = (findOptions.order || []).concat(includeResult.order);
-      }
-      findOptions.attributes = _.uniq(findOptions.attributes.concat(includeResult.attributes));
-
-      findOptions.root = context;
-      findOptions.context = context;
-      findOptions.logging = findOptions.logging || context.logging;
-
-      return options.before(findOptions, args, context, {
-        ...info,
-        ast: simpleAST,
-        type: type,
-        source: source
-      });
-    }).then(function (findOptions) {
+    return Promise.resolve(options.before(findOptions, args, context, {
+      ...info,
+      ast: simpleAST,
+      type: type,
+      source: source
+    })).then(function (findOptions) {
       if (list && !findOptions.order) {
-        findOptions.order = [model.primaryKeyAttribute, 'ASC'];
+        findOptions.order = [[model.primaryKeyAttribute, 'ASC']];
       }
 
       if (association) {
-        return source[association.accessors.get](findOptions).then(function (result) {
+        if (source.get(association.as) !== undefined) {
+          // The user did a manual include
+          // TODO test this!
+          const result = source.get(association.as);
           if (options.handleConnection && isConnection(info.returnType)) {
             return handleConnection(result, args);
           }
+
           return result;
-        });
+        } else {
+          return source[association.accessors.get](findOptions).then(function (result) {
+            if (options.handleConnection && isConnection(info.returnType)) {
+              return handleConnection(result, args);
+            }
+            return result;
+          });
+        }
       }
 
       return model[list ? 'findAll' : 'findOne'](findOptions);

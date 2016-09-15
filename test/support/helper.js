@@ -1,10 +1,12 @@
-
+import { resetCache } from 'dataloader-sequelize';
 import Sequelize from 'sequelize';
 
 export const Promise = Sequelize.Promise
 export const sequelize = createSequelize()
 
-export function createSequelize () {
+afterEach(resetCache);
+
+export function createSequelize(options = {}) {
   const env = process.env;
   const dialect = env.DIALECT || 'sqlite';
   const config = Object.assign(
@@ -41,7 +43,8 @@ export function createSequelize () {
   return new Sequelize(config.database, config.user, config.password, {
     host: config.host,
     dialect: dialect,
-    logging: false
+    logging: false,
+    ...options
   });
 }
 

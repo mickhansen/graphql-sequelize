@@ -1,22 +1,17 @@
 'use strict';
 
-import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper'
+import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper';
 
 var chai = require('chai')
   , expect = chai.expect
   , resolver = require('../../src/resolver')
   , Sequelize = require('sequelize')
-  , sinon = require('sinon')
-  , attributeFields = require('../../src/attributeFields')
-  , _ = require('lodash');
+  , sinon = require('sinon');
 
 import {
   GraphQLString,
   GraphQLInt,
-  GraphQLFloat,
   GraphQLNonNull,
-  GraphQLBoolean,
-  GraphQLEnumType,
   GraphQLList,
   GraphQLObjectType,
   GraphQLSchema,
@@ -32,15 +27,14 @@ import {
   toGlobalId,
   fromGlobalId,
   connectionDefinitions,
-  connectionArgs,
-  connectionFromArray
+  connectionArgs
 } from 'graphql-relay';
 
 function generateTask(id) {
   return {
     id: id,
     name: Math.random().toString()
-  }
+  };
 }
 
 const generateCustom = Promise.method(id => {
@@ -57,12 +51,10 @@ describe('relay', function () {
     , Task
     , userType
     , taskType
-    , taskConnection
     , nodeInterface
     , Project
     , projectType
     , viewerType
-    , userConnection
     , nodeField
     , schema;
 
@@ -233,17 +225,6 @@ describe('relay', function () {
             },
             resolve: resolver(Project)
           },
-          projectNoInclude: {
-            type: projectType,
-            args: {
-              id: {
-                type: new GraphQLNonNull(GraphQLInt)
-              }
-            },
-            resolve: resolver(Project, {
-              include: false
-            })
-          },
           custom: {
             type: customType,
             args: {
@@ -286,11 +267,11 @@ describe('relay', function () {
           include: [User.Tasks]
         })
       ).bind(this).spread(function (project, userA, userB) {
-          this.project = project;
-          this.userA = userA;
-          this.userB = userB;
-          this.users = [userA, userB];
-        });
+        this.project = project;
+        this.userA = userA;
+        this.userB = userB;
+        this.users = [userA, userB];
+      });
     });
   });
 
@@ -298,7 +279,7 @@ describe('relay', function () {
     return this.project.setUsers([this.userA.id, this.userB.id]);
   });
 
-  it('should support unassociated GraphQL types', function() {
+  it('should support unassociated GraphQL types', function () {
     var globalId = toGlobalId('Viewer');
     return graphql(schema, `
       {
@@ -312,7 +293,7 @@ describe('relay', function () {
 
   });
 
-  it('should return userA when running a node query', function() {
+  it('should return userA when running a node query', function () {
     var user = this.userA
       , globalId = toGlobalId('User', user.id);
 
@@ -331,8 +312,8 @@ describe('relay', function () {
     });
   });
 
-  describe('node queries', function() {
-    it('should allow returning a custom entity', function() {
+  describe('node queries', function () {
+    it('should allow returning a custom entity', function () {
       generateCustom(1).then(custom => {
         const globalId = toGlobalId('Custom', custom.id);
 
@@ -352,7 +333,7 @@ describe('relay', function () {
       });
     });
 
-    it('should merge nested queries from multiple fragments', function() {
+    it('should merge nested queries from multiple fragments', function () {
       var globalId = toGlobalId('Viewer');
       return graphql(schema, `
         {
@@ -374,7 +355,7 @@ describe('relay', function () {
           }
         }
       `).then(result => {
-        if (result.errors) throw result.errors[0]
+        if (result.errors) throw result.errors[0];
 
         expect(result.data.node.allProjects[0].id).to.not.be.null;
         expect(result.data.node.allProjects[0].name).to.not.be.null;
@@ -382,7 +363,7 @@ describe('relay', function () {
     });
   });
 
-  it('should support first queries on connections', function() {
+  it('should support first queries on connections', function () {
     var user = this.userB;
 
     return graphql(schema, `
@@ -418,7 +399,7 @@ describe('relay', function () {
     });
   });
 
-  it('should support last queries on connections', function() {
+  it('should support last queries on connections', function () {
     var user = this.userB;
 
     return graphql(schema, `
@@ -455,7 +436,7 @@ describe('relay', function () {
   });
 
   // these two tests are not determenistic on postgres currently
-  it.skip('should support after queries on connections', function() {
+  it('should support after queries on connections', function () {
     var user = this.userA;
 
     return graphql(schema, `
@@ -490,7 +471,7 @@ describe('relay', function () {
             }
           }
         }
-      `)
+      `);
     })
     .then(function (result) {
       expect(result.data.user.tasks.edges[0].node.name).to.equal(user.taskItems[1].name);
@@ -566,8 +547,7 @@ describe('relay', function () {
   });
 
   it('should resolve nested connections', function () {
-    var project = this.project
-      , sqlSpy = sinon.spy();
+    var sqlSpy = sinon.spy();
 
     return graphql(schema, `
       {
@@ -606,52 +586,7 @@ describe('relay', function () {
       expect(userB.tasks.edges).to.have.length.above(0);
       expect(userB.tasks.edges[0].node.name).to.be.ok;
 
-      expect(sqlSpy).to.have.been.calledOnce;
-    });
-  });
-
-  it('should resolve nested connections with a include: false top level node', function () {
-    var project = this.project
-      , sqlSpy = sinon.spy();
-
-    return graphql(schema, `
-      {
-        projectNoInclude(id: 1) {
-          users {
-            edges {
-              node {
-                name
-                tasks {
-                  edges {
-                    node {
-                      name
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    `, null, {
-      logging: sqlSpy
-    }).then(result => {
-      if (result.errors) throw new Error(result.errors[0].stack);
-
-      expect(result.data.projectNoInclude.users.edges).to.have.length(2);
-      let [nodeA, nodeB] = result.data.projectNoInclude.users.edges;
-      let userA = nodeA.node;
-      let userB = nodeB.node;
-
-      expect(userA).to.have.property('tasks');
-      expect(userA.tasks.edges).to.have.length.above(0);
-      expect(userA.tasks.edges[0].node.name).to.be.ok;
-
-      expect(userB).to.have.property('tasks');
-      expect(userB.tasks.edges).to.have.length.above(0);
-      expect(userB.tasks.edges[0].node.name).to.be.ok;
-
-      expect(sqlSpy).to.have.been.calledTwice;
+      expect(sqlSpy).to.have.been.calledThrice;
     });
   });
 

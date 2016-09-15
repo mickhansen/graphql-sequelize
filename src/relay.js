@@ -204,7 +204,6 @@ export function sequelizeConnection({
 
   let $resolver = require('./resolver')(target, {
     handleConnection: false,
-    include: true,
     list: true,
     before: function (options, args, context, info) {
       if (args.first || args.last) {
@@ -234,20 +233,21 @@ export function sequelizeConnection({
 
       options.attributes.push(orderAttribute);
 
-      if (model.sequelize.dialect.name === 'postgres' && options.limit) {
-        options.attributes.push([
-          model.sequelize.literal('COUNT(*) OVER()'),
-          'full_count'
-        ]);
-      } else if (model.sequelize.dialect.name === 'mssql' && options.limit) {
-        options.attributes.push([
-          model.sequelize.literal('COUNT(1) OVER()'),
-          'full_count'
-        ]);
+      if (options.limit && !options.attributes.some(attribute => attribute.length === 2 && attribute[1] === 'full_count')) {
+        if (model.sequelize.dialect.name === 'postgres') {
+          options.attributes.push([
+            model.sequelize.literal('COUNT(*) OVER()'),
+            'full_count'
+          ]);
+        } else if (model.sequelize.dialect.name === 'mssql') {
+          options.attributes.push([
+            model.sequelize.literal('COUNT(1) OVER()'),
+            'full_count'
+          ]);
+        }
       }
 
       options.where = argsToWhere(args);
-      options.required = false;
 
       if (args.after || args.before) {
         let cursor = fromCursor(args.after || args.before);
