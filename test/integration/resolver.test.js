@@ -1123,52 +1123,5 @@ describe('resolver', function () {
         expect(result.data.user.fullName).to.equal(user.get('name'));
       });
     });
-
-    it('should be able to disable via a resolver option', async function () {
-      resolver.filterAttributes = true;
-
-      var user = this.userB
-        , schema;
-
-      schema = new GraphQLSchema({
-        query: new GraphQLObjectType({
-          name: 'RootQueryType',
-          fields: {
-            user: {
-              type: this.userType,
-              args: {
-                id: {
-                  type: GraphQLInt
-                }
-              },
-              resolve: resolver(User, {
-                filterAttributes: false
-              })
-            }
-          }
-        })
-      });
-
-      return graphql(schema, `
-        {
-          user(id: ${user.get('id')}) {
-            fullName
-          }
-        }
-      `).then(function (result) {
-        if (result.errors) throw new Error(result.errors[0].stack);
-
-        expect(result.data.user.fullName).to.equal(user.get('name'));
-      });
-    });
-  });
-
-  describe('defaultAttributes', () => {
-    it('should only accept an array as input', () => {
-      const f = () => resolver(User, {
-        defaultAttributes: 'not_an_array',
-      });
-      expect(f).to.throw();
-    });
   });
 });

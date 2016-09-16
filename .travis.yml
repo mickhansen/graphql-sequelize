@@ -24,7 +24,7 @@ before_script:
   - if [[ "$DIALECT" == "mysql" ]]; then mysql -e "create database IF NOT EXISTS test;" -uroot; fi
 
 script:
-  - "npm run check && npm run test-integration"
+  - "npm run check && npm run test:integration"
 
 notifications:
   email: false
