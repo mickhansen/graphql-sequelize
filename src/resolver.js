@@ -57,7 +57,6 @@ function resolverFactory(target, options) {
       if (association) {
         if (source.get(association.as) !== undefined) {
           // The user did a manual include
-          // TODO test this!
           const result = source.get(association.as);
           if (options.handleConnection && isConnection(info.returnType)) {
             return handleConnection(result, args);
