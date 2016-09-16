@@ -21,3 +21,18 @@ mysql:
     MYSQL_PASSWORD: test
     MYSQL_DATABASE: test
     MYSQL_ALLOW_EMPTY_PASSWORD: 1
+
+benchmark_server:
+  build: .
+  command: [node, test/benchmark.js]
+  expose:
+  - 4000
+  links:
+  - postgres
+  volumes:
+  - .:/src/graphql-sequelize
+  environment:
+    DIALECT: postgres
+    DB_DATABASE: graphql_sequelize_test
+    DB_USER: graphql_sequelize_test
+    DB_PASSWORD: graphql_sequelize_test

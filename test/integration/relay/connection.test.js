@@ -49,6 +49,7 @@ describe('relay', function () {
 
       this.User.Tasks = this.User.hasMany(this.Task, {as: 'tasks', foreignKey: 'userId'});
       this.User.Projects = this.User.belongsToMany(this.Project, {as: 'projects', through: this.ProjectMember});
+      this.Project.belongsToMany(this.User, {through: this.ProjectMember});
 
       this.Project.Tasks = this.Project.hasMany(this.Task, {as: 'tasks', foreignKey: 'projectId'});
       this.Task.Project = this.Task.belongsTo(this.Project, {as: 'project', foreignKey: 'projectId'});
@@ -928,7 +929,7 @@ describe('relay', function () {
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
-      expect(sqlSpy.callCount).to.equal(1);
+      expect(sqlSpy.callCount).to.equal(3);
 
       const nodeNames = result.data.user.projects.edges.map(edge => {
         return edge.node.tasks.edges.map(edge => {
@@ -997,7 +998,7 @@ describe('relay', function () {
       expect(projects[0].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[4].get('id')));
       expect(projects[1].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[8].get('id')));
 
-      expect(sqlSpy.callCount).to.equal(2);
+      expect(sqlSpy.callCount).to.equal(3);
     });
 
     it('should support connection fields', async function () {
