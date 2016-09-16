@@ -1,8 +1,7 @@
 import {replaceWhereOperators} from './replaceWhereOperators';
 
-export default function argsToFindOptions(args, target) {
-  var result = {}
-    , targetAttributes = Object.keys(target.rawAttributes);
+export default function argsToFindOptions(args, targetAttributes) {
+  var result = {};
 
   if (args) {
     Object.keys(args).forEach(function (key) {
