@@ -96,11 +96,6 @@ export function sequelizeNodeInterface(sequelize) {
   };
 }
 
-export function nodeAST(connectionAST) {
-  return connectionAST.fields.edges &&
-    connectionAST.fields.edges.fields.node;
-}
-
 export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }

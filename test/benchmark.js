@@ -10,8 +10,8 @@ var app = express();
  *
  * sudo docker-compose up -d postgres
  * sudo docker-compose run benchmark_server node test/benchmark/seed.js
- * sudo docker-compose up -d benchmark_server
- * ab -p test/benchmark/[FILE].json -T application/json -n 500 -c 20 http://localhost:4000/graphql
+ * npm run build && sudo docker-compose kill benchmark_server && sudo docker-compose up -d benchmark_server
+ * ab -p test/benchmark/[FILE].json -T application/json -n 500 -c 20 http://localhost:4001/graphql
  */
 
 app.use('/graphql', graphqlHTTP({
@@ -26,6 +26,6 @@ app.use('/graphql', graphqlHTTP({
   }
 }));
 
-app.listen(4000, function () {
-  console.log('Benchmarking server listening');
+app.listen(4001, function () {
+  console.log('Benchmarking server listening on port 4001');
 });

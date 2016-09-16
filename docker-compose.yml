@@ -25,8 +25,8 @@ mysql:
 benchmark_server:
   build: .
   command: [node, test/benchmark.js]
-  expose:
-  - 4000
+  ports:
+  - "4001:4001"
   links:
   - postgres
   volumes:

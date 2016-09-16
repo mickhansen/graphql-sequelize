@@ -1,7 +1,6 @@
 import { GraphQLList } from 'graphql';
-import simplifyAST from './simplifyAST';
 import argsToFindOptions from './argsToFindOptions';
-import { isConnection, handleConnection, nodeAST, nodeType } from './relay';
+import { isConnection, handleConnection, nodeType } from './relay';
 import invariant from 'assert';
 import Promise from 'bluebird';
 import dataLoaderSequelize from 'dataloader-sequelize';
@@ -26,17 +25,19 @@ function resolverFactory(target, options) {
   if (options.handleConnection === undefined) options.handleConnection = true;
 
   resolver = function (source, args, context, info) {
-    var ast = info.fieldASTs
-      , type = info.returnType
+    var type = info.returnType
       , list = options.list || type instanceof GraphQLList
-      , simpleAST = simplifyAST(ast, info)
-      , findOptions = argsToFindOptions(args, model);
+      , findOptions = argsToFindOptions(args, targetAttributes);
+
+    info = {
+      ...info,
+      type: type,
+      source: source
+    };
 
     context = context || {};
 
-    if (isConnection(info.returnType)) {
-      simpleAST = nodeAST(simpleAST);
-
+    if (isConnection(type)) {
       type = nodeType(type);
     }
 
@@ -48,12 +49,7 @@ function resolverFactory(target, options) {
     findOptions.context = context;
     findOptions.logging = findOptions.logging || context.logging;
 
-    return Promise.resolve(options.before(findOptions, args, context, {
-      ...info,
-      ast: simpleAST,
-      type: type,
-      source: source
-    })).then(function (findOptions) {
+    return Promise.resolve(options.before(findOptions, args, context, info)).then(function (findOptions) {
       if (list && !findOptions.order) {
         findOptions.order = [[model.primaryKeyAttribute, 'ASC']];
       }
@@ -80,12 +76,7 @@ function resolverFactory(target, options) {
 
       return model[list ? 'findAll' : 'findOne'](findOptions);
     }).then(function (result) {
-      return options.after(result, args, context, {
-        ...info,
-        ast: simpleAST,
-        type: type,
-        source: source
-      });
+      return options.after(result, args, context, info);
     });
   };
 

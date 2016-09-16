@@ -1,10 +1,12 @@
 import { resetCache } from 'dataloader-sequelize';
 import Sequelize from 'sequelize';
 
-export const Promise = Sequelize.Promise
-export const sequelize = createSequelize()
+export const Promise = Sequelize.Promise;
+export const sequelize = createSequelize();
 
-afterEach(resetCache);
+if (typeof afterEach !== 'undefined') {
+  afterEach(resetCache);
+}
 
 export function createSequelize(options = {}) {
   const env = process.env;
@@ -38,7 +40,7 @@ export function createSequelize(options = {}) {
       password: '',
       database: 'test'
     }
-  )
+  );
 
   return new Sequelize(config.database, config.user, config.password, {
     host: config.host,
@@ -48,29 +50,27 @@ export function createSequelize(options = {}) {
   });
 }
 
-export function beforeRemoveAllTables () {
+export function beforeRemoveAllTables() {
   before(function () {
     if (sequelize.dialect.name === 'mysql') {
       this.timeout(10000);
       return removeAllTables(sequelize);
     }
-  })
+  });
 }
 
 // Not nice too, MySQL does not supports same name for foreign keys
 // Solution ? Force remove all tables!
-export function removeAllTables (sequelize) {
-  function getTables () {
-    return sequelize.query('show tables')
-      .then(tables => tables[0].map((table, i) => table.Tables_in_test));
+export function removeAllTables(sequelize) {
+  function getTables() {
+    return sequelize.query('show tables').then(tables => tables[0].map((table) => table.Tables_in_test));
   }
 
   return getTables()
     .then(tables => {
       return Promise.all(tables.map(table => {
-        return sequelize.query('drop table ' + table)
-          .catch(err => {});
-      }))
+        return sequelize.query('drop table ' + table).catch(() => {});
+      }));
     })
     .then(() => {
       return getTables();
