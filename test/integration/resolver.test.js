@@ -38,8 +38,10 @@ describe('resolver', function () {
    * A Task belongs to a Project, which can have Labels.
    */
   before(function () {
+    console.log('wat?')
     this.sandbox = sinon.sandbox.create();
 
+    console.log('wat?')
     sequelize.modelManager.models = [];
     sequelize.models = {};
 
@@ -52,7 +54,7 @@ describe('resolver', function () {
         }
       }
     });
-
+    console.log('wat?')
     Task = sequelize.define('task', {
       title: Sequelize.STRING,
       createdAt: {
@@ -87,7 +89,7 @@ describe('resolver', function () {
 
     Task.Project = Task.belongsTo(Project, {as: 'project', foreignKey: 'projectId'});
     Project.Labels = Project.hasMany(Label, {as: 'labels'});
-
+    console.log('wat?')
     labelType = new GraphQLObjectType({
       name: 'Label',
       fields: {
@@ -135,7 +137,7 @@ describe('resolver', function () {
         }
       }
     });
-
+    console.log('wat?')
     userType = new GraphQLObjectType({
       name: 'User',
       description: 'A user',
@@ -197,7 +199,7 @@ describe('resolver', function () {
         }
       }
     });
-
+    console.log('wat?')
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
         name: 'RootQueryType',
@@ -236,8 +238,9 @@ describe('resolver', function () {
   before(function () {
     var taskId = 0
       , projectId = 0;
-
+    console.log('wat2?')
     return sequelize.sync({force: true}).bind(this).then(function () {
+      console.log('wat2?')
       return Promise.join(
         Project.create({
           id: ++projectId,

@@ -42,8 +42,6 @@ export function createSequelize(options = {}) {
     }
   );
 
-  console.log(config, dialect);
-
   return new Sequelize(config.database, config.user, config.password, {
     host: config.host,
     dialect: dialect,
