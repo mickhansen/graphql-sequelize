@@ -1012,6 +1012,10 @@ describe('resolver', function () {
             resolve: resolver(User, {
               before: function (options) {
                 options.include = [User.Tasks];
+                options.order = [
+                  ['id'],
+                  [{ model: Task, as: 'tasks' }, 'id', 'ASC']
+                ];
                 return options;
               }
             })
@@ -1028,13 +1032,25 @@ describe('resolver', function () {
           }
         }
       }
-    `).then(function (result) {
+    `).then(result => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(Task.findAll.callCount).to.equal(0);
       expect(User.findAll.callCount).to.equal(1);
       expect(User.findAll.getCall(0).args[0].include).to.have.length(1);
       expect(User.findAll.getCall(0).args[0].include[0].name).to.equal(User.Tasks.name);
+
+      result.data.users.forEach(function (user) {
+        expect(user.tasks).length.to.be.above(0);
+      });
+
+      expect(result.data).to.deep.equal({
+        users: this.users.map(function (user) {
+          return {
+            tasks: user.tasks.map(task => ({title: task.title}))
+          };
+        })
+      });
     });
   });
 
