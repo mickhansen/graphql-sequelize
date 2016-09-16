@@ -20,22 +20,13 @@ graphql-sequelize assumes you have graphql and sequelize installed.
 A helper for resolving graphql queries targeted at Sequelize models or associations.
 Please take a look at [the tests](https://github.com/mickhansen/graphql-sequelize/blob/master/test/integration/resolver.test.js) to best get an idea of implementation.
 
-### Attribute filtering
-
-The graphql-sequelize resolver will by default only select those attributes requested from the database.
-
-If you have non-database values that depend on other values you can either solve this by using virtual attributes with dependencies on your model or disable attribute filtering via `resolver.filterAttributes = false` or for specific resolvers with `resolver(target, {filterAttributes: false})`.
-
-#### Default attributes
-When filtering attributes you might need some fields every time, regardless of wether they have been requested in the query. You can specify those fields with the `defaultAttributes` resolver option like `resolver(target, {defaultAttributes: ['default', 'field', 'names']})`. A common use case would be the need to fetch a `userId` for every query and every resource of your domain model for permission checking -- in that case you would write your `resolver` functions like `resolver(target, {defaultAttributes: ['userId']})`.
-
 ### Features
 
 - Automatically converts args to where if arg keys matches model attributes
 - Automatically converts a arg named 'limit' to a sequelize limit
 - Automatically converts a arg named 'order' to a sequelize order
 - Only loads the attributes defined in the query (automatically adds primary key and foreign keys)
-- Prefetching nested resolvers with includes/joins
+- Bathcing of nested associations (see [dataloader-sequelize](https://github.com/mickhansen/dataloader-sequelize))
 
 ### Relay & Connections
 

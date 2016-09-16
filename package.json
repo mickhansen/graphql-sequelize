@@ -8,15 +8,15 @@
   },
   "scripts": {
     "prepublish": "npm run check && npm run build",
-    "check": "npm run lint && npm run test-unit",
+    "check": "npm run lint && npm run test:unit",
     "lint": "eslint src",
     "build": "rm -rf lib/* && babel src --ignore test --out-dir lib",
-    "test": "npm run test-unit && npm run test-docker",
-    "test-watch": "npm run test-unit -- --watch",
-    "test-unit": "mocha $npm_package_options_mocha test/unit/*.test.js test/unit/**/*.test.js",
-    "build-docker": "docker-compose build",
-    "test-docker": "DIALECT=${DIALECT:=postgres} docker-compose run dev /bin/sh -c \"npm run test-integration\"",
-    "test-integration": "mocha $npm_package_options_mocha test/integration/*.test.js test/integration/**/*.test.js",
+    "test": "npm run test:unit && npm run test:docker",
+    "test:watch": "npm run test-unit -- --watch",
+    "test:unit": "mocha $npm_package_options_mocha test/unit/*.test.js test/unit/**/*.test.js",
+    "build:docker": "docker-compose build",
+    "test:docker": "DIALECT=${DIALECT:=postgres} docker-compose run dev /bin/sh -c \"npm run test:integration\"",
+    "test:integration": "mocha $npm_package_options_mocha test/integration/*.test.js test/integration/**/*.test.js",
     "psql": "docker run -it --link graphqlsequelize_postgres_1:postgres --rm postgres:9.4 sh -c 'PGPASSWORD=graphql_sequelize_test exec psql -h \"$POSTGRES_PORT_5432_TCP_ADDR\" -p \"$POSTGRES_PORT_5432_TCP_PORT\" -U graphql_sequelize_test'"
   },
   "repository": {

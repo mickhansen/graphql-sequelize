@@ -31,7 +31,6 @@ function resolverFactory(target, options) {
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
-  if (options.filterAttributes === undefined) options.filterAttributes = resolverFactory.filterAttributes;
 
   validateOptions(options);
 
@@ -99,17 +98,7 @@ function resolverFactory(target, options) {
     });
   };
 
-  if (association) {
-    resolver.$association = association;
-  }
-
-  resolver.$before = options.before;
-  resolver.$after = options.after;
-  resolver.$options = options;
-
   return resolver;
 }
-
-resolverFactory.filterAttributes = true;
 
 module.exports = resolverFactory;

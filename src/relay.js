@@ -332,11 +332,6 @@ export function sequelizeConnection({
     };
   };
 
-  resolver.$association = $resolver.$association;
-  resolver.$before = $resolver.$before;
-  resolver.$after = $resolver.$after;
-  resolver.$options = $resolver.$options;
-
   return {
     connectionType,
     edgeType,
