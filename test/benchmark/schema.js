@@ -22,8 +22,6 @@ import {
 
 import { sequelize, models } from './models';
 
-resolver.filterAttributes = false;
-
 const node = sequelizeNodeInterface(sequelize);
 const nodeInterface = node.nodeInterface;
 

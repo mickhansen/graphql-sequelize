@@ -233,7 +233,7 @@ describe('relay', function () {
                   type: new GraphQLNonNull(GraphQLInt)
                 }
               },
-              resolve: resolver(this.User, {filterAttributes: false})
+              resolve: resolver(this.User)
             },
             viewer: {
               type: this.viewerType,
@@ -438,7 +438,7 @@ describe('relay', function () {
                   type: new GraphQLNonNull(GraphQLInt)
                 }
               },
-              resolve: resolver(this.User, {filterAttributes: false})
+              resolve: resolver(this.User)
             },
             viewer: {
               type: this.viewerType,
