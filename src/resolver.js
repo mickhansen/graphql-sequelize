@@ -6,13 +6,6 @@ import invariant from 'assert';
 import Promise from 'bluebird';
 import dataLoaderSequelize from 'dataloader-sequelize';
 
-function validateOptions(options) {
-  invariant(
-    !options.defaultAttributes || Array.isArray(options.defaultAttributes),
-    'options.defaultAttributes must be an array of field names.'
-  );
-}
-
 function resolverFactory(target, options) {
   dataLoaderSequelize(target);
 
@@ -31,8 +24,6 @@ function resolverFactory(target, options) {
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
-
-  validateOptions(options);
 
   resolver = function (source, args, context, info) {
     var ast = info.fieldASTs

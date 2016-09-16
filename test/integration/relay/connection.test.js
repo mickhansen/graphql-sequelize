@@ -5,8 +5,8 @@ import Sequelize from 'sequelize';
 import sinon from 'sinon';
 import attributeFields from '../../../src/attributeFields';
 import resolver from '../../../src/resolver';
-import {uniq} from 'lodash';
-import { Promise, sequelize } from '../../support/helper'
+import {uniq, property, sortBy} from 'lodash';
+import { Promise, sequelize } from '../../support/helper';
 
 import {
   sequelizeConnection
@@ -233,7 +233,7 @@ describe('relay', function () {
                   type: new GraphQLNonNull(GraphQLInt)
                 }
               },
-              resolve: resolver(this.User, {filterAttributes: false})
+              resolve: resolver(this.User)
             },
             viewer: {
               type: this.viewerType,
@@ -251,13 +251,14 @@ describe('relay', function () {
 
       this.taskId = 0;
 
-      [this.projectA, this.projectB, this.projectC, this.projectD, this.projectE] = await Promise.join(
+      let projects = await Promise.join(
         this.Project.create({}),
         this.Project.create({}),
         this.Project.create({}),
         this.Project.create({}),
         this.Project.create({})
       );
+      [this.projectA, this.projectB, this.projectC, this.projectD, this.projectE] = sortBy(projects, property('id'));
 
       this.userA = await this.User.create({
         [this.User.Tasks.as]: [
@@ -437,7 +438,7 @@ describe('relay', function () {
                   type: new GraphQLNonNull(GraphQLInt)
                 }
               },
-              resolve: resolver(this.User, {filterAttributes: false})
+              resolve: resolver(this.User)
             },
             viewer: {
               type: this.viewerType,
