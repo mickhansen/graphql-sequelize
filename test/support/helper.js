@@ -76,6 +76,7 @@ export function removeAllTables(sequelize) {
       return getTables();
     })
     .then(tables => {
+      console.log(tables);
       if (tables.length) {
         return removeAllTables(sequelize);
       }
