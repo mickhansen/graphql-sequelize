@@ -38,6 +38,8 @@ describe('resolver', function () {
    * A Task belongs to a Project, which can have Labels.
    */
   before(function () {
+    this.sandbox = sinon.sandbox.create();
+
     sequelize.modelManager.models = [];
     sequelize.models = {};
 
@@ -318,6 +320,10 @@ describe('resolver', function () {
       });
     });
   });
+
+  afterEach(function () {
+    this.sandbox.restore();
+  })
 
   it('should resolve a plain result with a single model', function () {
     var user = this.userB;
@@ -990,6 +996,45 @@ describe('resolver', function () {
       result.data.users.forEach(function (user) {
         expect(user.tasks).length.to.be(2);
       });
+    });
+  });
+
+  it('should not call association getter if user manually included', function () {
+    this.sandbox.spy(Task, 'findAll');
+    this.sandbox.spy(User, 'findAll');
+
+    var schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'RootQueryType',
+        fields: {
+          users: {
+            type: new GraphQLList(userType),
+            resolve: resolver(User, {
+              before: function (options) {
+                options.include = [User.Tasks];
+                return options;
+              }
+            })
+          }
+        }
+      })
+    });
+
+    return graphql(schema, `
+      {
+        users {
+          tasks {
+            title
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(Task.findAll.callCount).to.equal(0);
+      expect(User.findAll.callCount).to.equal(1);
+      expect(User.findAll.getCall(0).args[0].include).to.have.length(1);
+      expect(User.findAll.getCall(0).args[0].include[0].name).to.equal(User.Tasks.name);
     });
   });
 
