@@ -56,7 +56,7 @@
     "babel-register": "^6.9.0",
     "bluebird": "^3.4.0",
     "chai": "^3.0.0",
-    "chai-as-promised": "^5.1.0",
+    "chai-as-promised": "^6.0.0",
     "eslint": "^1.7.3",
     "express": "^4.14.0",
     "express-graphql": "^0.5.4",
