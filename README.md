@@ -361,8 +361,8 @@ defaultArgs(Model);
   project_id: {
     type: GraphQLString
   },
-   where: {
-      type JSONType
+  where: {
+    type: JSONType
   }
 }
 */
@@ -381,7 +381,7 @@ defaultArgs(Model);
     type: GraphQLString
   },
   where: {
-    type JSONType
+    type: JSONType
   }
 }
 ```
