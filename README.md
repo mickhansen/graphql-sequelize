@@ -392,9 +392,7 @@ Should be used with fields of type `GraphQLList`.
 ```js
 import {defaultListArgs} from 'graphql-sequelize'
 
-args: {
-  _.assign(defaultListArgs(), {
-    // ... additional args
-  })
-}
+args: _.assign(defaultListArgs(), {
+  // ... additional args
+})
 ```
