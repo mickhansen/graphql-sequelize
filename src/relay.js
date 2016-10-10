@@ -144,8 +144,17 @@ export function sequelizeConnection({
     }
   };
 
-  let orderByAttribute = function (orderBy) {
-    return orderBy[0][0];
+  let orderByAttribute = function (orderAttr, {source, args, context, info}) {
+    return typeof orderAttr === 'function' ? orderAttr(source, args, context, info) : orderAttr;
+  };
+
+  let orderByDirection = function (orderDirection, args) {
+    if (args.last) {
+      return orderDirection.indexOf('ASC') >= 0
+              ? orderDirection.replace('ASC', 'DESC')
+              : orderDirection.replace('DESC', 'ASC');
+    }
+    return orderDirection;
   };
 
   /**
@@ -211,22 +220,25 @@ export function sequelizeConnection({
       }
 
       let orderBy = args.orderBy;
-      let orderAttribute = orderByAttribute(orderBy);
-      let orderDirection = args.orderBy[0][1];
-
-      if (args.last) {
-        orderDirection = orderDirection === 'ASC' ? 'DESC' : 'ASC';
-      }
+      let orderAttribute = orderByAttribute(orderBy[0][0], {
+        source: info.source,
+        args,
+        context,
+        info
+      });
+      let orderDirection = orderByDirection(orderBy[0][1], args);
 
       options.order = [
         [orderAttribute, orderDirection]
       ];
 
       if (orderAttribute !== model.primaryKeyAttribute) {
-        options.order.push([model.primaryKeyAttribute, 'ASC']);
+        options.order.push([model.primaryKeyAttribute, orderByDirection('ASC', args)]);
       }
 
-      options.attributes.push(orderAttribute);
+      if (typeof orderAttribute === 'string') {
+        options.attributes.push(orderAttribute);
+      }
 
       if (options.limit && !options.attributes.some(attribute => attribute.length === 2 && attribute[1] === 'full_count')) {
         if (model.sequelize.dialect.name === 'postgres') {

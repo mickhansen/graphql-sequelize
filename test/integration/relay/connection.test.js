@@ -64,6 +64,7 @@ describe('relay', function () {
         }
       });
 
+      this.projectOrderSpy = sinon.spy(() => 'name');
       this.projectTaskConnectionFieldSpy = sinon.spy();
       this.projectTaskConnection = sequelizeConnection({
         name: 'projectTask',
@@ -74,7 +75,9 @@ describe('relay', function () {
           values: {
             ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
             LATEST: {value: ['createdAt', 'DESC']},
-            NAME: {value: ['name', 'ASC']}
+            NAME: {value: ['name', 'ASC']},
+            NAME_FUNC: {value: [this.projectOrderSpy, 'ASC']},
+            NAME_NULLS_LAST: {value: ['name', 'ASC NULLS LAST']}
           }
         }),
         connectionFields: () => ({
@@ -479,6 +482,60 @@ describe('relay', function () {
 
     });
 
+    it('should handle orderBy function case', async function () {
+      await graphql(this.schema, `
+        {
+          user(id: ${this.userA.id}) {
+            projects(first: 1) {
+              edges {
+                node {
+                  tasks(orderBy: NAME_FUNC, first: 5) {
+                    edges {
+                      cursor
+                      node {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, null, {});
+
+      expect(this.projectOrderSpy).to.have.been.calledOnce;
+      expect(this.projectOrderSpy.alwaysCalledWithMatch({}, { first: 5 })).to.be.ok;
+    });
+
+    it('should properly reverse orderBy with NULLS and last', async function () {
+      let sqlSpy = sinon.spy();
+      await graphql(this.schema, `
+        {
+          user(id: ${this.userA.id}) {
+            projects(first: 1) {
+              edges {
+                node {
+                  tasks(orderBy: NAME_NULLS_LAST, last: 10) {
+                    edges {
+                      cursor
+                      node {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, null, { logging: sqlSpy });
+
+      expect(sqlSpy.lastCall.args[0].match('DESC NULLS LAST')).to.be.ok;
+    });
+
     it('should support in-query slicing and pagination with first and orderBy', async function () {
       let firstThree = this.userA.tasks.slice(this.userA.tasks.length - 3, this.userA.tasks.length);
       let nextThree = this.userA.tasks.slice(this.userA.tasks.length - 6, this.userA.tasks.length - 3);
@@ -641,7 +698,7 @@ describe('relay', function () {
     });
 
     it('should support pagination with where', async function () {
-      const completedTasks = this.userA.tasks.filter(task => task.completed)
+      const completedTasks = this.userA.tasks.filter(task => task.completed);
 
       expect(completedTasks.length).to.equal(4);
 
@@ -934,8 +991,8 @@ describe('relay', function () {
 
       const nodeNames = result.data.user.projects.edges.map(edge => {
         return edge.node.tasks.edges.map(edge => {
-          return edge.node.name
-        }).sort()
+          return edge.node.name;
+        }).sort();
       });
       expect(nodeNames).to.deep.equal([
         [
