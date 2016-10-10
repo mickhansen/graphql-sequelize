@@ -64,6 +64,7 @@ describe('relay', function () {
         }
       });
 
+      this.projectOrderSpy = sinon.spy(() => 'name');
       this.projectTaskConnectionFieldSpy = sinon.spy();
       this.projectTaskConnection = sequelizeConnection({
         name: 'projectTask',
@@ -74,7 +75,9 @@ describe('relay', function () {
           values: {
             ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
             LATEST: {value: ['createdAt', 'DESC']},
-            NAME: {value: ['name', 'ASC']}
+            NAME: {value: ['name', 'ASC']},
+            NAME_FUNC: {value: [this.projectOrderSpy, 'ASC']},
+            NAME_NULLS_LAST: {value: ['name', 'ASC NULLS LAST']}
           }
         }),
         connectionFields: () => ({
@@ -477,6 +480,84 @@ describe('relay', function () {
 
       expect(projectConnectionAttributesUnique).to.equal(true);
 
+    });
+
+    it('should handle orderBy function case', async function () {
+      await graphql(this.schema, `
+        {
+          user(id: ${this.userA.id}) {
+            projects(first: 1) {
+              edges {
+                node {
+                  tasks(orderBy: NAME_FUNC, first: 5) {
+                    edges {
+                      cursor
+                      node {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, null, {});
+
+      expect(this.projectOrderSpy).to.have.been.calledOnce;
+      expect(this.projectOrderSpy.alwaysCalledWithMatch({ first: 5 })).to.be.ok;
+    });
+
+    it('should properly reverse NULLS LAST in orderBy', async function () {
+      let sqlSpy = sinon.spy();
+      await graphql(this.schema, `
+        {
+          user(id: ${this.userA.id}) {
+            projects(first: 1) {
+              edges {
+                node {
+                  tasks(orderBy: NAME_NULLS_LAST, first: 10) {
+                    edges {
+                      cursor
+                      node {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, null, { logging: sqlSpy });
+
+      expect(sqlSpy.lastCall.args[0].match('ASC NULLS LAST')).to.be.ok;
+
+      await graphql(this.schema, `
+        {
+          user(id: ${this.userA.id}) {
+            projects(first: 1) {
+              edges {
+                node {
+                  tasks(orderBy: NAME_NULLS_LAST, last: 10) {
+                    edges {
+                      cursor
+                      node {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `, null, { logging: sqlSpy });
+
+      expect(sqlSpy.lastCall.args[0].match('DESC NULLS FIRST')).to.be.ok;
     });
 
     it('should support in-query slicing and pagination with first and orderBy', async function () {
