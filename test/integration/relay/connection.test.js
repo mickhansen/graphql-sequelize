@@ -509,7 +509,7 @@ describe('relay', function () {
       expect(this.projectOrderSpy.alwaysCalledWithMatch({}, { first: 5 })).to.be.ok;
     });
 
-    it('should properly reverse NULLS LAST in orderBy', async function () {
+    it('should properly reverse orderBy', async function () {
       let sqlSpy = sinon.spy();
       await graphql(this.schema, `
         {
