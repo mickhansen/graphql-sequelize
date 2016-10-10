@@ -150,12 +150,9 @@ export function sequelizeConnection({
 
   let orderByDirection = function (orderDirection, args) {
     if (args.last) {
-      orderDirection = orderDirection.indexOf('ASC') >= 0
+      return orderDirection.indexOf('ASC') >= 0
               ? orderDirection.replace('ASC', 'DESC')
               : orderDirection.replace('DESC', 'ASC');
-      orderDirection = orderDirection.indexOf('LAST') >= 0
-              ? orderDirection.replace('LAST', 'FIRST')
-              : orderDirection.replace('FIRST', 'LAST');
     }
     return orderDirection;
   };

@@ -557,7 +557,7 @@ describe('relay', function () {
         }
       `, null, { logging: sqlSpy });
 
-      expect(sqlSpy.lastCall.args[0].match('DESC NULLS FIRST')).to.be.ok;
+      expect(sqlSpy.lastCall.args[0].match('DESC NULLS LAST')).to.be.ok;
     });
 
     it('should support in-query slicing and pagination with first and orderBy', async function () {
