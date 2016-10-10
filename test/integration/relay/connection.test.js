@@ -509,32 +509,8 @@ describe('relay', function () {
       expect(this.projectOrderSpy.alwaysCalledWithMatch({}, { first: 5 })).to.be.ok;
     });
 
-    it('should properly reverse orderBy', async function () {
+    it('should properly reverse orderBy with last', async function () {
       let sqlSpy = sinon.spy();
-      await graphql(this.schema, `
-        {
-          user(id: ${this.userA.id}) {
-            projects(first: 1) {
-              edges {
-                node {
-                  tasks(orderBy: NAME_NULLS_LAST, first: 10) {
-                    edges {
-                      cursor
-                      node {
-                        id
-                        name
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      `, null, { logging: sqlSpy });
-
-      expect(sqlSpy.lastCall.args[0].match('ASC NULLS LAST')).to.be.ok;
-
       await graphql(this.schema, `
         {
           user(id: ${this.userA.id}) {

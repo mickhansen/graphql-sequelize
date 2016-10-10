@@ -101,7 +101,8 @@ const userTaskConnection = sequelizeConnection({
     name: 'UserTaskOrderBy',
     values: {
       AGE: {value: ['createdAt', 'DESC']}, // The first ENUM value will be the default order. The direction will be used for `first`, will automatically be inversed for `last` lookups.
-      TITLE: {value:  ['title', 'ASC']}
+      TITLE: {value:  ['title', 'ASC']},
+      CUSTOM: {value:  [function (source, args, context, info) {}, 'ASC']} // build and return custom order for sequelize orderBy option
     }
   }),
   where: function (key, value) {
