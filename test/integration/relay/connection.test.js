@@ -509,7 +509,7 @@ describe('relay', function () {
       expect(this.projectOrderSpy.alwaysCalledWithMatch({}, { first: 5 })).to.be.ok;
     });
 
-    it('should properly reverse orderBy with last', async function () {
+    it('should properly reverse orderBy with NULLS and last', async function () {
       let sqlSpy = sinon.spy();
       await graphql(this.schema, `
         {
@@ -698,7 +698,7 @@ describe('relay', function () {
     });
 
     it('should support pagination with where', async function () {
-      const completedTasks = this.userA.tasks.filter(task => task.completed)
+      const completedTasks = this.userA.tasks.filter(task => task.completed);
 
       expect(completedTasks.length).to.equal(4);
 
@@ -991,8 +991,8 @@ describe('relay', function () {
 
       const nodeNames = result.data.user.projects.edges.map(edge => {
         return edge.node.tasks.edges.map(edge => {
-          return edge.node.name
-        }).sort()
+          return edge.node.name;
+        }).sort();
       });
       expect(nodeNames).to.deep.equal([
         [
