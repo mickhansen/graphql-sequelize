@@ -506,7 +506,7 @@ describe('relay', function () {
       `, null, {});
 
       expect(this.projectOrderSpy).to.have.been.calledOnce;
-      expect(this.projectOrderSpy.alwaysCalledWithMatch({ first: 5 })).to.be.ok;
+      expect(this.projectOrderSpy.alwaysCalledWithMatch({}, { first: 5 })).to.be.ok;
     });
 
     it('should properly reverse NULLS LAST in orderBy', async function () {

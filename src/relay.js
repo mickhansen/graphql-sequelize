@@ -144,8 +144,8 @@ export function sequelizeConnection({
     }
   };
 
-  let orderByAttribute = function (orderAttr, args) {
-    return typeof orderAttr === 'function' ? orderAttr(args) : orderAttr;
+  let orderByAttribute = function (orderAttr, {source, args, context, info}) {
+    return typeof orderAttr === 'function' ? orderAttr(source, args, context, info) : orderAttr;
   };
 
   let orderByDirection = function (orderDirection, args) {
@@ -223,7 +223,12 @@ export function sequelizeConnection({
       }
 
       let orderBy = args.orderBy;
-      let orderAttribute = orderByAttribute(orderBy[0][0], args);
+      let orderAttribute = orderByAttribute(orderBy[0][0], {
+        source: info.source,
+        args,
+        context,
+        info
+      });
       let orderDirection = orderByDirection(orderBy[0][1], args);
 
       options.order = [
