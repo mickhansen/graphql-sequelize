@@ -27,7 +27,7 @@ Please take a look at [the tests](https://github.com/mickhansen/graphql-sequeliz
 - Automatically converts a arg named 'limit' to a sequelize limit
 - Automatically converts a arg named 'order' to a sequelize order
 - Only loads the attributes defined in the query (automatically adds primary key and foreign keys)
-- Bathcing of nested associations (see [dataloader-sequelize](https://github.com/mickhansen/dataloader-sequelize))
+- Batching of nested associations (see [dataloader-sequelize](https://github.com/mickhansen/dataloader-sequelize))
 
 ### Relay & Connections
 
