@@ -24,8 +24,8 @@ Please take a look at [the tests](https://github.com/mickhansen/graphql-sequeliz
 ### Features
 
 - Automatically converts args to where if arg keys matches model attributes
-- Automatically converts a arg named 'limit' to a sequelize limit
-- Automatically converts a arg named 'order' to a sequelize order
+- Automatically converts an arg named 'limit' to a sequelize limit
+- Automatically converts an arg named 'order' to a sequelize order
 - Only loads the attributes defined in the query (automatically adds primary key and foreign keys)
 - Batching of nested associations (see [dataloader-sequelize](https://github.com/mickhansen/dataloader-sequelize))
 
