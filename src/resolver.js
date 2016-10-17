@@ -44,9 +44,6 @@ function resolverFactory(target, options) {
     type = type.ofType || type;
 
     findOptions.attributes = targetAttributes;
-
-    findOptions.root = context;
-    findOptions.context = context;
     findOptions.logging = findOptions.logging || context.logging;
 
     return Promise.resolve(options.before(findOptions, args, context, info)).then(function (findOptions) {
