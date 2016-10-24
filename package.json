@@ -46,7 +46,7 @@
   },
   "peerDependencies": {
     "graphql-relay": "^0.4.2",
-    "graphql": "^0.5.0 || ^0.6.0 || ^0.7.0"
+    "graphql": "^0.6.0"
   },
   "devDependencies": {
     "babel-cli": "^6.9.0",
