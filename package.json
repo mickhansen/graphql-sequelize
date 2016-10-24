@@ -41,7 +41,7 @@
   },
   "homepage": "https://github.com/mickhansen/graphql-sequelize",
   "dependencies": {
-    "dataloader-sequelize": "^1.4.0",
+    "dataloader-sequelize": "^1.4.2",
     "lodash": "^4.0.0"
   },
   "peerDependencies": {
@@ -69,7 +69,7 @@
     "mysql": "^2.11.1",
     "pg": "^5.0.0",
     "pg-hstore": "^2.3.2",
-    "sequelize": "^3.24.3",
+    "sequelize": "^3.24.5",
     "sinon": "^1.15.4",
     "sinon-as-promised": "^4.0.0",
     "sinon-chai": "^2.8.0",
