@@ -1,4 +1,4 @@
-import { GraphQLInt, GraphQLString } from 'graphql';
+import { GraphQLList, GraphQLInt, GraphQLString } from 'graphql';
 import JSONType from './types/jsonType';
 
 module.exports = function () {
@@ -7,7 +7,7 @@ module.exports = function () {
       type: GraphQLInt
     },
     order: {
-      type: GraphQLString
+      type: new GraphQLList(new GraphQLList(GraphQLString))
     },
     where: {
       type: JSONType,

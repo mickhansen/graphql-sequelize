@@ -1,16 +1,16 @@
 'use strict';
 
-import chai, {expect} from "chai";
-import Sequelize from "sequelize";
-import defaultListArgs from "../../src/defaultListArgs";
+import { expect } from 'chai';
+import Sequelize from 'sequelize';
+import defaultListArgs from '../../src/defaultListArgs';
 
-import { sequelize } from '../support/helper'
+import { sequelize } from '../support/helper';
 
 import {
   GraphQLString,
   GraphQLInt,
-  GraphQLNonNull,
-  GraphQLScalarType
+  GraphQLScalarType,
+  GraphQLList,
 } from 'graphql';
 
 describe('defaultListArgs', function () {
@@ -25,7 +25,7 @@ describe('defaultListArgs', function () {
     var args = defaultListArgs();
 
     expect(args).to.have.ownProperty('order');
-    expect(args.order.type).to.equal(GraphQLString);
+    expect(args.order.type).to.eql(new GraphQLList(new GraphQLList(GraphQLString)));
   });
 
   describe('will have an "where" argument', function () {

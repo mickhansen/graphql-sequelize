@@ -19,11 +19,8 @@ export default function argsToFindOptions(args, targetAttributes) {
       }
 
       if (key === 'order' && args[key]) {
-        if (args[key].indexOf('reverse:') === 0) {
-          result.order = [[args[key].substring(8), 'DESC']];
-        } else {
-          result.order = [[args[key], 'ASC']];
-        }
+        result.order = result.order || [];
+        result.order = args[key];
       }
 
       if (key === 'where' && args[key]) {
