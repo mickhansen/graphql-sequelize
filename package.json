@@ -42,7 +42,7 @@
   "homepage": "https://github.com/mickhansen/graphql-sequelize",
   "dependencies": {
     "dataloader-sequelize": "^1.4.3",
-    "lodash": "^4.0.0"
+    "lodash": "^4.16.5"
   },
   "peerDependencies": {
     "graphql-relay": "^0.4.2",
