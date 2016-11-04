@@ -265,7 +265,11 @@ export function sequelizeConnection({
       options.attributes = _.uniq(options.attributes);
       return before(options, args, context, info);
     },
-    after: async function (values, args, context, {source}) {
+    after: async function (values, args, context, info) {
+      const {
+        source,
+      } = info;
+
       var cursor = null;
 
       if (args.after || args.before) {
@@ -288,7 +292,7 @@ export function sequelizeConnection({
         // In case of `OVER()` is not available, we need to get the full count from a second query.
         const options = await Promise.resolve(before({
           where: argsToWhere(args)
-        }));
+        }, args, context, info));
 
         if (target.count) {
           fullCount = await target.count(source, options);
