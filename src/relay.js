@@ -295,9 +295,15 @@ export function sequelizeConnection({
         }, args, context, info));
 
         if (target.count) {
-          fullCount = await target.count(options);
+          // If it's a relation
+          if (target.associationType) {
+            fullCount = await target.count(source, options);
+          } else {
+            // target: Model case
+            fullCount = await target.count(options);
+          }
         } else {
-          fullCount = await target.manyFromSource.count(options);
+          fullCount = await target.manyFromSource.count(source, options);
         }
       }
 
