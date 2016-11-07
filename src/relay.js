@@ -196,9 +196,9 @@ export function sequelizeConnection({
   };
 
   let resolveEdge = function (item, index, queriedCursor, args = {}, source) {
-    let startIndex = false;
+    let startIndex = null;
     if (queriedCursor) startIndex = Number(queriedCursor.index);
-    if (startIndex !== false) {
+    if (startIndex !== null) {
       startIndex++;
     } else {
       startIndex = 0;
@@ -300,11 +300,9 @@ export function sequelizeConnection({
         }, args, context, info));
 
         if (target.count) {
-          // If it's a relation
           if (target.associationType) {
             fullCount = await target.count(source, options);
           } else {
-            // target: Model case
             fullCount = await target.count(options);
           }
         } else {
@@ -316,8 +314,8 @@ export function sequelizeConnection({
       let hasPreviousPage = false;
       if (args.first || args.last) {
         const count = parseInt(args.first || args.last, 10);
-        let index = cursor ? Number(cursor.index) : false;
-        if (index !== false) {
+        let index = cursor ? Number(cursor.index) : null;
+        if (index !== null) {
           index++;
         } else {
           index = 0;
