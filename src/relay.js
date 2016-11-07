@@ -62,7 +62,7 @@ export function typeResolver(nodeTypeMapper) {
   return obj => {
     var type = obj.__graphqlType__
                || (obj.Model
-                 ? obj.Model.options.name.singular
+                 ? obj.Model.name
                  : obj.name);
 
     if (!type) {
