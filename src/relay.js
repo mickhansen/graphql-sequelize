@@ -196,9 +196,14 @@ export function sequelizeConnection({
   };
 
   let resolveEdge = function (item, index, queriedCursor, args = {}, source) {
-    let startIndex = 0;
+    let startIndex = false;
     if (queriedCursor) startIndex = Number(queriedCursor.index);
-    if (startIndex !== 0) startIndex++;
+    if (startIndex !== false) {
+      startIndex++;
+    } else {
+      startIndex = 0;
+    }
+
     return {
       cursor: toCursor(item, index + startIndex),
       node: item,
@@ -311,8 +316,12 @@ export function sequelizeConnection({
       let hasPreviousPage = false;
       if (args.first || args.last) {
         const count = parseInt(args.first || args.last, 10);
-        let index = cursor ? Number(cursor.index) : 0;
-        if (index !== 0) index++;
+        let index = cursor ? Number(cursor.index) : false;
+        if (index !== false) {
+          index++;
+        } else {
+          index = 0;
+        }
 
         hasNextPage = index + 1 + count <= fullCount;
         hasPreviousPage = index - count >= 0;
