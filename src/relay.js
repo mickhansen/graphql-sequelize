@@ -260,7 +260,7 @@ export function sequelizeConnection({
         let cursor = fromCursor(args.after || args.before);
         let startIndex = Number(cursor.index);
 
-        if (startIndex > 0) options.offset = startIndex + 1;
+        if (startIndex >= 0) options.offset = startIndex + 1;
       }
       options.attributes = _.uniq(options.attributes);
       return before(options, args, context, info);
