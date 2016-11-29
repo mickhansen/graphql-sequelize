@@ -345,7 +345,7 @@ export function sequelizeConnection({
   });
 
   let resolver = (source, args, context, info) => {
-    if (simplifyAST(info.fieldASTs[0], info).fields.edges) {
+    if (simplifyAST(info.fieldNodes[0], info).fields.edges) {
       return $resolver(source, args, context, info);
     }
 
