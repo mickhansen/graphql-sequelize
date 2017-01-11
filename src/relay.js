@@ -45,7 +45,7 @@ export function idFetcher(sequelize, nodeTypeMapper) {
     const nodeType = nodeTypeMapper.item(type);
     if (nodeType && typeof nodeType.resolve === 'function') {
       const res = await Promise.resolve(nodeType.resolve(globalId, context));
-      res.__graphqlType__ = type;
+      if (res) res.__graphqlType__ = type;
       return res;
     }
 
@@ -345,7 +345,8 @@ export function sequelizeConnection({
   });
 
   let resolver = (source, args, context, info) => {
-    if (simplifyAST(info.fieldASTs[0], info).fields.edges) {
+    var fieldNodes = info.fieldASTs || info.fieldNodes;
+    if (simplifyAST(fieldNodes[0], info).fields.edges) {
       return $resolver(source, args, context, info);
     }
 
