@@ -85,13 +85,18 @@ export function handleConnection(values, args) {
 
 export function sequelizeNodeInterface(sequelize) {
   let nodeTypeMapper = new NodeTypeMapper();
+  const myIdFetcher = idFetcher(sequelize, nodeTypeMapper);
+  const myTypeResolver = typeResolver(nodeTypeMapper);
+
   const nodeObjects = nodeDefinitions(
-    idFetcher(sequelize, nodeTypeMapper),
-    typeResolver(nodeTypeMapper)
+    myIdFetcher,
+    myTypeResolver,
   );
 
   return {
     nodeTypeMapper,
+    idFetcher: myIdFetcher,
+    typeResolver: myTypeResolver,
     ...nodeObjects
   };
 }
