@@ -41,7 +41,7 @@ const astToJson = {
 
 
 const JSONType = new GraphQLScalarType({
-  name: 'JSON',
+  name: 'SequelizeJSON',
   description: 'The `JSON` scalar type represents raw JSON as values.',
   serialize: value => value,
   parseValue: value => value,
