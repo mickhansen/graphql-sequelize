@@ -86,6 +86,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
 
   if (sequelizeType instanceof ENUM) {
     return new GraphQLEnumType({
+      name: 'tempEnumName', //grpahql 0.9 requires name for EnumType. Using tempEnumName until its replaced with field generated name
       values: sequelizeType.values.reduce((obj, value) => {
         let sanitizedValue = value;
         if (specialChars.test(value)) {
