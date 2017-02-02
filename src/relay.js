@@ -189,7 +189,7 @@ export function sequelizeConnection({
 
     _.each(args, (value, key) => {
       if (key in $connectionArgs) return;
-      _.assign(result, where(key, value));
+      _.assign(result, where(key, value, result));
     });
 
     return result;
