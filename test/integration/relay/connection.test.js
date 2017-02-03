@@ -851,7 +851,7 @@ describe('relay', function () {
       ]);
     });
 
-    it.only('should support multiple user provided args/where that act on a single database field', async function () {
+    it('should support multiple user provided args/where that act on a single database field', async function () {
       let result = await graphql(this.schema, `
         {
           user(id: ${this.userA.id}) {
