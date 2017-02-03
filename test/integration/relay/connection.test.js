@@ -149,9 +149,27 @@ describe('relay', function () {
             }
           }
         }),
-        where: (key, value) => {
+        where: (key, value, prevWhere) => {
           if (key === 'completed') {
             value = !!value;
+          }
+          if (key === 'timeRangeOne') {
+            const existingWhere = prevWhere.createdAt || {};
+            return {
+              createdAt: {
+                ...existingWhere,
+                gte: new Date(now - 35000)
+              }
+            };
+          }
+          if (key === 'timeRangeTwo') {
+            const existingWhere = prevWhere.createdAt || {};
+            return {
+              createdAt: {
+                ...existingWhere,
+                lte: new Date(now - 25000)
+              }
+            };
           }
           return {[key]: value};
         }
@@ -187,6 +205,12 @@ describe('relay', function () {
             args: {
               ...this.userTaskConnection.connectionArgs,
               completed: {
+                type: GraphQLBoolean
+              },
+              timeRangeOne: {
+                type: GraphQLBoolean
+              },
+              timeRangeTwo: {
                 type: GraphQLBoolean
               }
             },
@@ -824,6 +848,35 @@ describe('relay', function () {
       })).to.deep.equal([
         this.userA.tasks[6].id,
         this.userA.tasks[5].id,
+      ]);
+    });
+
+    it.only('should support multiple user provided args/where that act on a single database field', async function () {
+      let result = await graphql(this.schema, `
+        {
+          user(id: ${this.userA.id}) {
+            tasks(first: 5, orderBy: LATEST, timeRangeOne: true, timeRangeTwo: true) {
+              edges {
+                cursor
+                node {
+                  id
+                  name
+                }
+              }
+            }
+          }
+        }
+      `, null, {});
+
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data.user.tasks.edges.length).to.equal(3);
+      expect(result.data.user.tasks.edges.map(task => {
+        return parseInt(fromGlobalId(task.node.id).id, 10);
+      })).to.deep.equal([
+        this.userA.tasks[4].id,
+        this.userA.tasks[3].id,
+        this.userA.tasks[2].id,
       ]);
     });
 
