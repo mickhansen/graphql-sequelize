@@ -158,7 +158,7 @@ describe('relay', function () {
             return {
               createdAt: {
                 ...existingWhere,
-                gte: new Date(now - 35000)
+                gte: new Date(now - 36000)
               }
             };
           }
@@ -167,7 +167,7 @@ describe('relay', function () {
             return {
               createdAt: {
                 ...existingWhere,
-                lte: new Date(now - 25000)
+                lte: new Date(now - 24000)
               }
             };
           }
