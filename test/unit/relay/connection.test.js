@@ -1,7 +1,7 @@
 import Sequelize from 'sequelize';
 import {expect} from 'chai';
 import sinon from 'sinon';
-import { sequelize } from '../../support/helper'
+import { sequelize } from '../../support/helper';
 import attributeFields from '../../../src/attributeFields';
 
 import {

@@ -105,7 +105,7 @@ const userTaskConnection = sequelizeConnection({
       CUSTOM: {value:  [function (source, args, context, info) {}, 'ASC']} // build and return custom order for sequelize orderBy option
     }
   }),
-  where: function (key, value) {
+  where: function (key, value, currentWhere) {
     // for custom args other than connectionArgs return a sequelize where parameter
 
     return {[key]: value};
