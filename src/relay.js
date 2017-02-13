@@ -340,7 +340,7 @@ export function sequelizeConnection({
           hasNextPage: hasNextPage,
           hasPreviousPage: hasPreviousPage
         }
-      });
+      }, args, context, info);
     }
   });
 
