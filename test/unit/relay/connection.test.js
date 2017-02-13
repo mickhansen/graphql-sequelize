@@ -34,13 +34,15 @@ describe('relay', function () {
         }
       });
 
-      this.spy = sinon.spy(options => options);
+      this.beforeSpy = sinon.spy(options => options);
+      this.afterSpy = sinon.spy(options => options);
 
       this.viewerTaskConnection = sequelizeConnection({
         name: 'Viewer' + this.Task.name,
         nodeType: this.taskType,
         target: this.User.Tasks,
-        before: this.spy
+        before: this.beforeSpy,
+        after: this.afterSpy
       });
 
       this.viewerType = new GraphQLObjectType({
@@ -101,7 +103,7 @@ describe('relay', function () {
         viewer: this.viewer
       });
 
-      expect(this.spy).to.have.been.calledWithMatch(
+      expect(this.beforeSpy).to.have.been.calledWithMatch(
         sinon.match.any,
         sinon.match({
           orderBy: sinon.match.any
@@ -115,6 +117,22 @@ describe('relay', function () {
           ast: sinon.match.any
         })
       );
+
+      expect(this.afterSpy).to.have.been.calledWithMatch(
+        sinon.match.any,
+        sinon.match({
+          orderBy: sinon.match.any
+        }),
+        sinon.match({
+          viewer: {
+            id: this.viewer.id
+          }
+        }),
+        sinon.match({
+          ast: sinon.match.any
+        })
+      );
+
     });
   });
 });
