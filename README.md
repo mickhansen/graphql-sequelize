@@ -199,7 +199,7 @@ var Model = sequelize.define('User', {
 });
 
 import {attributeFields,typeMapper} from 'graphql-sequelize';
-typeMapper.mapType((type) => {s
+typeMapper.mapType((type) => {
    //map bools as strings
    if (type instanceof Sequelize.BOOLEAN) {
      return GraphQLString
