@@ -117,10 +117,6 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     return JSONType;
   }
 
-  if (sequelizeType instanceof JSONB) {
-    return JSONType;
-  }
-
   throw new Error(`Unable to convert ${sequelizeType.key || sequelizeType.toSql()} to a GraphQL type`);
 
 }
