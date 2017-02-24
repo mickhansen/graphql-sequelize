@@ -52,8 +52,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     TIME,
     ARRAY,
     VIRTUAL,
-    JSON,
-    JSONB
+    JSON
   } = sequelizeTypes;
 
 
