@@ -6,6 +6,7 @@ import {
    GraphQLEnumType,
    GraphQLList
  } from 'graphql';
+import JSONType from './types/jsonType';
 
 let customTypeMapper;
 /**
@@ -50,7 +51,9 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     DATEONLY,
     TIME,
     ARRAY,
-    VIRTUAL
+    VIRTUAL,
+    JSON,
+    JSONB
   } = sequelizeTypes;
 
 
@@ -108,6 +111,14 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
         ? toGraphQL(sequelizeType.returnType, sequelizeTypes)
         : GraphQLString;
     return returnType;
+  }
+
+  if (sequelizeType instanceof JSON) {
+    return JSONType;
+  }
+
+  if (sequelizeType instanceof JSONB) {
+    return JSONType;
   }
 
   throw new Error(`Unable to convert ${sequelizeType.key || sequelizeType.toSql()} to a GraphQL type`);
