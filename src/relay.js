@@ -339,7 +339,8 @@ export function sequelizeConnection({
           endCursor: lastEdge ? lastEdge.cursor : null,
           hasNextPage: hasNextPage,
           hasPreviousPage: hasPreviousPage
-        }
+        },
+        fullCount
       }, args, context, info);
     }
   });

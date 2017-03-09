@@ -119,7 +119,9 @@ describe('relay', function () {
       );
 
       expect(this.afterSpy).to.have.been.calledWithMatch(
-        sinon.match.any,
+        sinon.match({
+          fullCount: sinon.match.number
+        }),
         sinon.match({
           orderBy: sinon.match.any
         }),
