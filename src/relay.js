@@ -18,6 +18,7 @@ import {
 
 import _ from 'lodash';
 import simplifyAST from './simplifyAST';
+import assert from 'assert';
 
 export class NodeTypeMapper {
   constructor() {
@@ -204,10 +205,18 @@ export function sequelizeConnection({
       startIndex = 0;
     }
 
+    assert(
+      !item.$options.includeNames || item.$options.includeNames.length === 1,
+      'Edge must match to exactly one through-model'
+    );
+
+    const modelThroughList = item.$options.includeNames && item.toJSON()[item.$options.includeNames[0]] || [{}];
+
     return {
       cursor: toCursor(item, index + startIndex),
       node: item,
-      source: source
+      source: source,
+      throughModels: modelThroughList,
     };
   };
 
@@ -281,9 +290,13 @@ export function sequelizeConnection({
         cursor = fromCursor(args.after || args.before);
       }
 
-      let edges = values.map((value, idx) => {
-        return resolveEdge(value, idx, cursor, args, source);
-      });
+      // We generate as many edges as there are rows in the association table for that relationship
+      let edges = _.flatten(values.map((value, idx) => {
+        const edge = resolveEdge(value, idx, cursor, args, source);
+        return edge.throughModels.map(throughModel =>
+          Object.assign(edge, throughModel)
+        );
+      }));
 
       let firstEdge = edges[0];
       let lastEdge = edges[edges.length - 1];
