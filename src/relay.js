@@ -210,13 +210,24 @@ export function sequelizeConnection({
       'Edge must match to exactly one through-model'
     );
 
-    const modelThroughList = item.$options.includeNames && item.toJSON()[item.$options.includeNames[0]] || [{}];
+    let throughModels = [{}];
+
+    if (item.$options.btmAttributes) {
+      const joinTableName = item.$options.btmAttributes[0];
+      const foreignKey = item.$options.btmAttributes[1];
+      const sourceKey = source.get(item.$options.btmAttributes[2]);
+      throughModels = item.toJSON()[joinTableName].filter(throughRow =>
+        // We need to filter out the rows that do not match the source id since the query
+        // was made on the children->parent association and not the other way around
+        throughRow[foreignKey] === sourceKey
+      );
+    }
 
     return {
       cursor: toCursor(item, index + startIndex),
       node: item,
       source: source,
-      throughModels: modelThroughList,
+      throughModels: throughModels,
     };
   };
 
