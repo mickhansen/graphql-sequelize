@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "babel-cli": "^6.9.0",
-    "babel-eslint": "^6.0.3",
+    "babel-eslint": "^7.2.3",
     "babel-plugin-transform-object-rest-spread": "^6.8.0",
     "babel-preset-async-to-bluebird": "^1.1.0",
     "babel-preset-es2015-node4": "^2.1.0",
