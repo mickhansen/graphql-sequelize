@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { mapType, toGraphQL } from '../../src/typeMapper';
+import JSONType from '../../src/types/jsonType';
 
 import Sequelize from 'sequelize';
 
@@ -19,7 +20,9 @@ const {
   DATEONLY,
   TIME,
   ARRAY,
-  VIRTUAL
+  VIRTUAL,
+  JSON,
+  JSONB
   } = Sequelize;
 
 import {
@@ -160,5 +163,17 @@ describe('typeMapper', () => {
       expect(toGraphQL(new VIRTUAL(), Sequelize)).to.equal(GraphQLString);
     });
 
+  });
+
+  describe('JSON', function () {
+    it('should map to JSONType', function () {
+      expect(toGraphQL(new JSON(), Sequelize)).to.equal(JSONType);
+    });
+  });
+
+  describe('JSONB', function () {
+    it('should map to JSONType', function () {
+      expect(toGraphQL(new JSONB(), Sequelize)).to.equal(JSONType);
+    });
   });
 });

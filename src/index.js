@@ -1,4 +1,5 @@
 module.exports = {
+  argsToFindOptions: require('./argsToFindOptions'),
   resolver: require('./resolver'),
   defaultListArgs: require('./defaultListArgs'),
   defaultArgs: require('./defaultArgs'),
@@ -6,5 +7,5 @@ module.exports = {
   attributeFields: require('./attributeFields'),
   simplifyAST: require('./simplifyAST'),
   relay: require('./relay'),
-  JSONType: require('./types/jsonType')
+  JSONType: require('./types/jsonType'),
 };
