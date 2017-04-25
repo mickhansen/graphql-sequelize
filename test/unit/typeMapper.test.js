@@ -109,7 +109,11 @@ describe('typeMapper', () => {
 
   describe('ENUM', function () {
     it('should map to instance of GraphQLEnumType', function () {
-      expect(toGraphQL(new ENUM('value', 'another value'), Sequelize)).to.instanceof(GraphQLEnumType);
+      expect(
+        toGraphQL(new ENUM('value', 'another value'),
+        Sequelize,
+        { name: 'EnumTypeName' },
+      )).to.instanceof(GraphQLEnumType);
     });
   });
 

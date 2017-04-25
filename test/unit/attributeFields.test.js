@@ -25,7 +25,7 @@ import {
 
 describe('attributeFields', function () {
   var Model;
-  var modelName = Math.random().toString();
+  var modelName = 'model' + Math.random().toString().slice(2);
   before(function () {
     Model = sequelize.define(modelName, {
       email: {
