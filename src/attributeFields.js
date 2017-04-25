@@ -27,11 +27,11 @@ module.exports = function (Model, options = {}) {
     }
 
     memo[key] = {
-      type: typeMapper.toGraphQL(type, Model.sequelize.constructor, Model)
+      type: typeMapper.toGraphQL(type, Model.sequelize.constructor, { name: `${Model.name}${key}`})
     };
 
     if (memo[key].type instanceof GraphQLEnumType ) {
-      var typeName = `${Model.name}${key}EnumType`;
+      var typeName = memo[key].type.name;
       /*
       Cache enum types to prevent duplicate type name error
       when calling attributeFields multiple times on the same model
