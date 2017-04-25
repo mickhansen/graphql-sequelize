@@ -24,7 +24,7 @@ export function mapType(mapFunc) {
  * @param  {Object} sequelizeTypes
  * @return {Function} GraphQL type declaration
  */
-export function toGraphQL(sequelizeType, sequelizeTypes) {
+export function toGraphQL(sequelizeType, sequelizeTypes, Model) {
 
   // did the user supply a mapping function?
   // use their mapping, if it returns truthy
@@ -99,7 +99,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
         }
         obj[sanitizedValue] = {value};
         return obj;
-      }, {})
+      }, {}),
+      name: Model.name,
     });
   }
 
