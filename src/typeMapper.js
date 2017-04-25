@@ -24,7 +24,7 @@ export function mapType(mapFunc) {
  * @param  {Object} sequelizeTypes
  * @return {Function} GraphQL type declaration
  */
-export function toGraphQL(sequelizeType, sequelizeTypes, Model) {
+export function toGraphQL(sequelizeType, sequelizeTypes, Model = {}) {
 
   // did the user supply a mapping function?
   // use their mapping, if it returns truthy

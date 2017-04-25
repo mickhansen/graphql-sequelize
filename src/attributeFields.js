@@ -27,7 +27,7 @@ module.exports = function (Model, options = {}) {
     }
 
     memo[key] = {
-      type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
+      type: typeMapper.toGraphQL(type, Model.sequelize.constructor, Model)
     };
 
     if (memo[key].type instanceof GraphQLEnumType ) {
