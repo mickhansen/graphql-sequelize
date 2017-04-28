@@ -1,12 +1,9 @@
 'use strict';
 
-var chai = require('chai')
-  , expect = chai.expect
-  , Sequelize = require('sequelize')
-  , attributeFields = require('../../src/attributeFields');
-
-import { sequelize } from '../support/helper'
-
+import chai from 'chai';
+import Sequelize from 'sequelize';
+import attributeFields from '../../src/attributeFields';
+import { sequelize } from '../support/helper';
 import {
   GraphQLString,
   GraphQLInt,
@@ -23,6 +20,8 @@ import {
   toGlobalId
 } from 'graphql-relay';
 
+var expect = chai.expect;
+
 describe('attributeFields', function () {
   var Model;
   var modelName = Math.random().toString();
@@ -38,8 +37,8 @@ describe('attributeFields', function () {
       lastName: {
         type: Sequelize.STRING
       },
-      char:{
-        type:Sequelize.CHAR
+      char: {
+        type: Sequelize.CHAR
       },
       float: {
         type: Sequelize.FLOAT
@@ -62,16 +61,16 @@ describe('attributeFields', function () {
       virtualBoolean: {
         type: new Sequelize.VIRTUAL(Sequelize.BOOLEAN)
       },
-      date:{
-        type:Sequelize.DATE
+      date: {
+        type: Sequelize.DATE
       },
-      time:{
-        type:Sequelize.TIME
+      time: {
+        type: Sequelize.TIME
       },
-      dateonly:{
-        type:Sequelize.DATEONLY
+      dateonly: {
+        type: Sequelize.DATEONLY
       },
-      comment:{
+      comment: {
         type: Sequelize.STRING,
         comment: 'This is a comment'
       }
@@ -122,7 +121,7 @@ describe('attributeFields', function () {
   });
 
   it('should be possible to rename fields with a object map',function () {
-    var fields = attributeFields(Model, {map: {"id":"mappedId"}});
+    var fields = attributeFields(Model, {map: {id: 'mappedId'}});
     expect(Object.keys(fields)).to.deep.equal([
       'mappedId', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal',
       'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean', 'date',
@@ -165,7 +164,27 @@ describe('attributeFields', function () {
     expect(Object.keys(fields)).to.deep.equal(['firstName', 'lastName']);
   });
 
-  it('should be possible to specify specific fields', function () {
+  it('should gracefully handle empty exclude arrays', function () {
+    var fields = attributeFields(Model, {
+      exclude: []
+    });
+
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName',
+    'lastName', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger',
+    'virtualBoolean','date','time','dateonly','comment']);
+  });
+
+  it('should gracefully handle empty only arrays', function () {
+    var fields = attributeFields(Model, {
+      only: []
+    });
+
+    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName',
+    'lastName', 'char', 'float', 'decimal', 'enum', 'enumTwo', 'list', 'virtualInteger',
+    'virtualBoolean','date','time','dateonly','comment']);
+  });
+
+  it('should be possible to specify fields to include in an array', function () {
     var fields = attributeFields(Model, {
       only: ['id', 'email', 'list']
     });
@@ -173,7 +192,7 @@ describe('attributeFields', function () {
     expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'list']);
   });
 
-  it('should be possible to specify specific fields via a function', function () {
+  it('should be possible to specify fields to include via a function', function () {
     var fields = attributeFields(Model, {
       only: field => ~['id', 'email', 'list'].indexOf(field),
     });
@@ -251,7 +270,7 @@ describe('attributeFields', function () {
             }
           })
         });
-      }
+      };
     };
 
     // Bad: Will create multiple/duplicate types with same name
