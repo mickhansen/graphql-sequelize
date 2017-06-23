@@ -39,7 +39,7 @@ module.exports = function (Model, options = {}) {
       if (cache[typeName]) {
         memo[key].type = cache[typeName];
       } else {
-        memo[key].type.name = typeName;
+        if (memo[key].type.name === 'tempEnumName') memo[key].type.name = typeName;
         cache[typeName] = memo[key].type;
       }
 
