@@ -94,9 +94,10 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
         if (specialChars.test(value)) {
           sanitizedValue = value.split(specialChars).reduce((reduced, val, idx) => {
             let newVal = val;
-            if (idx > 0) {
-              newVal = `${val[0].toUpperCase()}${val.slice(1)}`;
+            if (idx === 1 && /\d/.test(reduced[0])) {
+              reduced = `_${reduced}`;
             }
+            newVal = val && `${val[0].toUpperCase()}${val.slice(1)}`;
             return `${reduced}${newVal}`;
           });
         }

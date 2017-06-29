@@ -381,9 +381,16 @@ attributeFields(Model, {
 
 ### ENUM attributes with non-alphanumeric characters
 
-GraphQL enum types [only support ASCII alphanumeric characters and underscores](https://facebook.github.io/graphql/#Name).
+GraphQL enum types [only support ASCII alphanumeric characters, digits and underscores with leading non-digit](https://facebook.github.io/graphql/#Name).
 If you have other characters, like a dash (`-`) in your Sequelize enum types,
-they will be converted to camelCase. For example: `foo-bar` becomes `fooBar`.
+they will be converted to camelCase. If your enum value starts from a digit, it
+will be prepended with an underscore.
+
+For example: 
+
+- `foo-bar` becomes `fooBar` 
+
+- `25.8` becomes `_258`
 
 ### VIRTUAL attributes and GraphQL fields
 
