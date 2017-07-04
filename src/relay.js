@@ -356,7 +356,8 @@ export function sequelizeConnection({
     return {
       source,
       args,
-      where: argsToWhere(args)
+      where: argsToWhere(args),
+      context
     };
   };
 
