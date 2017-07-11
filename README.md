@@ -18,6 +18,12 @@ graphql-sequelize assumes you have graphql and sequelize installed.
 
 ## Resolve helpers
 
+```js
+import { resolver } from "graphql-sequelize";
+
+resolver(SequelizeModel[, options]);
+```
+
 A helper for resolving graphql queries targeted at Sequelize models or associations.
 Please take a look at [the tests](https://github.com/mickhansen/graphql-sequelize/blob/master/test/integration/resolver.test.js) to best get an idea of implementation.
 
@@ -32,6 +38,48 @@ Please take a look at [the tests](https://github.com/mickhansen/graphql-sequeliz
 ### Relay & Connections
 
 [Relay documentation](docs/relay.md)
+
+### Options
+
+The `resolver` function takes a model as its first (required) argument, but also
+has a second options object argument. The available options are:
+
+```js
+resolver(SequelizeModel, {
+  // Whether or not this should return a list. Is automatically intuited if
+  // the field type is an instance of `GraphQLList` by default.
+  list: false,
+
+  // Whether or not relay connections should be handled. Defaults to `true`.
+  handleConnection: true,
+
+  /**
+   * Manipulate the query before it's sent to Sequelize.
+   * @param findOptions {object} - Options sent to Seqeulize model's find function
+   * @param args {object} - The arguments from the incoming GraphQL query
+   * @param context {object} - Resolver context, see more at GraphQL docs below.
+   * @returns findOptions or promise that resolves with findOptions
+   */
+  before: (findOptions, args, context) => {
+    findOptions.where = { /* Custom where arguments */ };
+    return findOptions;
+  },
+  /**
+   * Manipulate the Sequelize find results before it's sent back to the requester.
+   * @param result {object|array} - Result of the query, object or array depending on list or not.
+   * @param args {object} - The arguments from the incoming GraphQL query
+   * @param context {object} - Resolver context, see more at GraphQL docs below.
+   * @returns result(s) or promise that resolves with result(s)
+   */
+  after: (result, args, context) => {
+    result.sort(/* Custom sort function */);
+    return result;
+  },
+});
+```
+
+_The `args` and `context` parameters are provided by GraphQL. More information
+about those is available in their [resolver docs](http://graphql.org/learn/execution/#root-fields-resolvers)._
 
 ### Examples
 
