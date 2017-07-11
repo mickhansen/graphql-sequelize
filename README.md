@@ -46,8 +46,8 @@ has a second options object argument. The available options are:
 
 ```js
 resolver(SequelizeModel, {
-  // Whether or not this should return a list. Is automatically intuited if
-  // the field type is an instance of `GraphQLList` by default.
+  // Whether or not this should return a list. Defaults to whether or not the
+  // field type is an instance of `GraphQLList`.
   list: false,
 
   // Whether or not relay connections should be handled. Defaults to `true`.
@@ -134,6 +134,7 @@ let schema = new GraphQLSchema({
   query: new GraphQLObjectType({
     name: 'RootQueryType',
     fields: {
+      // Field for retrieving a user by ID
       user: {
         type: userType,
         // args will automatically be mapped to `where`
@@ -144,6 +145,40 @@ let schema = new GraphQLSchema({
           }
         },
         resolve: resolver(User)
+      },
+
+      // Field for searching for a user by name
+      userSearch: {
+        type: new GraphQLList(userType),
+        args: {
+          query: {
+            description: "Fuzzy-matched name of user",
+            type: new GraphQLNonNull(GraphQLString),
+          }
+        },
+        resolve: resolver(User, {
+          // Custom `where` clause that fuzzy-matches user's name
+          before: (findOptions, args) => {
+            findOptions.where = {
+              name: { "$like": `%${args.query}%` },
+            };
+            return findOptions;
+          },
+          // Custom sort for alphabetical users, but put exact match at top
+          after: (results, args) => {
+            return results.sort((a, b) => {
+              if (a.name === args.query) {
+                return 1;
+              }
+              else if (b.name === args.query) {
+                return -1;
+              }
+              else {
+                return a.name.localeCompare(b.name);
+              }
+            });
+          }
+        })
       }
     }
   })
