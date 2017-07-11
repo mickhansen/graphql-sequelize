@@ -157,14 +157,16 @@ let schema = new GraphQLSchema({
           }
         },
         resolve: resolver(User, {
-          // Custom `where` clause that fuzzy-matches user's name
+          // Custom `where` clause that fuzzy-matches user's name and
+          // alphabetical sort by username
           before: (findOptions, args) => {
             findOptions.where = {
               name: { "$like": `%${args.query}%` },
             };
+            findOptions.order = [['name', 'ASC']];
             return findOptions;
           },
-          // Custom sort for alphabetical users, but put exact match at top
+          // Custom sort override for exact matches first
           after: (results, args) => {
             return results.sort((a, b) => {
               if (a.name === args.query) {
@@ -173,9 +175,8 @@ let schema = new GraphQLSchema({
               else if (b.name === args.query) {
                 return -1;
               }
-              else {
-                return a.name.localeCompare(b.name);
-              }
+
+              return 0;
             });
           }
         })
