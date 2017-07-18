@@ -7,6 +7,7 @@ import sinon from 'sinon';
 import Sequelize from 'sequelize';
 
 import resolver from '../../src/resolver';
+import JSONType from '../../src/types/jsonType';
 
 import {
   graphql,
@@ -219,6 +220,9 @@ describe('resolver', function () {
               },
               order: {
                 type: GraphQLString
+              },
+              where: {
+                type: JSONType
               }
             },
             resolve: resolver(User)
@@ -1121,6 +1125,23 @@ describe('resolver', function () {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.user.tasksByIds.length).to.equal(1);
+    });
+  });
+
+  it('should resolve query variables inside where parameter', function () {
+    return graphql(schema, `
+      query($where: SequelizeJSON) {
+        users(where: $where) {
+          id
+        }
+      }
+    `, undefined, undefined, {
+      where: '{"name": {"like": "a%"}}',
+    }).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data.users[0].id).to.equal(2);
+      expect(result.data.users.length).to.equal(1);
     });
   });
 });
