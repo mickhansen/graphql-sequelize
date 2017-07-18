@@ -1,9 +1,20 @@
 import { GraphQLList } from 'graphql';
+import _ from 'lodash';
 import argsToFindOptions from './argsToFindOptions';
 import { isConnection, handleConnection, nodeType } from './relay';
 import invariant from 'assert';
 import Promise from 'bluebird';
 import dataLoaderSequelize from 'dataloader-sequelize';
+
+function whereQueryVarsToValues(o, vals) {
+  _.forEach(o, (v, k) => {
+    if (typeof v === 'function') {
+      o[k] = o[k](vals);
+    } else if (v && typeof v === 'object') {
+      whereQueryVarsToValues(v, vals);
+    }
+  });
+}
 
 function resolverFactory(target, options) {
   dataLoaderSequelize(target);
@@ -47,6 +58,11 @@ function resolverFactory(target, options) {
     findOptions.logging = findOptions.logging || context.logging;
 
     return Promise.resolve(options.before(findOptions, args, context, info)).then(function (findOptions) {
+      if (args.where && !_.isEmpty(info.variableValues)) {
+        whereQueryVarsToValues(args.where, info.variableValues);
+        whereQueryVarsToValues(findOptions.where, info.variableValues);
+      }
+
       if (list && !findOptions.order) {
         findOptions.order = [[model.primaryKeyAttribute, 'ASC']];
       }

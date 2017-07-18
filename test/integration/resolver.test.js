@@ -1144,4 +1144,19 @@ describe('resolver', function () {
       expect(result.data.users.length).to.equal(1);
     });
   });
+
+  it('should resolve query variables inside where parameter', function () {
+    return graphql(schema, `
+      query($name: String) {
+        users(where: {name: {like: $name}}) {
+          id
+        }
+      }
+    `, undefined, undefined, {name: 'a%'}).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data.users[0].id).to.equal(2);
+      expect(result.data.users.length).to.equal(1);
+    });
+  });
 });
