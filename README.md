@@ -452,6 +452,24 @@ defaultArgs(Model);
 */
 ```
 
+If you would like to pass "where" as a query variable - you should pass it as a JSON string and declear it's type as SequelizeJSON:
+
+```
+/* with GraphiQL */
+// request
+query($where: SequelizeJSON) {
+  user(where: $where) {
+    name
+  }
+}
+
+// qyery variables
+# because you can't use single quotes you need to escape JSON's the double quotes
+{
+  "where": "{\"name\": {\"like\": \"Henry%\"}}"
+}
+```
+
 ### defaultListArgs
 
 `defaultListArgs` will return an object like:
