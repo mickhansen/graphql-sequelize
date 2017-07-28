@@ -302,7 +302,7 @@ export function sequelizeConnection({
         // In case of `OVER()` is not available, we need to get the full count from a second query.
         const options = await Promise.resolve(before({
           where: argsToWhere(args)
-        }, args, context, info));
+        }, args, context, info, true));
 
         if (target.count) {
           if (target.associationType) {
