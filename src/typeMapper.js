@@ -86,6 +86,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
 
   if (sequelizeType instanceof ENUM) {
     return new GraphQLEnumType({
+      name: 'tempEnumName',
       values: sequelizeType.values.reduce((obj, value) => {
         let sanitizedValue = value;
         if (specialChars.test(value)) {
