@@ -4,4 +4,6 @@ var chai = require('chai');
 
 chai.use(require('chai-as-promised'));
 chai.use(require('sinon-chai'));
-require('sinon-as-promised')(require('bluebird'));
+const bluebird = require('bluebird');
+bluebird.coroutine.addYieldHandler(v => Promise.resolve(v));
+require('sinon-as-promised')(bluebird);
