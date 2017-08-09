@@ -75,8 +75,14 @@ resolver(SequelizeModel, {
     result.sort(/* Custom sort function */);
     return result;
   },
+  /**
+  * Only listed in allowedIncludes values are allowed to be used in "include" query argument.
+  * Values could be strings or arrays of pairs of strings
+  */
+  allowedIncludes: ['model1', ['model2', 'model2PublicName'], 'model3']
 });
 ```
+For more details on allowedIncludes option read the ["Include"](#include-1) section
 
 _The `args` and `context` parameters are provided by GraphQL. More information
 about those is available in their [resolver docs](http://graphql.org/learn/execution/#root-fields-resolvers)._
@@ -424,6 +430,8 @@ fullName: {
 `defaultArgs(Model)` will return an object containing:
  * an arg with a key and type matching your models primary key
  * `where` argument for passing complex query operations described [here](http://docs.sequelizejs.com/en/latest/docs/querying/)
+ * `include` that will allow to make a filtering of a model based on sub-models properties
+ as described [here](http://docs.sequelizejs.com/manual/tutorial/querying.html#relations-associations)
 
 ```js
 const User = sequelize.define('User', {
@@ -442,6 +450,12 @@ defaultArgs(User);
     }
   },
   where: {
+    type: GraphQLScalarType {
+      name: 'SequelizeJSON',
+      ...
+    }
+  },
+  include: {
     type: GraphQLScalarType {
       name: 'SequelizeJSON',
       ...
@@ -526,7 +540,7 @@ await graphql(schema, query, undefined, undefined, params);
 ```
 
 ##### query with "where" as parameter
-Where may be an object or a JSON string. In any case it should have a type of SequelizeJSON
+"where" may be an object or a JSON string. In any case it should have a type of SequelizeJSON
 ```js
 const query = `
   query ($where: SequelizeJSON) {
@@ -550,6 +564,7 @@ In graphiql you can't define `where` as an object, so you should define it as a 
 
 query ($where: SequelizeJSON) {
   user (where: $where) {
+    id
     name
   }
 }
@@ -560,12 +575,21 @@ query ($where: SequelizeJSON) {
   "where": "{\"name\": {\"like\": \"Alex%\"}}"
 }
 ```
+#### include
+While in Sequelize `include` main purpose is to load multiple models is a single query,
+in graphql-sequelize it extends `where` functionality allowing to filter over sub-models properties.
+Because of security reasons it needs an explicit allowance for each model to have each `include` value with 
+the `allowedIncludes` option of the [resolver](#options) function.
+
+It is mostly useful for non-scalar types so examples and more details are provided in [defaultListArgs](#defaultlistargs) section.
+
 ### defaultListArgs
 
-`defaultListArgs(Model)` is suitable for `GraphQLList` type. It will return an object containing:
+`defaultListArgs(Model)` is suitable for `GraphQLList` type. It will return an object that contains:
  * `where` argument for passing complex query operations described [here](http://docs.sequelizejs.com/en/latest/docs/querying/)
- (same as [defaultArgs(Model)](#defaultArgs))
- * `limit`, `offset` and `order` for pagination and sorting. `order` support `reverse:` prefix for DESC ordering
+ * `limit`, `offset` and `order` for pagination and sorting. `order` support `reverse:` prefix for DESC ordering 
+ * `include` that will allow to make a filtering of a model based on sub-models properties
+ as described [here](http://docs.sequelizejs.com/manual/tutorial/querying.html#relations-associations)
 
 ```js
 const User = sequelize.define('User', {
@@ -600,10 +624,15 @@ defaultListArgs(User);
       name: 'String',
       ...
     }
+  },
+  include: {
+    type: GraphQLScalarType {
+      name: 'SequelizeJSON',
+      ...
+    }
   }
 }
 */
-}
 ```
 Lets define some schema to have examples on this properties
 ```js
@@ -638,7 +667,7 @@ const schema = new GraphQLSchema({
       projects: {
         type: new GraphQLList(projectType),
         args: defaultListArgs(Project),
-        resolve: resolver(Project)
+        resolve: resolver(Project, {allowedIncludes: [['User', 'user']]})
       }
     }
   })
@@ -646,7 +675,7 @@ const schema = new GraphQLSchema({
 ```
 
 #### where
-Is the same as for [defaultArgs(Model)](#schema)
+Is the same as for [defaultArgs(Model)](#where)
 
 #### limit, offset and order
 pagination would looks like
@@ -680,4 +709,123 @@ const query = `
 `;
 
 await graphql(schema, query);
+```
+#### include
+
+Usage of `include` is the only way to filter requested models by it's sub-models values. For example
+to paginate over projects with users with specific name:
+```js
+const query = `
+  query ($include: SequelizeJSON) {
+    projects (limit: 10, offset: 20, order: "id", include: $include) {
+      id
+      title
+      users {
+        name
+      }
+    }
+  }
+`;
+
+const params = {
+  include: [{model: 'user', where: {name: 'Alex'}}]
+}
+
+await graphql(schema, query, undefined, undefined, params);
+```
+Important that it will return filtered projects with all its users and not just ones with name "Alex".
+So usage of `include` **WILL NOT** affect the set of corresponding sub-model entities and **CAN NOT** be used to obtain
+sub-model entities. Only to filter the model entities.
+
+Same as `where`, to be used as a query parameter it should be defined with type `SequelizeJSON`.
+It should always be an array, even if it has only a single element.
+
+For security reasons to use `include` argument it needs to be explicitly allowed. Each model has it's own list of allowed values.
+To allow some values to a model they need to be listed in resolver `allowedInclueds` [options](#options) parameter. 
+`allowedInclueds` is an array of strings and arrays of pairs of strings. In the above schema example
+`projects` model is allowed to include `User` model by alias `user`. The `User` is the name of an associated
+with `Project` Sequelize model, and `user` is the the value that is allowed to be used in query.
+If no renaming is needed than a string could be used instead:
+```js
+...
+projects: {
+  type: new GraphQLList(projectType),
+  args: defaultListArgs(Project),
+  resolve: resolver(Project, {allowedIncludes: ['User']}) // <- was {allowedIncludes: [['User', 'user']]}
+}
+...
+```
+It is important for `Project` model to be associated with `User` model. Association could be direct
+or through another models. `graphql-sequelize` would return an error if `allowedIncludes` would list
+a model name that is not in the association chain with the one that is the first `resolver` argument.
+
+#### Nested include
+
+For this example lets extend a schema with Tasks model
+```js
+const Task = sequelize.define('Task', {
+  id: {type: Sequelize.UUID},
+  description: {type: Sequelize.STRING},
+});
+
+const taskType = new GraphQLObjectType({
+  name: 'Task',
+  fields: attributeFields(Task)
+});
+
+const userType = new GraphQLObjectType({
+  name: 'User',
+  fields: Object.assign(attributeFields(User), {
+    tasks: {
+      type: new GraphQLList(taskType),
+      args: defaultListArgs(Task),
+      resolve: resolver(Task)
+    }
+  })
+});
+
+User.Tasks = User.hasMany(Task);
+Task.User = Task.belongsTo(User);
+
+const schema = new GraphQLSchema({
+  query: new GraphQLObjectType({
+    name: 'RootQueryType',
+    fields: {
+      projects: {
+        type: new GraphQLList(projectType),
+        args: defaultListArgs(Project),
+        resolve: resolver(Project, {allowedIncludes: [['User', 'user'], 'Task']})
+      }
+    }
+  })
+});
+```
+now to paginate over projects that have user with task with word "develop" in it's description
+```js
+const query = `
+  query ($include: SequelizeJSON) {
+    projects (limit: 10, offset: 20, order: "id", include: $include) {
+      id
+      title
+      users {
+        name
+      }
+    }
+  }
+`;
+
+const params = {
+  include: [{
+    model: 'user', 
+    include: [{
+      model: 'Task', // <- notes "Task" and not "task". Because it was not renamed in allowedIncludes
+      where: {
+        description: {
+          like: "%develop%"}
+      }
+    }]
+  }]
+}
+
+await graphql(schema, query, undefined, undefined, params);
 ```

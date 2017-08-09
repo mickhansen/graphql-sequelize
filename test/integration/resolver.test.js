@@ -226,9 +226,21 @@ describe('resolver', function () {
               },
               where: {
                 type: JSONType
+              },
+              include: {
+                type: JSONType
               }
             },
-            resolve: resolver(User)
+            resolve: resolver(User, {allowedIncludes: ['task', ['project', 'suit']]})
+          },
+          task: {
+            type: taskType,
+            args: {
+              include: {
+                type: JSONType
+              }
+            },
+            resolve: resolver(Task, {allowedIncludes: [['project', 'suit']]})
           }
         }
       })
@@ -1006,61 +1018,6 @@ describe('resolver', function () {
     });
   });
 
-  it('should not call association getter if user manually included', function () {
-    this.sandbox.spy(Task, 'findAll');
-    this.sandbox.spy(User, 'findAll');
-
-    var schema = new GraphQLSchema({
-      query: new GraphQLObjectType({
-        name: 'RootQueryType',
-        fields: {
-          users: {
-            type: new GraphQLList(userType),
-            resolve: resolver(User, {
-              before: function (options) {
-                options.include = [User.Tasks];
-                options.order = [
-                  ['id'],
-                  [{ model: Task, as: 'tasks' }, 'id', 'ASC']
-                ];
-                return options;
-              }
-            })
-          }
-        }
-      })
-    });
-
-    return graphql(schema, `
-      {
-        users {
-          tasks {
-            title
-          }
-        }
-      }
-    `).then(result => {
-      if (result.errors) throw new Error(result.errors[0].stack);
-
-      expect(Task.findAll.callCount).to.equal(0);
-      expect(User.findAll.callCount).to.equal(1);
-      expect(User.findAll.getCall(0).args[0].include).to.have.length(1);
-      expect(User.findAll.getCall(0).args[0].include[0].name).to.equal(User.Tasks.name);
-
-      result.data.users.forEach(function (user) {
-        expect(user.tasks).length.to.be.above(0);
-      });
-
-      expect(result.data).to.deep.equal({
-        users: this.users.map(function (user) {
-          return {
-            tasks: user.tasks.map(task => ({title: task.title}))
-          };
-        })
-      });
-    });
-  });
-
   it('should allow async before and after', function () {
     var users = this.users
       , schema;
@@ -1179,4 +1136,263 @@ describe('resolver', function () {
     expect(result.data.users[0].id).to.equal(2);
     expect(result.data.users.length).to.equal(1);
   });
+
+  it('should allow parameter allowedIncludes to be optional', () => {
+    expect(() => resolver(User)).to.not.throw();
+  });
+
+  it('should allow element of allowedIncludes parameter array to be a names of an associated model', () =>
+    expect(() => resolver(User, {allowedIncludes: ['task']})).not.to.throw()
+  );
+
+  it('should allow element of allowedIncludes parameter array to be a pair of a names of an associated model and some alias',
+    () =>
+      expect(() => resolver(User, {allowedIncludes: [['task', 'job']]})).not.to.throw()
+  );
+
+  it('should allow parameter allowedIncludes to be an array with the names of a models associated to associated model', () =>
+    expect(() => resolver(User, {allowedIncludes: ['project', 'label']})).not.to.throw()
+  );
+
+  it('should throw if there is no model corresponded to allowedIncludes parameter', () =>
+    expect(() => resolver(Project, {allowedIncludes: ['task']})).to
+      .throw(`can't allow to includes model "task" for model "project" because there is no association chain between them`)
+  );
+
+  it('should allow include with listed in allowedIncludes models', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        users(include: $include) {
+          id
+          tasks {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: [{model: 'task'}]
+    });
+
+    if (result.errors) throw new Error(result.errors[0].stack);
+  });
+
+
+  it('should allow include with aliased in allowedIncludes models', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        task(include: $include) {
+          id
+          project {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: [{model: 'suit'}],
+    });
+
+    if (result.errors) throw new Error(result.errors[0].stack);
+  });
+
+  it('should allow to make nested include', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        users(include: $include) {
+          id
+          tasks {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: [{model: 'task', include: [{model: 'suit'}]}]
+    });
+
+    if (result.errors) throw new Error(result.errors[0].stack);
+  });
+
+  it('should throw if include is present and not an array', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        users(include: $include) {
+          id
+          tasks {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: {model: 'task'}
+    });
+
+    expect(result.errors[0].message).to.equal('include must be an Array but got {"model":"task"}');
+  });
+
+  it('should throw if nested include is present and not an array', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        users(include: $include) {
+          id
+          tasks {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: [{model: 'task', include: {model: 'suit'}}]
+    });
+
+    expect(result.errors[0].message).to.equal('include must be an Array but got {"model":"suit"}');
+  });
+
+  it('should not allow to include models in other hierarchy then they are associated', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        users(include: $include) {
+          id
+          tasks {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: [{model: 'suit'}]
+    });
+
+    expect(result.errors[0].message).to.equal('model "user" is not associate with "suit"');
+  });
+
+  it('should not allow include with aliased in allowedIncludes model by it`s actual name', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        task(include: $include) {
+          id
+          project {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: [{model: 'project'}],
+    });
+
+    expect(result.errors[0].message).to.equal('model "task" has no allowance to include "project"');
+  });
+
+  it('should not allow include with values not listed in allowedIncludes', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        users(include: $include) {
+          id
+          tasks {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: [{model: 'label'}]
+    });
+
+    expect(result.errors[0].message).to.equal('model "user" has no allowance to include "label"');
+  });
+
+  it('should allow to filter over where property of include argument', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        users(include: $include) {
+          id
+          tasks {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: [{model: 'task', where: {id: 1}}],
+    });
+
+    if (result.errors) throw new Error(result.errors[0].stack);
+
+    expect(result.data.users.length).to.equal(1);
+  });
+
+  it('should allow to filter over where property of nested include argument', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        users(include: $include) {
+          id
+          tasks {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: [{model: 'task', include: [{model: 'suit', where: {id: 1}}]}],
+    });
+
+    if (result.errors) throw new Error(result.errors[0].stack);
+
+    expect(result).to.deep.equal({
+      data: {
+        users: [{
+          id: 1,
+          tasks: [
+            {id: 1},
+            {id: 2},
+            {id: 3}
+          ]
+        }]
+      }
+    });
+  });
+
+  it('should not filter sub-entities while filtering over where property of include argument', async () => {
+    const result = await graphql(schema, `
+      query($include: SequelizeJSON) {
+        users(include: $include) {
+          id
+          tasks {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {
+      include: [{model: 'task', where: {id: 1}}],
+    });
+
+    if (result.errors) throw new Error(result.errors[0].stack);
+
+    expect(result.data.users[0].tasks.length).to.equal(3);
+  });
+
+  it('should not conflict with where property of sub-entities while filtering over where property of include argument',
+    async () => {
+      const result = await graphql(schema, `
+        query($include: SequelizeJSON) {
+          users(include: $include) {
+            id
+            tasks (where: {id: {gt: 2}}) {
+              id
+            }
+          }
+        }
+      `, undefined, undefined, {
+        include: [{model: 'task', where: {id: {lt: 2}}}],
+      });
+
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result).to.deep.equal({
+        data: {
+          users: [
+            {
+              id: 1,
+              tasks: [
+                {id: 3}
+              ]
+            }
+          ]
+        }
+      });
+    }
+  );
 });

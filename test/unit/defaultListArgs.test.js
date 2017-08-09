@@ -44,6 +44,8 @@ describe('defaultListArgs', function () {
 
       expect(args).to.have.ownProperty('where');
       expect(args.where.type).to.be.an.instanceOf(GraphQLScalarType);
+      expect(args).to.have.ownProperty('include');
+      expect(args.include.type).to.be.an.instanceOf(GraphQLScalarType);
     });
 
   });
