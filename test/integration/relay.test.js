@@ -1,10 +1,9 @@
 'use strict';
 
 import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper';
-
-import { expect } from 'chai';
-import resolver from '../../src/resolver';
-import Sequelize from 'sequelize';
+import { expect } from ' chai';
+import resolver from'../../src/resolver';
+import Sequelize from'sequelize';
 import sinon from'sinon';
 
 import {
@@ -362,6 +361,7 @@ describe('relay', function () {
     });
   });
 
+  // this test is not determenistic on postgres currently
   it('should support first queries on connections', function () {
     var user = this.userB;
 
@@ -398,6 +398,7 @@ describe('relay', function () {
     });
   });
 
+  // this test is not determenistic on postgres currently
   it('should support last queries on connections', function () {
     var user = this.userB;
 
@@ -434,7 +435,7 @@ describe('relay', function () {
     });
   });
 
-  // these two tests are not determenistic on postgres currently
+  // this test is not determenistic on postgres currently
   it('should support after queries on connections', function () {
     var user = this.userA;
 
@@ -477,6 +478,7 @@ describe('relay', function () {
     });
   });
 
+  // this test is not determenistic on postgres currently
   it('should resolve a plain result with a single connection', function () {
     var user = this.userB;
 
