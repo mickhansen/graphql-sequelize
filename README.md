@@ -386,9 +386,9 @@ If you have other characters, like a dash (`-`) in your Sequelize enum types,
 they will be converted to camelCase. If your enum value starts from a digit, it
 will be prepended with an underscore.
 
-For example: 
+For example:
 
-- `foo-bar` becomes `fooBar` 
+- `foo-bar` becomes `fooBar`
 
 - `25.8` becomes `_258`
 
@@ -421,51 +421,135 @@ fullName: {
 
 ### defaultArgs
 
-`defaultArgs(Model)` will return an object containing an arg with a key and type matching your models primary key and
-the "where" argument for passing complex query operations described [here](http://docs.sequelizejs.com/en/latest/docs/querying/)
+`defaultArgs(Model)` will return an object containing:
+ * an arg with a key and type matching your models primary key
+ * `where` argument for passing complex query operations described [here](http://docs.sequelizejs.com/en/latest/docs/querying/)
 
 ```js
-var Model = sequelize.define('User', {
-
+const User = sequelize.define('User', {
+  id: {type: Sequelize.INT, primaryKey: true},
+  name: {type: Sequelize.STRING}
 });
 
-defaultArgs(Model);
+defaultArgs(User);
 
 /*
 {
   id: {
-    type: new GraphQLNonNull(GraphQLInt)
-  }
-}
-*/
-
-var Model = sequelize.define('Project', {
-  project_id: {
-    type: Sequelize.UUID
-  }
-});
-
-defaultArgs(Model);
-
-/*
-{
-  project_id: {
-    type: GraphQLString
+    type: GraphQLScalarType {
+      name: 'Int',
+      ...
+    }
   },
   where: {
-    type: JSONType
+    type: GraphQLScalarType {
+      name: 'SequelizeJSON',
+      ...
+    }
   }
 }
 */
 ```
+Lets take some simple schema and write an examples on each of this properties:
+```js
+const userType = new GraphQLObjectType({
+  name: 'User',
+  fields: attributeFields(User)
+});
 
-If you would like to pass "where" as a query variable - you should pass it as a JSON string and declare its type as SequelizeJSON:
+const schema = new GraphQLSchema({
+  query: new GraphQLObjectType({
+    name: 'RootQueryType',
+    fields: {
+      user: {
+        type: userType,
+        args: defaultArgs(User),
+        resolve: resolver(User)
+      }
+    }
+  })
+});
+```
+If your model does not define a primary key it it's schema - Sequelize would add an `id` primary key on it for you.
+So `defaultArgs` would return the same result even if there would be no `id` in `User` model definition.
+#### primary key parameter
+```js
+const query = `
+  query {
+    user (id: 2) {
+      id
+      name
+    }
+  }
+`;
+
+await graphql(schema, query);
 
 ```
-/* with GraphiQL */
-// request
-query($where: SequelizeJSON) {
-  user(where: $where) {
+
+#### where
+
+While Sequelize query arguments are starting with "$", according to graphql specification it is not
+a valid symbol. So all operators should be used without leading "$". Ex. `$gt` becomes just `gt`.
+
+
+##### simple query with "where"
+```js
+const query = `
+  query {
+    user (where: {name: {like: 'Alex%'}}) {
+      id
+      name
+    }
+  }
+`;
+
+await graphql(schema, query);
+```
+
+##### query with "where" with parameter
+```js
+const query = `
+  query ($name: String) {
+    user (where: {name: {like: $name}}) {
+      id
+      name
+    }
+  }
+`;
+
+const params = {
+  name: 'Alex%'
+};
+
+await graphql(schema, query, undefined, undefined, params);
+```
+
+##### query with "where" as parameter
+Where may be an object or a JSON string. In any case it should have a type of SequelizeJSON
+```js
+const query = `
+  query ($where: SequelizeJSON) {
+    user (where: $where) {
+      id
+      name
+    }
+  }
+`;
+
+const params = {
+  where: {name: {like: 'Alex%'}}
+};
+
+await graphql(schema, query, undefined, undefined, params);
+```
+##### query with graphiql
+In graphiql you can't define `where` as an object, so you should define it as a JSON string
+```
+// query
+
+query ($where: SequelizeJSON) {
+  user (where: $where) {
     name
   }
 }
@@ -473,35 +557,127 @@ query($where: SequelizeJSON) {
 // query variables
 # JSON doesn't allow single quotes, so you need to use escaped double quotes in your JSON string
 {
-  "where": "{\"name\": {\"like\": \"Henry%\"}}"
+  "where": "{\"name\": {\"like\": \"Alex%\"}}"
 }
 ```
-
 ### defaultListArgs
 
-`defaultListArgs` will return an object like:
+`defaultListArgs(Model)` is suitable for `GraphQLList` type. It will return an object containing:
+ * `where` argument for passing complex query operations described [here](http://docs.sequelizejs.com/en/latest/docs/querying/)
+ (same as [defaultArgs(Model)](#defaultArgs))
+ * `limit`, `offset` and `order` for pagination and sorting. `order` support `reverse:` prefix for DESC ordering
 
 ```js
+const User = sequelize.define('User', {
+  id: {type: Sequelize.INT},
+  name: {type: Sequelize.STRING}
+});
+
+defaultListArgs(User);
+
+/*
 {
+  where: {
+    type: GraphQLScalarType {
+      name: 'SequelizeJSON',
+      ...
+    }
+  },
   limit: {
-    type: GraphQLInt
+    type: GraphQLScalarType {
+      name: 'Int',
+      ...
+    }
+  },
+  offset: {
+    type: GraphQLScalarType {
+      name: 'Int',
+      ...
+    }
   },
   order: {
-    type: GraphQLString
-  },
-  where: {
-    type: JSONType
+    type: GraphQLScalarType {
+      name: 'String',
+      ...
+    }
   }
 }
+*/
+}
+```
+Lets define some schema to have examples on this properties
+```js
+const Project = sequelize.define('Project', {
+  id: {type: Sequelize.UUID},
+  title: {type: Sequelize.STRING},
+});
+
+const userType = new GraphQLObjectType({
+  name: 'User',
+  fields: attributeFields(User)
+});
+
+const projectType = new GraphQLObjectType({
+  name: 'Project',
+  fields: Object.assign(attributeFields(Project), {
+    users: {
+      type: new GraphQLList(userType),
+      args: defaultListArgs(User),
+      resolve: resolver(User)
+    }
+  })
+});
+
+Projects.Users = Projects.hasMany(User);
+User.Project = User.belongsTo(Project);
+
+const schema = new GraphQLSchema({
+  query: new GraphQLObjectType({
+    name: 'RootQueryType',
+    fields: {
+      projects: {
+        type: new GraphQLList(projectType),
+        args: defaultListArgs(Project),
+        resolve: resolver(Project)
+      }
+    }
+  })
+});
 ```
 
-Which when added to args will let the resolver automatically support limit and ordering in args for graphql queries.
-Should be used with fields of type `GraphQLList`.
+#### where
+Is the same as for [defaultArgs(Model)](#schema)
 
+#### limit, offset and order
+pagination would looks like
 ```js
-import {defaultListArgs} from 'graphql-sequelize'
+const query = `
+  query {
+    projects (limit: 10, offset: 20, order: "id") {
+      id
+      title
+      users (limit: 5) {
+        name
+      }
+    }
+  }
+`;
 
-args: _.assign(defaultListArgs(), {
-  // ... additional args
-})
+await graphql(schema, query);
+```
+`order` could be useful even without `limit` and `offset`
+```js
+const query = `
+  query {
+    projects (order: "title") {
+      id
+      title
+      users (order: "reverse:name") {
+        name
+      }
+    }
+  }
+`;
+
+await graphql(schema, query);
 ```

@@ -164,6 +164,9 @@ describe('resolver', function () {
             },
             first: {
               type: GraphQLInt
+            },
+            where: {
+              type: JSONType
             }
           },
           resolve: resolver(User.Tasks, {
@@ -327,7 +330,7 @@ describe('resolver', function () {
 
   afterEach(function () {
     this.sandbox.restore();
-  })
+  });
 
   it('should resolve a plain result with a single model', function () {
     var user = this.userB;
@@ -1128,8 +1131,25 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve query variables inside where parameter', function () {
-    return graphql(schema, `
+  it('should resolve where as query variables', async function () {
+    const result = await graphql(schema, `
+      query($where: SequelizeJSON) {
+        users(where: $where) {
+          id
+        }
+      }
+    `, undefined, undefined, {
+      where: {name: {like: 'a%'}},
+    });
+
+    if (result.errors) throw new Error(result.errors[0].stack);
+
+    expect(result.data.users[0].id).to.equal(2);
+    expect(result.data.users.length).to.equal(1);
+  });
+
+  it('should resolve where as JSON query variables', async function () {
+    const result = await graphql(schema, `
       query($where: SequelizeJSON) {
         users(where: $where) {
           id
@@ -1137,26 +1157,26 @@ describe('resolver', function () {
       }
     `, undefined, undefined, {
       where: '{"name": {"like": "a%"}}',
-    }).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].stack);
-
-      expect(result.data.users[0].id).to.equal(2);
-      expect(result.data.users.length).to.equal(1);
     });
+
+    if (result.errors) throw new Error(result.errors[0].stack);
+
+    expect(result.data.users[0].id).to.equal(2);
+    expect(result.data.users.length).to.equal(1);
   });
 
-  it('should resolve query variables inside where parameter', function () {
-    return graphql(schema, `
+  it('should resolve query variables inside where parameter', async function () {
+    const result = await graphql(schema, `
       query($name: String) {
         users(where: {name: {like: $name}}) {
           id
         }
       }
-    `, undefined, undefined, {name: 'a%'}).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].stack);
+    `, undefined, undefined, {name: 'a%'});
 
-      expect(result.data.users[0].id).to.equal(2);
-      expect(result.data.users.length).to.equal(1);
-    });
+    if (result.errors) throw new Error(result.errors[0].stack);
+
+    expect(result.data.users[0].id).to.equal(2);
+    expect(result.data.users.length).to.equal(1);
   });
 });
