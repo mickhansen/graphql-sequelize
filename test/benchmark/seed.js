@@ -21,7 +21,7 @@ return sequelize.sync({ force: true, logging: console.log }).then(function () {
   for (var i = 0; i < NO_USERS; i++) {
     users.push({
       name: Math.random().toString(),
-      manager_id: randomInt(NO_USERS)
+      manager_id: randomInt(NO_USERS) // eslint-disable-line
     });
   }
 
@@ -33,7 +33,7 @@ return sequelize.sync({ force: true, logging: console.log }).then(function () {
     tasks.push({
       name: Math.random().toString(),
       completed: Math.random() > 0.5,
-      user_id: randomInt(NO_USERS)
+      user_id: randomInt(NO_USERS) // eslint-disable-line
     });
   }
 
@@ -46,7 +46,7 @@ return sequelize.sync({ force: true, logging: console.log }).then(function () {
       subTasks.push({
         name: Math.random().toString(),
         completed: Math.random() > 0.5,
-        parent_id: i
+        parent_id: i // eslint-disable-line
       });
     }
   }
@@ -71,12 +71,14 @@ return sequelize.sync({ force: true, logging: console.log }).then(function () {
         userIds.push(userId);
       }
     }
+    /* eslint-disable camelcase */
     userIds.forEach(user_id => {
       projectUsers.push({
         project_id: i,
         user_id
       });
     });
+    /* eslint-enable camelcase */
   }
 
   return models.ProjectUser.bulkCreate(projectUsers);

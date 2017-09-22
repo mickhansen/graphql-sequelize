@@ -1,7 +1,6 @@
 import {
   GraphQLString,
   GraphQLInt,
-  GraphQLNonNull,
   GraphQLList,
   GraphQLObjectType,
   GraphQLSchema,
@@ -144,7 +143,7 @@ const schema = new GraphQLSchema({
           before: findOptions => {
             // we only want top-level tasks, not subtasks
             findOptions.where = {
-              user_id: {
+              user_id: { // eslint-disable-line
                 $not: null
               }
             };

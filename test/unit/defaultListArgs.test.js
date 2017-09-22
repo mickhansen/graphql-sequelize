@@ -1,15 +1,14 @@
 'use strict';
 
-import chai, {expect} from "chai";
-import Sequelize from "sequelize";
-import defaultListArgs from "../../src/defaultListArgs";
+import {expect} from 'chai';
+import Sequelize from 'sequelize';
+import defaultListArgs from '../../src/defaultListArgs';
 
-import { sequelize } from '../support/helper'
+import { sequelize } from '../support/helper';
 
 import {
   GraphQLString,
   GraphQLInt,
-  GraphQLNonNull,
   GraphQLScalarType
 } from 'graphql';
 

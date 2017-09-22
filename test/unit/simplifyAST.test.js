@@ -1,13 +1,11 @@
 'use strict';
 
-var chai = require('chai')
-  , expect = chai.expect
-  , Sequelize = require('sequelize')
-  , parser = require('graphql/language/parser').parse
+import {expect} from 'chai';
+import simplifyAST from '../../src/simplifyAST';
+var parser = require('graphql/language/parser').parse // eslint-disable-line
   , parse = function (query) {
-      return parser(query).definitions[0];
-    }
-  , simplifyAST = require('../../src/simplifyAST');
+    return parser(query).definitions[0];
+  };
 
 describe('simplifyAST', function () {
   it('should simplify a basic nested structure', function () {
@@ -57,7 +55,7 @@ describe('simplifyAST', function () {
       fields: {
         user: {
           args: {
-            id: "1"
+            id: '1'
           },
           fields: {
             name: {
@@ -81,9 +79,9 @@ describe('simplifyAST', function () {
       args: {},
       fields: {
         luke: {
-          key: "human",
+          key: 'human',
           args: {
-            id: ["1000", "1003"]
+            id: ['1000', '1003']
           },
           fields: {
             name: {
@@ -93,7 +91,7 @@ describe('simplifyAST', function () {
           }
         }
       }
-    })
+    });
   });
 
   it('should simplify a basic structure with object args', function () {
@@ -107,9 +105,9 @@ describe('simplifyAST', function () {
       args: {},
       fields: {
         luke: {
-          key: "human",
+          key: 'human',
           args: {
-            contact: { phone: "91264646" }
+            contact: { phone: '91264646' }
           },
           fields: {
             name: {
@@ -119,7 +117,7 @@ describe('simplifyAST', function () {
           }
         }
       }
-    })
+    });
   });
 
   it('should simplify a basic structure with nested array args', function () {
@@ -134,7 +132,7 @@ describe('simplifyAST', function () {
       fields: {
         user: {
           args: {
-            units: ["1", "2", ["3", ["4"], [["5"], "6"], "7"]]
+            units: ['1', '2', ['3', ['4'], [['5'], '6'], '7']]
           },
           fields: {
             name: {
@@ -144,7 +142,7 @@ describe('simplifyAST', function () {
           }
         }
       }
-    })
+    });
   });
 
   it('should simplify a basic structure with variable args', function () {
@@ -156,14 +154,14 @@ describe('simplifyAST', function () {
       }
     `), {
       variableValues: {
-        id: "1"
+        id: '1'
       }
     })).to.deep.equal({
       args: {},
       fields: {
         user: {
           args: {
-            id: "1"
+            id: '1'
           },
           fields: {
             name: {
@@ -173,7 +171,7 @@ describe('simplifyAST', function () {
           }
         }
       }
-    })
+    });
   });
 
   it('should simplify a basic structure with an inline fragment', function () {
@@ -335,9 +333,9 @@ describe('simplifyAST', function () {
       args: {},
       fields: {
         luke: {
-          key: "human",
+          key: 'human',
           args: {
-            id: "1000"
+            id: '1000'
           },
           fields: {
             name: {
@@ -347,19 +345,19 @@ describe('simplifyAST', function () {
           }
         },
         leia: {
-          key: "human",
+          key: 'human',
           args: {
-            id: "1003"
+            id: '1003'
           },
           fields: {
             firstName: {
-              key: "name",
+              key: 'name',
               args: {},
               fields: {}
             }
           }
         }
       }
-    })
+    });
   });
 });

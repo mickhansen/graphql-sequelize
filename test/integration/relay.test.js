@@ -2,11 +2,10 @@
 
 import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper';
 
-var chai = require('chai')
-  , expect = chai.expect
-  , resolver = require('../../src/resolver')
-  , Sequelize = require('sequelize')
-  , sinon = require('sinon');
+import { expect } from 'chai';
+import resolver from '../../src/resolver';
+import Sequelize from 'sequelize';
+import sinon from'sinon';
 
 import {
   GraphQLString,
