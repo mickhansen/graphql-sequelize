@@ -1,6 +1,6 @@
 'use strict';
 
-import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper'
+import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper';
 
 import { expect } from 'chai';
 import sinon from 'sinon';

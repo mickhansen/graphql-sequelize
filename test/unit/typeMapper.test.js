@@ -62,13 +62,13 @@ describe('typeMapper', () => {
 
   describe('CUSTOM', function () {
     before(function () {
-      //setup mapping
+      // setup mapping
       mapType((type)=> {
         if (type instanceof BOOLEAN) {
-          return GraphQLString
+          return GraphQLString;
         }
         if (type instanceof FLOAT) {
-          return false
+          return false;
         }
       });
     });
@@ -79,7 +79,7 @@ describe('typeMapper', () => {
       expect(toGraphQL(new BOOLEAN(), Sequelize)).to.equal(GraphQLString);
     });
 
-    //reset mapType
+    // reset mapType
     after(function () {
       mapType(null);
     });
@@ -167,7 +167,7 @@ describe('typeMapper', () => {
 
   describe('JSON', function () {
     it('should map to JSONType', function () {
-      expect(toGraphQL(new JSON(), Sequelize)).to.equal(JSONType);
+      expect(toGraphQL(new JSON(), Sequelize)).to.equal(JSONType); // eslint-disable-line
     });
   });
 

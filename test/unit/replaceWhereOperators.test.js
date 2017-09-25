@@ -1,16 +1,16 @@
-import chai, {expect} from "chai";
-import {replaceWhereOperators} from "../../src/replaceWhereOperators";
+import {expect} from 'chai';
+import {replaceWhereOperators} from '../../src/replaceWhereOperators';
 
-describe("replaceWhereOperators", ()=> {
-  it("should take an Object of grapqhl-friendly keys and replace with the correct sequelize operators", ()=> {
+describe('replaceWhereOperators', () => {
+  it('should take an Object of grapqhl-friendly keys and replace with the correct sequelize operators', ()=> {
     let before = {
       and: 1,
-      or: "1",
-      gt: [{and: "1", or: "1"}, {between: "1", overlap: "1"}],
+      or: '1',
+      gt: [{and: '1', or: '1'}, {between: '1', overlap: '1'}],
       gte: 1,
       lt: {
         and: {
-          "test": [{or: "1"}]
+          test: [{or: '1'}]
         }
       },
       lte: 1,
@@ -31,12 +31,12 @@ describe("replaceWhereOperators", ()=> {
     };
     let after = {
       $and: 1,
-      $or: "1",
-      $gt: [{$and: "1", $or: "1"}, {$between: "1", $overlap: "1"}],
+      $or: '1',
+      $gt: [{$and: '1', $or: '1'}, {$between: '1', $overlap: '1'}],
       $gte: 1,
       $lt: {
         $and: {
-          "test": [{$or: "1"}]
+          test: [{$or: '1'}]
         }
       },
       $lte: 1,
@@ -57,5 +57,5 @@ describe("replaceWhereOperators", ()=> {
     };
 
     expect(replaceWhereOperators(before)).to.deep.equal(after);
-  })
+  });
 });
