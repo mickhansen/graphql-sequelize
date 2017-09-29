@@ -452,7 +452,7 @@ defaultArgs(Model);
 */
 ```
 
-If you would like to pass "where" as a query variable - you should pass it as a JSON string and declear it's type as SequelizeJSON:
+If you would like to pass "where" as a query variable - you should pass it as a JSON string and declare its type as SequelizeJSON:
 
 ```
 /* with GraphiQL */
