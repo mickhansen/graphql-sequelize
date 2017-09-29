@@ -464,7 +464,7 @@ query($where: SequelizeJSON) {
 }
 
 // query variables
-# because you can't use single quotes you need to escape JSON's the double quotes
+# JSON doesn't allow single quotes, so you need to use escaped double quotes in your JSON string
 {
   "where": "{\"name\": {\"like\": \"Henry%\"}}"
 }
