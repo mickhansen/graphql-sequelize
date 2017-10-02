@@ -452,7 +452,7 @@ defaultArgs(Model);
 */
 ```
 
-If you would like to pass "where" as a query variable - you should pass it as a JSON string and declear it's type as SequelizeJSON:
+If you would like to pass "where" as a query variable - you should pass it as a JSON string and declare its type as SequelizeJSON:
 
 ```
 /* with GraphiQL */
@@ -463,8 +463,8 @@ query($where: SequelizeJSON) {
   }
 }
 
-// qyery variables
-# because you can't use single quotes you need to escape JSON's the double quotes
+// query variables
+# JSON doesn't allow single quotes, so you need to use escaped double quotes in your JSON string
 {
   "where": "{\"name\": {\"like\": \"Henry%\"}}"
 }
