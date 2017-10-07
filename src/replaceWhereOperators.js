@@ -1,3 +1,6 @@
+const Sequelize = require('sequelize');
+const Op = Sequelize.Op;
+
 /**
  * Replace a key deeply in an object
  * @param obj
@@ -37,25 +40,25 @@ function replaceKeyDeep(obj, keyMap) {
  */
 export function replaceWhereOperators(where) {
   return replaceKeyDeep(where, {
-    and: '$and',
-    or: '$or',
-    gt: '$gt',
-    gte: '$gte',
-    lt: '$lt',
-    lte: '$lte',
-    ne: '$ne',
-    between: '$between',
-    notBetween: '$notBetween',
-    in: '$in',
-    notIn: '$notIn',
-    notLike: '$notLike',
-    iLike: '$iLike',
-    notILike: '$notILike',
-    like: '$like',
-    overlap: '$overlap',
-    contains: '$contains',
-    contained: '$contained',
-    any: '$any',
-    col: '$col'
+    and: Op.and,
+    or: Op.or,
+    gt: Op.gt,
+    gte: Op.gte,
+    lt: Op.lt,
+    lte: Op.lte,
+    ne: Op.ne,
+    between: Op.between,
+    notBetween: Op.notBetween,
+    in: Op.in,
+    notIn: Op.notIn,
+    notLike: Op.notLike,
+    iLike: Op.iLike,
+    notILike: Op.notILike,
+    like: Op.like,
+    overlap: Op.overlap,
+    contains: Op.contains,
+    contained: Op.contained,
+    any: Op.any,
+    col: Op.col
   });
 }

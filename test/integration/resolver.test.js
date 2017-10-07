@@ -5,6 +5,7 @@ import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper';
 import { expect } from 'chai';
 import sinon from 'sinon';
 import Sequelize from 'sequelize';
+const Op = Sequelize.Op;
 
 import resolver from '../../src/resolver';
 import JSONType from '../../src/types/jsonType';
@@ -191,7 +192,7 @@ describe('resolver', function () {
           resolve: resolver(User.Tasks, {
             before: (options, args) => {
               options.where = options.where || {};
-              options.where.id = { $in: args.ids };
+              options.where.id = { [Op.in]: args.ids };
               return options;
             }
           })
