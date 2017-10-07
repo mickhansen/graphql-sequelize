@@ -7,7 +7,6 @@ import sinon from 'sinon';
 import Sequelize from 'sequelize';
 
 import resolver from '../../src/resolver';
-import JSONType from '../../src/types/jsonType';
 
 import {
   graphql,
@@ -22,7 +21,7 @@ import {
 import GraphQLDate from 'graphql-date';
 
 
-describe('resolver', function () {
+describe('between', function () {
   beforeRemoveAllTables();
 
   var User
@@ -74,51 +73,8 @@ describe('resolver', function () {
       timestamps: false
     });
 
-    Project = sequelize.define('project', {
-      name: Sequelize.STRING
-    }, {
-      timestamps: false
-    });
-
-    Label = sequelize.define('label', {
-      name: Sequelize.STRING
-    }, {
-      timestamps: false
-    });
-
     User.Tasks = User.hasMany(Task, {as: 'tasks', foreignKey: 'userId'});
     Task.User = Task.belongsTo(User, {as: 'user', foreignKey: 'userId'});
-
-    Task.Project = Task.belongsTo(Project, {as: 'project', foreignKey: 'projectId'});
-    Project.Labels = Project.hasMany(Label, {as: 'labels'});
-
-    labelType = new GraphQLObjectType({
-      name: 'Label',
-      fields: {
-        id: {
-          type: new GraphQLNonNull(GraphQLInt)
-        },
-        name: {
-          type: GraphQLString
-        }
-      }
-    });
-
-    projectType = new GraphQLObjectType({
-      name: 'Project',
-      fields: {
-        id: {
-          type: new GraphQLNonNull(GraphQLInt)
-        },
-        name: {
-          type: GraphQLString
-        },
-        labels: {
-          type: new GraphQLList(labelType),
-          resolve: resolver(Project.Labels)
-        }
-      }
-    });
 
     taskType = new GraphQLObjectType({
       name: 'Task',
@@ -136,10 +92,6 @@ describe('resolver', function () {
         createdAt: {
           type: GraphQLDate
         },
-        project: {
-          type: projectType,
-          resolve: resolver(Task.Project)
-        }
       }
     });
 
@@ -155,40 +107,6 @@ describe('resolver', function () {
         },
         myVirtual: {
           type: GraphQLString
-        },
-        tasks: {
-          type: new GraphQLList(taskType),
-          args: {
-            limit: {
-              type: GraphQLInt
-            },
-            offset: {
-              type: GraphQLInt
-            },
-            order: {
-              type: GraphQLString
-            },
-            first: {
-              type: GraphQLInt
-            },
-            due: {
-              type: GraphQLDate
-            }
-          },
-          resolve: resolver(User.Tasks, {
-            before: function (options, args) {
-              if (args.first) {
-                options.order = options.order || [];
-                options.order.push(['created_at', 'ASC']);
-
-                if (args.first !== 0) {
-                  options.limit = args.first;
-                }
-              }
-
-              return options;
-            }
-          })
         },
         tasksByCreatedRange: {
           type: new GraphQLList(taskType),
@@ -222,21 +140,6 @@ describe('resolver', function () {
             },
             resolve: resolver(User)
           },
-          users: {
-            type: new GraphQLList(userType),
-            args: {
-              limit: {
-                type: GraphQLInt
-              },
-              order: {
-                type: GraphQLString
-              },
-              where: {
-                type: JSONType
-              }
-            },
-            resolve: resolver(User)
-          }
         }
       })
     });
@@ -253,35 +156,6 @@ describe('resolver', function () {
 
     return sequelize.sync({force: true}).bind(this).then(function () {
       return Promise.join(
-        Project.create({
-          id: ++projectId,
-          name: 'b' + Math.random().toString(),
-          labels: [
-            {name: Math.random().toString()},
-            {name: Math.random().toString()}
-          ]
-        }, {
-          include: [
-            Project.Labels
-          ]
-        }),
-        Project.create({
-          id: ++projectId,
-          name: 'a' + Math.random().toString(),
-          labels: [
-            {name: Math.random().toString()},
-            {name: Math.random().toString()}
-          ]
-        }, {
-          include: [
-            Project.Labels
-          ]
-        })
-      ).bind(this).spread(function (projectA, projectB) {
-        this.projectA = projectA;
-        this.projectB = projectB;
-      }).bind(this).then(function () {
-        return Promise.join(
           User.create({
             id: 1,
             name: 'b' + Math.random().toString(),
@@ -290,50 +164,27 @@ describe('resolver', function () {
                 id: ++taskId,
                 title: Math.random().toString(),
                 createdAt: new Date(Date.UTC(2014, 5, 11)),
-                projectId: this.projectA.id
               },
               {
                 id: ++taskId,
                 title: Math.random().toString(),
                 createdAt: new Date(Date.UTC(2014, 5, 16)),
-                projectId: this.projectB.id
               },
               {
                 id: ++taskId,
                 title: Math.random().toString(),
                 createdAt: new Date(Date.UTC(2014, 5, 20)),
-                projectId: this.projectA.id
               }
             ]
           }, {
             include: [User.Tasks]
           }),
-          User.create({
-            id: 2,
-            name: 'a' + Math.random().toString(),
-            tasks: [
-              {
-                id: ++taskId,
-                title: Math.random().toString(),
-                projectId: this.projectB.id
-              },
-              {
-                id: ++taskId,
-                title: Math.random().toString(),
-                projectId: this.projectB.id
-              }
-            ]
-          }, {
-            include: [User.Tasks]
-          })
-        ).bind(this).spread(function (userA, userB) {
+        ).bind(this).spread(function (userA) {
           this.userA = userA;
-          this.userB = userB;
-          this.users = [userA, userB];
+          this.users = [userA];
         });
       });
     });
-  });
 
   afterEach(function () {
     this.sandbox.restore();
