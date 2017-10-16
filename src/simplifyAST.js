@@ -48,7 +48,7 @@ function simplifyValue(value, info) {
   if (value.kind === 'ObjectValue') {
     return simplifyObjectValue(value);
   }
-  if (value.name) {
+  if (value.name && info.variableValues) {
     return info.variableValues[value.name.value];
   }
 }
