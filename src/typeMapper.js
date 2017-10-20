@@ -58,9 +58,9 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
 
   // Map of special characters
   const specialCharsMap = new Map([
-    ['¼', 'frac14']
-    , ['½', 'frac12']
-    , ['¾', 'frac34']
+    ['¼', 'frac14'],
+    ['½', 'frac12'],
+    ['¾', 'frac34']
   ]);
 
   if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
