@@ -49,8 +49,8 @@ describe('attributeFields', function () {
       enum: {
         type: Sequelize.ENUM('first', 'second')
       },
-      enumTwo: {
-        type: Sequelize.ENUM('foo_bar', 'foo-bar')
+      enumSpecial: {
+        type: Sequelize.ENUM('foo_bar', 'foo-bar', '25.8', 'two--specials', '¼', ' ¼--½_¾ - ')
       },
       list: {
         type: Sequelize.ARRAY(Sequelize.STRING)
@@ -82,10 +82,13 @@ describe('attributeFields', function () {
   it('should return fields for a simple model', function () {
     var fields = attributeFields(Model);
 
-
-    expect(Object.keys(fields)).to.deep.equal(['id', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal', 'enum',
-        'enumTwo', 'list', 'virtualInteger', 'virtualBoolean','date','time','dateonly','comment']);
-
+    expect(Object.keys(fields)).to.deep.equal([
+      'id', 'email', 'firstName', 'lastName',
+      'char', 'float', 'decimal',
+      'enum', 'enumSpecial',
+      'list', 'virtualInteger', 'virtualBoolean',
+      'date', 'time', 'dateonly', 'comment'
+    ]);
 
     expect(fields.id.type).to.be.an.instanceOf(GraphQLNonNull);
     expect(fields.id.type.ofType).to.equal(GraphQLInt);
@@ -101,7 +104,7 @@ describe('attributeFields', function () {
 
     expect(fields.enum.type).to.be.an.instanceOf(GraphQLEnumType);
 
-    expect(fields.enumTwo.type).to.be.an.instanceOf(GraphQLEnumType);
+    expect(fields.enumSpecial.type).to.be.an.instanceOf(GraphQLEnumType);
 
     expect(fields.list.type).to.be.an.instanceOf(GraphQLList);
 
@@ -124,7 +127,8 @@ describe('attributeFields', function () {
     var fields = attributeFields(Model, {map: {id: 'mappedId'}});
     expect(Object.keys(fields)).to.deep.equal([
       'mappedId', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal',
-      'enum', 'enumTwo', 'list', 'virtualInteger', 'virtualBoolean', 'date',
+      'enum', 'enumSpecial',
+      'list', 'virtualInteger', 'virtualBoolean', 'date',
       'time', 'dateonly', 'comment'
     ]);
   });
@@ -135,7 +139,8 @@ describe('attributeFields', function () {
     });
     expect(Object.keys(fields)).to.deep.equal([
       'ids', 'emails', 'firstNames', 'lastNames', 'chars', 'floats', 'decimals',
-      'enums', 'enumTwos', 'lists', 'virtualIntegers', 'virtualBooleans',
+      'enums', 'enumSpecials',
+      'lists', 'virtualIntegers', 'virtualBooleans',
       'dates', 'times', 'dateonlys', 'comments'
     ]);
   });
@@ -143,8 +148,9 @@ describe('attributeFields', function () {
   it('should be possible to exclude fields', function () {
     var fields = attributeFields(Model, {
       exclude: [
-        'id', 'email', 'char', 'float', 'decimal', 'enum',
-        'enumTwo', 'list', 'virtualInteger', 'virtualBoolean',
+        'id', 'email', 'char', 'float', 'decimal',
+        'enum', 'enumSpecial',
+        'list', 'virtualInteger', 'virtualBoolean',
         'date','time','dateonly','comment'
       ]
     });
@@ -155,8 +161,9 @@ describe('attributeFields', function () {
   it('should be able to exclude fields via a function', function () {
     var fields = attributeFields(Model, {
       exclude: field => ~[
-        'id', 'email', 'char', 'float', 'decimal', 'enum',
-        'enumTwo', 'list', 'virtualInteger', 'virtualBoolean',
+        'id', 'email', 'char', 'float', 'decimal',
+        'enum', 'enumSpecial',
+        'list', 'virtualInteger', 'virtualBoolean',
         'date','time','dateonly','comment'
       ].indexOf(field)
     });
@@ -196,26 +203,38 @@ describe('attributeFields', function () {
     var fields = attributeFields(Model);
 
     expect(fields.enum.type.name).to.not.be.undefined;
-    expect(fields.enumTwo.type.name).to.not.be.undefined;
+    expect(fields.enumSpecial.type.name).to.not.be.undefined;
 
     expect(fields.enum.type.name).to.equal(modelName + 'enum' + 'EnumType');
-    expect(fields.enumTwo.type.name).to.equal(modelName + 'enumTwo' + 'EnumType');
+    expect(fields.enumSpecial.type.name).to.equal(modelName + 'enumSpecial' + 'EnumType');
   });
 
   it('should support enum values with characters not allowed by GraphQL', function () {
-    var fields = attributeFields(Model);
+    const fields = attributeFields(Model);
+    const enums = fields.enumSpecial.type.getValues();
 
-    expect(fields.enumTwo.type.getValues()).to.not.be.undefined;
-    expect(fields.enumTwo.type.getValues()[1].name).to.equal('fooBar');
-    expect(fields.enumTwo.type.getValues()[1].value).to.equal('foo-bar');
+    expect(enums).to.not.be.undefined;
+    expect(enums[0].name).to.equal('foo_bar');
+    expect(enums[0].value).to.equal('foo_bar');
+    expect(enums[1].name).to.equal('fooBar');
+    expect(enums[1].value).to.equal('foo-bar');
+    expect(enums[2].name).to.equal('_258');
+    expect(enums[2].value).to.equal('25.8');
+    expect(enums[3].name).to.equal('twoSpecials');
+    expect(enums[3].value).to.equal('two--specials');
+    expect(enums[4].name).to.equal('frac14');
+    expect(enums[4].value).to.equal('¼');
+    expect(enums[5].name).to.equal('frac14Frac12_frac34');
+    expect(enums[5].value).to.equal(' ¼--½_¾ - ');
   });
 
   it('should support enum values with underscores', function () {
-    var fields = attributeFields(Model);
+    const fields = attributeFields(Model);
+    const enums = fields.enumSpecial.type.getValues();
 
-    expect(fields.enumTwo.type.getValues()).to.not.be.undefined;
-    expect(fields.enumTwo.type.getValues()[0].name).to.equal('foo_bar');
-    expect(fields.enumTwo.type.getValues()[0].value).to.equal('foo_bar');
+    expect(enums).to.not.be.undefined;
+    expect(enums[0].name).to.equal('foo_bar');
+    expect(enums[0].value).to.equal('foo_bar');
   });
 
   it('should not create multiple enum types with same name when using cache', function () {
