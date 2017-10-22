@@ -56,12 +56,10 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     JSON
   } = sequelizeTypes;
 
-  // Map of special characters
-  const specialCharsMap = new Map([
-    ['¼', 'frac14'],
-    ['½', 'frac12'],
-    ['¾', 'frac34']
-  ]);
+
+
+  // Regex for finding special characters
+  const specialChars = /[^a-z\d_]/i;
 
   if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
 
@@ -114,11 +112,9 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
 
   function sanitizeEnumValue(value) {
     return value
-      .trim()
-      .replace(/([^_a-zA-Z0-9])/g, (_, p) => specialCharsMap.get(p) || ' ')
-      .split(' ')
+      .replace(/(^\d)/, '_$1')
+      .split(specialChars)
       .map((v, i) => i ? _.upperFirst(v) : v)
-      .join('')
-      .replace(/(^\d)/, '_$1');
+      .join('');
   }
 }
