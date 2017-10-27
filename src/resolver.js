@@ -56,6 +56,7 @@ function resolverFactory(target, options) {
 
     findOptions.attributes = targetAttributes;
     findOptions.logging = findOptions.logging || context.logging;
+    findOptions.graphqlContext = context;
 
     return Promise.resolve(options.before(findOptions, args, context, info)).then(function (findOptions) {
       if (args.where && !_.isEmpty(info.variableValues)) {
