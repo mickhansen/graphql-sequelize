@@ -37,7 +37,8 @@ function resolverFactory(target, options) {
   validateOptions(options);
 
   resolver = function (source, args, context, info) {
-    var ast = info.fieldASTs
+    // fieldASTs
+    var ast = info.fieldNodes || info.fieldASTs
       , type = info.returnType
       , list = options.list || type instanceof GraphQLList
       , simpleAST = simplifyAST(ast, info)
