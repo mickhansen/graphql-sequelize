@@ -53,6 +53,9 @@ resolver(SequelizeModel, {
   // Whether or not relay connections should be handled. Defaults to `true`.
   handleConnection: true,
 
+  // Whether or not Sequelize should be shimmed to use Dataloader. Disable by setting this value to boolean false.
+  dataLoader: false,
+
   /**
    * Manipulate the query before it's sent to Sequelize.
    * @param findOptions {object} - Options sent to Seqeulize model's find function
@@ -386,9 +389,9 @@ If you have other characters, like a dash (`-`) in your Sequelize enum types,
 they will be converted to camelCase. If your enum value starts from a digit, it
 will be prepended with an underscore.
 
-For example: 
+For example:
 
-- `foo-bar` becomes `fooBar` 
+- `foo-bar` becomes `fooBar`
 
 - `25.8` becomes `_258`
 
