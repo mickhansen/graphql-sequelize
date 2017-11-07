@@ -16,8 +16,10 @@ function whereQueryVarsToValues(o, vals) {
   });
 }
 
-function resolverFactory(target, options) {
-  dataLoaderSequelize(target);
+function resolverFactory(target, options = {}) {
+  if (options.dataLoader !== false) {
+    dataLoaderSequelize(target);
+  }
 
   var resolver
     , targetAttributes
@@ -27,8 +29,6 @@ function resolverFactory(target, options) {
     , model = isAssociation && target.target || isModel && target;
 
   targetAttributes = Object.keys(model.rawAttributes);
-
-  options = options || {};
 
   invariant(options.include === undefined, 'Include support has been removed in favor of dataloader batching');
   if (options.before === undefined) options.before = (options) => options;
