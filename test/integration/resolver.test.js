@@ -1160,7 +1160,29 @@ describe('resolver', function () {
     });
   });
 
-  it('issue#541', function () {
+  it('issue#541 - Singlar', function () {
+    return graphql(schema, `
+      query {
+        users(limit: 1, where: {id: 2}) {
+          id
+        }
+
+        test: users(limit: 1, where: {id: 2}) {
+          id
+        }
+      }
+    `, undefined, undefined, {name: 'a%'}).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data.users.length).to.equal(1);
+      expect(result.data.users[0].id).to.equal(2);
+
+      expect(result.data.test.length).to.equal(1);
+      expect(result.data.test[0].id).to.equal(2);
+    });
+  });
+
+  it('issue#541 - Relationship', function () {
     return graphql(schema, `
       query {
         users {
@@ -1178,10 +1200,10 @@ describe('resolver', function () {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users[0].tasks.length).to.equal(1);
-      expect(result.data.users[0].tasks[0]).to.equal({ id: 1 });
+      expect(result.data.users[0].tasks[0].id).to.equal(1);
 
       expect(result.data.users[0].test.length).to.equal(1);
-      expect(result.data.users[0].test[0]).to.equal({ id: 1 });
+      expect(result.data.users[0].test[0].id).to.equal(1);
     });
   });
 });
