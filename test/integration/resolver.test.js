@@ -1159,4 +1159,29 @@ describe('resolver', function () {
       expect(result.data.users.length).to.equal(1);
     });
   });
+
+  it('issue#541', function () {
+    return graphql(schema, `
+      query {
+        users {
+          id
+          tasks (limit: 1) {
+            id
+          }
+
+          test: tasks (limit: 1) {
+            id
+          }
+        }
+      }
+    `, undefined, undefined, {name: 'a%'}).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data.users[0].tasks.length).to.equal(1);
+      expect(result.data.users[0].tasks[0]).to.equal({ id: 1 });
+
+      expect(result.data.users[0].test.length).to.equal(1);
+      expect(result.data.users[0].test[0]).to.equal({ id: 1 });
+    });
+  });
 });
