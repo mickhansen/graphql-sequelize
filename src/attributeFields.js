@@ -32,9 +32,17 @@ module.exports = function (Model, options = {}) {
       }
     }
 
-    memo[key] = {
-      type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
-    };
+    // TODO: add "primaryKeyIsId" option to options cache
+    if ( attribute.primaryKey === true
+      && options.primaryKeyIsId
+      && !options.globalId
+    ) {
+      memo[key].type = GraphQLID;
+    } else {
+      memo[key] = {
+        type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
+      };
+    }
 
     if (memo[key].type instanceof GraphQLEnumType ) {
       var typeName = `${Model.name}${key}EnumType`;
@@ -49,15 +57,6 @@ module.exports = function (Model, options = {}) {
         cache[typeName] = memo[key].type;
       }
 
-    }
-
-    // set integer and string primaryKey attriubte types to GraphQLID
-    if ( attribute.primaryKey === true
-      && ( memo[key].type === GraphQLInt
-        || memo[key].type === GraphQLString
-      )
-    ) {
-      memo[key].type = GraphQLID;
     }
 
     if (!options.allowNull) {
