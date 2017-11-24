@@ -53,11 +53,11 @@ module.exports = function (Model, options = {}) {
 
     // set integer and string primaryKey attriubte types to GraphQLID
     if ( attribute.primaryKey === true
-      && ( memo[key].type instanceof GraphQLInt
-        || memo[key].type instanceof GraphQLString
+      && ( memo[key].type === GraphQLInt
+        || memo[key].type === GraphQLString
       )
     ) {
-      memo[key].type = GraphQLID
+      memo[key].type = GraphQLID;
     }
 
     if (!options.allowNull) {
