@@ -32,7 +32,6 @@ module.exports = function (Model, options = {}) {
       }
     }
 
-    // TODO: add "primaryKeyIsId" option to options cache
     if ( attribute.primaryKey === true
       && options.primaryKeyIsId
       && !options.globalId
