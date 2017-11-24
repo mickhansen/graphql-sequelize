@@ -1,5 +1,11 @@
 import * as typeMapper from './typeMapper';
-import { GraphQLNonNull, GraphQLEnumType } from 'graphql';
+import {
+  GraphQLNonNull,
+  GraphQLEnumType,
+  GraphQLInt,
+  GraphQLString,
+  GraphQLID
+} from 'graphql';
 import { globalIdField } from 'graphql-relay';
 
 module.exports = function (Model, options = {}) {
@@ -43,6 +49,15 @@ module.exports = function (Model, options = {}) {
         cache[typeName] = memo[key].type;
       }
 
+    }
+
+    // set integer and string primaryKey attriubte types to GraphQLID
+    if ( attribute.primaryKey === true
+      && ( memo[key].type instanceof GraphQLInt
+        || memo[key].type instanceof GraphQLString
+      )
+    ) {
+      memo[key].type = GraphQLID
     }
 
     if (!options.allowNull) {
