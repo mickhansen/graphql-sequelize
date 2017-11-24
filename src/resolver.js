@@ -34,6 +34,7 @@ function resolverFactory(target, options = {}) {
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
+  if (options.associationInclude === undefined) options.associationInclude = true;
 
   resolver = function (source, args, context, info) {
     var type = info.returnType
@@ -69,7 +70,7 @@ function resolverFactory(target, options = {}) {
       }
 
       if (association) {
-        if (source.get(association.as) !== undefined) {
+        if (options.associationInclude && source.get(association.as) !== undefined) {
           // The user did a manual include
           const result = source.get(association.as);
           if (options.handleConnection && isConnection(info.returnType)) {
