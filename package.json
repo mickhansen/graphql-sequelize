@@ -41,7 +41,7 @@
   },
   "homepage": "https://github.com/mickhansen/graphql-sequelize",
   "dependencies": {
-    "dataloader-sequelize": "^1.5.0",
+    "dataloader-sequelize": "^1.5.4",
     "invariant": "2.2.1",
     "bluebird": "^3.4.0",
     "lodash": "^4.0.0"
