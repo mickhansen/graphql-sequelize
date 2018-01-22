@@ -1,7 +1,13 @@
 {
-  "plugins": ["transform-object-rest-spread"],
+  "plugins": [
+    "transform-object-rest-spread"
+  ],
   "presets": [
-    "async-to-bluebird",
-    "es2015-node4"
+    ["env", {
+      "targets": {
+        "node": 6
+      }
+    }],
+    "async-to-bluebird"
   ]
 }
