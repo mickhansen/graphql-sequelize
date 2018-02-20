@@ -5,6 +5,8 @@
 [![Slack](http://sequelize-slack.herokuapp.com/badge.svg)](http://sequelize-slack.herokuapp.com)
 [![Coverage](https://codecov.io/gh/mickhansen/graphql-sequelize/branch/master/graph/badge.svg)](https://codecov.io/gh/mickhansen/graphql-sequelize)
 
+Should be used with [dataloader-sequelize](https://github.com/mickhansen/dataloader-sequelize) to avoid N+1 queries
+
 - [Installation](#installation)
 - [Resolve helpers](#resolve-helpers)
 - [field helpers](#field-helpers)
@@ -32,8 +34,6 @@ Please take a look at [the tests](https://github.com/mickhansen/graphql-sequeliz
 - Automatically converts args to where if arg keys matches model attributes
 - Automatically converts an arg named 'limit' to a sequelize limit
 - Automatically converts an arg named 'order' to a sequelize order
-- Only loads the attributes defined in the query (automatically adds primary key and foreign keys)
-- Batching of nested associations (see [dataloader-sequelize](https://github.com/mickhansen/dataloader-sequelize))
 
 ### Relay & Connections
 
@@ -78,7 +78,18 @@ resolver(SequelizeModel, {
     result.sort(/* Custom sort function */);
     return result;
   },
+
+  /*
+   * Transfer fields from the graphql contet to the options passed to model calls
+   * Inherits from global resolver.contextToOptions
+   */
+  contextToOptions: {
+    a: 'a',
+    b: 'c'
+  }
 });
+
+resolver.contextToOptions = {}; /* Set contextToOptions globally */
 ```
 
 _The `args` and `context` parameters are provided by GraphQL. More information

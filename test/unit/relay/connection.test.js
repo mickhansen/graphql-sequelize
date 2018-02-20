@@ -78,7 +78,9 @@ describe('relay', function () {
         id: Math.ceil(Math.random() * 999)
       });
 
-      this.sinon.stub(this.Task, 'findAll').resolves([this.Task.build()]);
+      const task = this.Task.build();
+      task.dataValues.full_count = Math.random() * 999;
+      this.sinon.stub(this.Task, 'findAll').resolves([task]);
       this.sinon.stub(this.User, 'findById').resolves(this.User.build());
     });
 
@@ -131,7 +133,7 @@ describe('relay', function () {
           }
         }),
         sinon.match({
-          ast: sinon.match.any
+          path: sinon.match.any
         })
       );
 
