@@ -166,7 +166,7 @@ describe('resolver', function () {
               type: GraphQLInt
             }
           },
-          resolve: resolver(User.Tasks, {
+          resolve: resolver(() => User.Tasks, {
             before: function (options, args) {
               if (args.first) {
                 options.order = options.order || [];

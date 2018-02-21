@@ -111,7 +111,7 @@ describe('relay', function () {
       this.userTaskConnection = sequelizeConnection({
         name: 'userTask',
         nodeType: this.taskType,
-        target: this.User.Tasks,
+        target: () => this.User.Tasks,
         orderBy: new GraphQLEnumType({
           name: this.User.name + this.Task.name + 'ConnectionOrder',
           values: {
@@ -507,7 +507,7 @@ describe('relay', function () {
     });
 
     it('should handle orderBy function case', async function () {
-      await graphql(this.schema, `
+      const result = await graphql(this.schema, `
         {
           user(id: ${this.userA.id}) {
             projects(first: 1) {
@@ -528,6 +528,8 @@ describe('relay', function () {
           }
         }
       `, null, {});
+
+      if (result.errors) throw new Error(result.errors[0]);
 
       expect(this.projectOrderSpy).to.have.been.calledOnce;
       expect(this.projectOrderSpy.alwaysCalledWithMatch({}, { first: 5 })).to.be.ok;
