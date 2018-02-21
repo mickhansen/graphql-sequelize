@@ -7,8 +7,7 @@ import {
 } from 'graphql-relay';
 
 import {
-  GraphQLList,
-  GraphQLEnumType
+  GraphQLList
 } from 'graphql';
 
 import {
@@ -105,7 +104,7 @@ export function nodeType(connectionType) {
 export function sequelizeConnection({
   name,
   nodeType,
-  target,
+  target: targetMaybeThunk,
   orderBy: orderByEnum,
   before,
   after,
@@ -123,28 +122,21 @@ export function sequelizeConnection({
     edgeFields
   });
 
-  const model = target.target ? target.target : target;
   const SEPERATOR = '$';
   const PREFIX = 'arrayconnection' + SEPERATOR;
-
-  if (orderByEnum === undefined) {
-    orderByEnum = new GraphQLEnumType({
-      name: name + 'ConnectionOrder',
-      values: {
-        ID: {value: [model.primaryKeyAttribute, 'ASC']}
-      }
-    });
-  }
 
   before = before || ((options) => options);
   after = after || ((result) => result);
 
   let $connectionArgs = {
-    ...connectionArgs,
-    orderBy: {
-      type: new GraphQLList(orderByEnum)
-    }
+    ...connectionArgs
   };
+
+  if (orderByEnum) {
+    $connectionArgs.orderBy = {
+      type: new GraphQLList(orderByEnum)
+    };
+  }
 
   let orderByAttribute = function (orderAttr, {source, args, context, info}) {
     return typeof orderAttr === 'function' ? orderAttr(source, args, context, info) : orderAttr;
@@ -166,7 +158,7 @@ export function sequelizeConnection({
    * @return {String}          The Base64 encoded cursor string
    */
   let toCursor = function (item, index) {
-    let id = item.get(model.primaryKeyAttribute);
+    let id = item.get(item.Model.primaryKeyAttribute);
     return base64(PREFIX + id + SEPERATOR + index);
   };
 
@@ -188,6 +180,8 @@ export function sequelizeConnection({
 
   let argsToWhere = function (args) {
     let result = {};
+
+    if (where === undefined) return result;
 
     _.each(args, (value, key) => {
       if (key in $connectionArgs) return;
@@ -213,16 +207,21 @@ export function sequelizeConnection({
     };
   };
 
-  let $resolver = require('./resolver')(target, {
+  let $resolver = require('./resolver')(targetMaybeThunk, {
     handleConnection: false,
     list: true,
     before: function (options, args, context, info) {
+      const target = info.target;
+      const model = target.target ? target.target : target;
+
       if (args.first || args.last) {
         options.limit = parseInt(args.first || args.last, 10);
       }
       if (!args.orderBy) {
-        args.orderBy = [orderByEnum._values[0].value];
-      } else if (typeof args.orderBy === 'string') {
+        args.orderBy = [
+          [model.primaryKeyAttribute, 'ASC']
+        ];
+      } else if (orderByEnum && typeof args.orderBy === 'string') {
         args.orderBy = [orderByEnum._nameLookup[args.orderBy].value];
       }
 
@@ -275,6 +274,7 @@ export function sequelizeConnection({
     after: async function (values, args, context, info) {
       const {
         source,
+        target
       } = info;
 
       var cursor = null;

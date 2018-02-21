@@ -15,31 +15,32 @@ function whereQueryVarsToValues(o, vals) {
   });
 }
 
-function resolverFactory(target, options = {}) {
-  var resolver
-    , targetAttributes
-    , isModel = !!target.getTableName
-    , isAssociation = !!target.associationType
-    , association = isAssociation && target
-    , model = isAssociation && target.target || isModel && target
-    , contextToOptions = _.assign({}, resolverFactory.contextToOptions, options.contextToOptions);
-
-  targetAttributes = Object.keys(model.rawAttributes);
+function resolverFactory(targetMaybeThunk, options = {}) {
+  const contextToOptions = _.assign({}, resolverFactory.contextToOptions, options.contextToOptions);
 
   invariant(options.include === undefined, 'Include support has been removed in favor of dataloader batching');
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
 
-  resolver = function (source, args, context, info) {
-    var type = info.returnType
-      , list = options.list || type instanceof GraphQLList
+  return async function (source, args, context, info) {
+    let target = typeof targetMaybeThunk === 'function' && targetMaybeThunk.findAndCountAll === undefined ?
+                 await Promise.resolve(targetMaybeThunk(source, args, context, info)) : targetMaybeThunk
+      , isModel = !!target.getTableName
+      , isAssociation = !!target.associationType
+      , association = isAssociation && target
+      , model = isAssociation && target.target || isModel && target
+      , type = info.returnType
+      , list = options.list || type instanceof GraphQLList;
+
+    let targetAttributes = Object.keys(model.rawAttributes)
       , findOptions = argsToFindOptions(args, targetAttributes);
 
     info = {
       ...info,
       type: type,
-      source: source
+      source: source,
+      target: target
     };
 
     context = context || {};
@@ -92,8 +93,6 @@ function resolverFactory(target, options = {}) {
       return options.after(result, args, context, info);
     });
   };
-
-  return resolver;
 }
 
 resolverFactory.contextToOptions = {};

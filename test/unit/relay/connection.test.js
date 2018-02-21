@@ -89,7 +89,7 @@ describe('relay', function () {
     });
 
     it('passes context, root and info to before', async function () {
-      await graphql(this.schema, `
+      const result = await graphql(this.schema, `
         query {
           viewer {
             tasks {
@@ -105,10 +105,13 @@ describe('relay', function () {
         viewer: this.viewer
       });
 
+      if (result.errors) throw new Error(result.errors[0]);
+
+      expect(this.beforeSpy).to.have.been.calledOnce;
       expect(this.beforeSpy).to.have.been.calledWithMatch(
         sinon.match.any,
         sinon.match({
-          orderBy: sinon.match.any
+          first: sinon.match.any
         }),
         sinon.match({
           viewer: {
@@ -125,7 +128,7 @@ describe('relay', function () {
           fullCount: sinon.match.number
         }),
         sinon.match({
-          orderBy: sinon.match.any
+          first: sinon.match.any
         }),
         sinon.match({
           viewer: {
