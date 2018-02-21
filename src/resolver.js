@@ -24,12 +24,12 @@ function resolverFactory(targetResolver, options = {}) {
   if (options.handleConnection === undefined) options.handleConnection = true;
 
   return async function (source, args, context, info) {
-    let target = typeof targetResolver === 'function' && targetResolver.findAndCountAll === undefined ? await Promise.resolve(targetResolver(source, args, context, info)) : targetResolver
+    let target = typeof targetResolver === 'function' && targetResolver.findAndCountAll === undefined ?
+                 await Promise.resolve(targetResolver(source, args, context, info)) : targetResolver
       , isModel = !!target.getTableName
       , isAssociation = !!target.associationType
       , association = isAssociation && target
       , model = isAssociation && target.target || isModel && target
-      , contextToOptions = _.assign({}, resolverFactory.contextToOptions, options.contextToOptions)
       , type = info.returnType
       , list = options.list || type instanceof GraphQLList;
 

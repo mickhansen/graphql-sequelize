@@ -7,8 +7,7 @@ import {
 } from 'graphql-relay';
 
 import {
-  GraphQLList,
-  GraphQLEnumType
+  GraphQLList
 } from 'graphql';
 
 import {
