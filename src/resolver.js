@@ -15,7 +15,7 @@ function whereQueryVarsToValues(o, vals) {
   });
 }
 
-function resolverFactory(targetResolver, options = {}) {
+function resolverFactory(targetMaybeThunk, options = {}) {
   const contextToOptions = _.assign({}, resolverFactory.contextToOptions, options.contextToOptions);
 
   invariant(options.include === undefined, 'Include support has been removed in favor of dataloader batching');
@@ -24,8 +24,8 @@ function resolverFactory(targetResolver, options = {}) {
   if (options.handleConnection === undefined) options.handleConnection = true;
 
   return async function (source, args, context, info) {
-    let target = typeof targetResolver === 'function' && targetResolver.findAndCountAll === undefined ?
-                 await Promise.resolve(targetResolver(source, args, context, info)) : targetResolver
+    let target = typeof targetMaybeThunk === 'function' && targetMaybeThunk.findAndCountAll === undefined ?
+                 await Promise.resolve(targetMaybeThunk(source, args, context, info)) : targetMaybeThunk
       , isModel = !!target.getTableName
       , isAssociation = !!target.associationType
       , association = isAssociation && target

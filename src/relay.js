@@ -104,7 +104,7 @@ export function nodeType(connectionType) {
 export function sequelizeConnection({
   name,
   nodeType,
-  target: targetResolver,
+  target: targetMaybeThunk,
   orderBy: orderByEnum,
   before,
   after,
@@ -207,7 +207,7 @@ export function sequelizeConnection({
     };
   };
 
-  let $resolver = require('./resolver')(targetResolver, {
+  let $resolver = require('./resolver')(targetMaybeThunk, {
     handleConnection: false,
     list: true,
     before: function (options, args, context, info) {
