@@ -80,7 +80,7 @@ resolver(SequelizeModel, {
   },
 
   /*
-   * Transfer fields from the graphql contet to the options passed to model calls
+   * Transfer fields from the graphql context to the options passed to model calls
    * Inherits from global resolver.contextToOptions
    */
   contextToOptions: {
