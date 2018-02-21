@@ -210,7 +210,12 @@ describe('resolver', function () {
                 type: new GraphQLNonNull(GraphQLInt)
               }
             },
-            resolve: resolver(User)
+            resolve: resolver(User, {
+              contextToOptions: {
+                a: 'a',
+                b: 'c'
+              }
+            })
           },
           users: {
             type: new GraphQLList(userType),
@@ -325,6 +330,9 @@ describe('resolver', function () {
     });
   });
 
+  beforeEach(function () {
+    this.sandbox.spy(User, 'findOne');
+  });
   afterEach(function () {
     this.sandbox.restore();
   })
@@ -348,6 +356,31 @@ describe('resolver', function () {
           myVirtual: 'lol'
         }
       });
+    });
+  });
+
+  it('should map context to find options', function () {
+    var user = this.userB;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+          myVirtual
+        }
+      }
+    `, null, {a: 1, b: 2}).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data).to.deep.equal({
+        user: {
+          name: user.name,
+          myVirtual: 'lol'
+        }
+      });
+
+      expect(User.findOne.firstCall.args[0].a).to.equal(1);
+      expect(User.findOne.firstCall.args[0].c).to.equal(2);
     });
   });
 
@@ -641,17 +674,13 @@ describe('resolver', function () {
           }
         }
       }
-    `, null, {
-      logging: spy
-    }).then(function (result) {
+    `, null).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(users.length);
       result.data.users.forEach(function (user) {
         expect(user.tasks).to.have.length.above(0);
       });
-
-      expect(spy).to.have.been.calledTwice;
     });
   });
 
@@ -744,9 +773,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, null, {
-      logging: spy
-    }).then(function (result) {
+    `, null).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(users.length);
@@ -757,8 +784,6 @@ describe('resolver', function () {
           expect(task.id).to.be.ok;
         });
       });
-
-      expect(spy).to.have.been.calledTwice;
     });
   });
 
@@ -892,9 +917,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, null, {
-      logging: sqlSpy
-    }).then(function (result) {
+    `, null).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
@@ -904,8 +927,6 @@ describe('resolver', function () {
           expect(task.project.name).to.be.ok;
         });
       });
-
-      expect(sqlSpy.callCount).to.equal(3);
     });
   });
 
@@ -924,9 +945,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, null, {
-      logging: sqlSpy
-    }).then(function (result) {
+    `, null).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
@@ -936,8 +955,6 @@ describe('resolver', function () {
           expect(task.project.name).to.be.ok;
         });
       });
-
-      expect(sqlSpy.callCount).to.equal(3);
     });
   });
 
@@ -960,9 +977,7 @@ describe('resolver', function () {
           }
         }
       }
-    `, null, {
-      logging: sqlSpy
-    }).then(function (result) {
+    `, null).then(function (result) {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
@@ -977,8 +992,6 @@ describe('resolver', function () {
           });
         });
       });
-
-      expect(sqlSpy.callCount).to.equal(4);
     });
   });
 

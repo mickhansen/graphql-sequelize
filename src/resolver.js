@@ -4,7 +4,6 @@ import argsToFindOptions from './argsToFindOptions';
 import { isConnection, handleConnection, nodeType } from './relay';
 import invariant from 'assert';
 import Promise from 'bluebird';
-import dataLoaderSequelize from 'dataloader-sequelize';
 
 function whereQueryVarsToValues(o, vals) {
   _.forEach(o, (v, k) => {
@@ -17,16 +16,13 @@ function whereQueryVarsToValues(o, vals) {
 }
 
 function resolverFactory(target, options = {}) {
-  if (options.dataLoader !== false) {
-    dataLoaderSequelize(target);
-  }
-
   var resolver
     , targetAttributes
     , isModel = !!target.getTableName
     , isAssociation = !!target.associationType
     , association = isAssociation && target
-    , model = isAssociation && target.target || isModel && target;
+    , model = isAssociation && target.target || isModel && target
+    , contextToOptions = _.assign({}, resolverFactory.contextToOptions, options.contextToOptions);
 
   targetAttributes = Object.keys(model.rawAttributes);
 
@@ -57,6 +53,10 @@ function resolverFactory(target, options = {}) {
     findOptions.attributes = targetAttributes;
     findOptions.logging = findOptions.logging || context.logging;
     findOptions.graphqlContext = context;
+
+    _.each(contextToOptions, (as, key) => {
+      findOptions[as] = context[key];
+    });
 
     return Promise.resolve(options.before(findOptions, args, context, info)).then(function (findOptions) {
       if (args.where && !_.isEmpty(info.variableValues)) {
@@ -95,5 +95,7 @@ function resolverFactory(target, options = {}) {
 
   return resolver;
 }
+
+resolverFactory.contextToOptions = {};
 
 module.exports = resolverFactory;

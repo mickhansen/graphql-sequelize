@@ -1034,13 +1034,9 @@ describe('relay', function () {
             }
           }
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null);
 
       if (result.errors) throw new Error(result.errors[0].stack);
-
-      expect(sqlSpy.callCount).to.equal(3);
 
       const nodeNames = result.data.user.projects.edges.map(edge => {
         return edge.node.tasks.edges.map(edge => {
@@ -1093,9 +1089,7 @@ describe('relay', function () {
             }
           }
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null);
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
@@ -1108,13 +1102,9 @@ describe('relay', function () {
 
       expect(projects[0].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[4].get('id')));
       expect(projects[1].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[8].get('id')));
-
-      expect(sqlSpy.callCount).to.equal(3);
     });
 
     it('should support connection fields', async function () {
-      let sqlSpy = sinon.spy();
-
       let result = await graphql(this.schema, `
         {
           user(id: ${this.userA.id}) {
@@ -1123,9 +1113,7 @@ describe('relay', function () {
             }
           }
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null, {});
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
@@ -1134,8 +1122,6 @@ describe('relay', function () {
     });
 
     it('should support connection fields on nested connections', async function () {
-      let sqlSpy = sinon.spy();
-
       let result = await graphql(this.schema, `
         {
           user(id: ${this.userA.id}) {
@@ -1150,9 +1136,7 @@ describe('relay', function () {
             }
           }
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null, {});
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
@@ -1181,9 +1165,7 @@ describe('relay', function () {
         fragment projectOwner on userProjectEdge {
           isOwner
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null);
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
@@ -1202,9 +1184,7 @@ describe('relay', function () {
             }
           }
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null, {});
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
