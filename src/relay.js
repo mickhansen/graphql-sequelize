@@ -158,7 +158,7 @@ export function sequelizeConnection({
    * @return {String}          The Base64 encoded cursor string
    */
   let toCursor = function (item, index) {
-    let id = item.get(item.Model.primaryKeyAttribute);
+    let id = item.get(item.constructor ? item.constructor.primaryKeyAttribute : item.Model.primaryKeyAttribute);
     return base64(PREFIX + id + SEPERATOR + index);
   };
 
