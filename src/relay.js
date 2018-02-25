@@ -217,15 +217,12 @@ export function sequelizeConnection({
       if (args.first || args.last) {
         options.limit = parseInt(args.first || args.last, 10);
       }
-      if (!args.orderBy) {
-        args.orderBy = [
-          [model.primaryKeyAttribute, 'ASC']
-        ];
-      } else if (orderByEnum && typeof args.orderBy === 'string') {
-        args.orderBy = [orderByEnum._nameLookup[args.orderBy].value];
+
+      let orderBy = args.orderBy || [[model.primaryKeyAttribute, 'ASC']];
+      if (orderByEnum && typeof orderBy === 'string') {
+        orderBy = [orderByEnum._nameLookup[args.orderBy].value];
       }
 
-      let orderBy = args.orderBy;
       let orderAttribute = orderByAttribute(orderBy[0][0], {
         source: info.source,
         args,
