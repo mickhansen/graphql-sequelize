@@ -218,7 +218,10 @@ export function sequelizeConnection({
         options.limit = parseInt(args.first || args.last, 10);
       }
 
-      let orderBy = args.orderBy || [[model.primaryKeyAttribute, 'ASC']];
+      let orderBy = args.orderBy ? args.orderBy :
+                    orderByEnum ? [orderByEnum._values[0].value] :
+                    [[model.primaryKeyAttribute, 'ASC']];
+
       if (orderByEnum && typeof orderBy === 'string') {
         orderBy = [orderByEnum._nameLookup[args.orderBy].value];
       }
