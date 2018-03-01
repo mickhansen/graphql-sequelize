@@ -353,11 +353,11 @@ export function sequelizeConnection({
       return $resolver(source, args, context, info);
     }
 
-    return {
+    return after({
       source,
       args,
       where: argsToWhere(args)
-    };
+    }, args, context, info);
   };
 
   return {
