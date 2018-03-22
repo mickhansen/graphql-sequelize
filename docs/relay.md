@@ -142,11 +142,7 @@ const userType = new GraphQLObjectType({
     name: {
       type: GraphQLString
     },
-    tasks: {
-      type: userTaskConnection.connectionType,
-      args: userTaskConnection.connectionArgs,
-      resolve: userTaskConnection.resolve
-    }
+    tasks: userTaskConnection.field
   }
 });
 ```
@@ -201,14 +197,13 @@ const userType = new GraphQLObjectType({
       type: GraphQLString
     },
     tasks: {
-      type: userTaskConnection.connectionType,
+      ...userTaskConnection.field,
       args: {
-        ...userTaskConnection.connectionArgs, // <-- Load the defaults
+        ...userTaskConnection.field.args, // <-- Load the defaults
         titleStartsWith: { // <-- Extend further yourself
           type: GraphQLString,
         }
-      },
-      resolve: userTaskConnection.resolve
+      }
     }
   }
 });
