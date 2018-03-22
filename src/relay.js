@@ -366,6 +366,11 @@ export function sequelizeConnection({
     nodeType,
     resolveEdge,
     connectionArgs: $connectionArgs,
-    resolve: resolver
+    resolve: resolver,
+    fieldConfig: {
+      type: connectionType,
+      args: $connectionArgs,
+      resolve: resolver
+    }
   };
 }
