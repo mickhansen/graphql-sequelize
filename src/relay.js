@@ -139,14 +139,14 @@ export function sequelizeConnection({
   }
 
   let orderByAttribute = function (orderAttr, {source, args, context, info}) {
-     const Model = info.target;
-
-     if (typeof orderAttr === 'function') {
-         return orderAttr(source, args, context, info);
-     } else {
-         const attr = _.lowerFirst(orderAttr);
-         return _.has(Model.rawAttributes, attr, 'field') ? Model.rawAttributes[attr].field : orderAttr;
-     }
+    const Model = info.target;
+    
+    if (typeof orderAttr === 'function') {
+      return orderAttr(source, args, context, info);
+    } else {
+      const attr = _.lowerFirst(orderAttr);
+      return _.has(Model.rawAttributes, attr, 'field') ? Model.rawAttributes[attr].field : orderAttr;
+    }
   };
 
   let orderByDirection = function (orderDirection, args) {
