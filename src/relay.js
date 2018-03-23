@@ -144,8 +144,8 @@ export function sequelizeConnection({
      if (typeof orderAttr === 'function') {
          return orderAttr(source, args, context, info);
      } else {
-         const attr = _lodash.lowerFirst(orderAttr);
-         return _lodash.has(Model.rawAttributes, attr, 'field') ? Model.rawAttributes[attr].field : orderAttr;
+         const attr = _.lowerFirst(orderAttr);
+         return _.has(Model.rawAttributes, attr, 'field') ? Model.rawAttributes[attr].field : orderAttr;
      }
   };
 
