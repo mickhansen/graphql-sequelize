@@ -139,7 +139,7 @@ export function sequelizeConnection({
   }
 
   let orderByAttribute = function (orderAttr, {source, args, context, info}) {
-     const Model = info.target,
+     const Model = info.target;
 
      if (typeof orderAttr === 'function') {
          return orderAttr(source, args, context, info);
