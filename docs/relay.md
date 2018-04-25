@@ -142,11 +142,7 @@ const userType = new GraphQLObjectType({
     name: {
       type: GraphQLString
     },
-    tasks: {
-      type: userTaskConnection.field.type,
-      args: userTaskConnection.field.args,
-      resolve: userTaskConnection.field.resolve,
-    }
+    tasks: userTaskConnection.field, /* {type, args, resolve} * /
   }
 });
 ```
