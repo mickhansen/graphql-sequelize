@@ -3,15 +3,19 @@ import JSONType from './types/jsonType';
 
 module.exports = function (Model) {
   var result = {}
-    , key = Model.primaryKeyAttribute
-    , attribute = Model.rawAttributes[key]
+    , keys = Model.primaryKeyAttributes
     , type;
 
-  if (key && attribute) {
-    type = typeMapper.toGraphQL(attribute.type, Model.sequelize.constructor);
-    result[key] = {
-      type: type
-    };
+  if (keys) {
+    keys.forEach(key => {
+      var attribute = Model.rawAttributes[key];
+      if (attribute) {
+        type = typeMapper.toGraphQL(attribute.type, Model.sequelize.constructor);
+        result[key] = {
+          type: type
+        };
+      }
+    });
   }
 
   // add where
