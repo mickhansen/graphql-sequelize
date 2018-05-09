@@ -1182,7 +1182,7 @@ describe('resolver', function () {
         name: 'RootQueryType',
         fields: {
           users: {
-            type: new GraphQLNonNull(GraphQLList(userType)),
+            type: new GraphQLNonNull(new GraphQLList(userType)),
             resolve: resolver(User, {
               before: function (options, args, { name }) {
                 options.where = options.where || {};
