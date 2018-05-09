@@ -31,7 +31,9 @@ function resolverFactory(targetMaybeThunk, options = {}) {
       , association = isAssociation && target
       , model = isAssociation && target.target || isModel && target
       , type = info.returnType
-      , list = options.list || type instanceof GraphQLList || (type instanceof GraphQLNonNull && type.ofType instanceof GraphQLList);
+      , list = options.list ||
+        type instanceof GraphQLList ||
+        type instanceof GraphQLNonNull && type.ofType instanceof GraphQLList;
 
     let targetAttributes = Object.keys(model.rawAttributes)
       , findOptions = argsToFindOptions(args, targetAttributes);
