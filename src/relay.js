@@ -159,7 +159,7 @@ export function sequelizeConnection({
    */
   let toCursor = function (item, index) {
     let id = item.get(item.constructor ? item.constructor.primaryKeyAttribute : item.Model.primaryKeyAttribute);
-    return base64(PREFIX + id + SEPERATOR + index);
+    return base64(JSON.stringify([id, index]));
   };
 
   /**
@@ -168,9 +168,7 @@ export function sequelizeConnection({
    * @return {Object}        Object containing ID and index
    */
   let fromCursor = function (cursor) {
-    cursor = unbase64(cursor);
-    cursor = cursor.substring(PREFIX.length, cursor.length);
-    let [id, index] = cursor.split(SEPERATOR);
+    let [id, index] = JSON.parse(unbase64(cursor));
 
     return {
       id,
