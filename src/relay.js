@@ -138,10 +138,6 @@ export function sequelizeConnection({
     };
   }
 
-  let orderByAttribute = function (orderAttr, {source, args, context, info}) {
-    return typeof orderAttr === 'function' ? orderAttr(source, args, context, info) : orderAttr;
-  };
-
   let orderByDirection = function (orderDirection, args) {
     if (args.last) {
       return orderDirection.indexOf('ASC') >= 0
@@ -150,6 +146,26 @@ export function sequelizeConnection({
     }
     return orderDirection;
   };
+
+  let orderByAttribute = function (orderAttr, {source, args, context, info}) {
+    return typeof orderAttr === 'function' ? orderAttr(source, args, context, info) : orderAttr;
+  };
+
+  function getOrder(orderBy, options) {
+    const {args, info} = options;
+    const target = info.target;
+    const model = target.target ? target.target : target;
+    const result = orderBy.map(([orderAttr, orderDirection]) => [
+      orderByAttribute(orderAttr, options),
+      orderByDirection(orderDirection, args),
+    ]);
+    model.primaryKeyAttributes.forEach(primaryKeyAttribute => {
+      if (explicitOrderAttributes.indexOf(primaryKeyAttribute) < 0) {
+        result.push([primaryKeyAttribute, orderByDirection('ASC', args)]);
+      }
+    });
+    return result;
+  }
 
   /**
    * Creates a cursor given a item returned from the Database
@@ -216,6 +232,9 @@ export function sequelizeConnection({
 
       if (args.first || args.last) {
         options.limit = parseInt(args.first || args.last, 10);
+        // include edges at before/after cursors, if given, to determine if there's a prev/next page
+        if (args.before) options.limit++;
+        if (args.after) options.limit++;
       }
 
       let orderBy = args.orderBy ? args.orderBy :
@@ -226,47 +245,28 @@ export function sequelizeConnection({
         orderBy = [orderByEnum._nameLookup[args.orderBy].value];
       }
 
-      let orderAttribute = orderByAttribute(orderBy[0][0], {
-        source: info.source,
-        args,
-        context,
-        info
-      });
-      let orderDirection = orderByDirection(orderBy[0][1], args);
-
-      options.order = [
-        [orderAttribute, orderDirection]
-      ];
-
-      if (orderAttribute !== model.primaryKeyAttribute) {
-        options.order.push([model.primaryKeyAttribute, orderByDirection('ASC', args)]);
-      }
-
-      if (typeof orderAttribute === 'string') {
-        options.attributes.push(orderAttribute);
-      }
-
-      if (options.limit && !options.attributes.some(attribute => attribute.length === 2 && attribute[1] === 'full_count')) {
-        if (model.sequelize.dialect.name === 'postgres') {
-          options.attributes.push([
-            model.sequelize.literal('COUNT(*) OVER()'),
-            'full_count'
-          ]);
-        } else if (model.sequelize.dialect.name === 'mssql') {
-          options.attributes.push([
-            model.sequelize.literal('COUNT(1) OVER()'),
-            'full_count'
-          ]);
-        }
-      }
+      options.order = getOrder(orderBy, {options, args, context, info});
+      const orderAttributes = options.order.map(([attribute]) => attribute);
+      options.attributes.push(...orderAttributes);
 
       options.where = argsToWhere(args);
 
       if (args.after || args.before) {
-        let cursor = fromCursor(args.after || args.before);
-        let startIndex = Number(cursor.index);
+        const cursor = fromCursor(args.after || args.before);
+        const slicingWhere = {}
+        options.order.forEach(([orderAttribute, orderDirection]) => {
+          let orderValue = cursor[orderAttribute];
 
-        if (startIndex >= 0) options.offset = startIndex + 1;
+          if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
+            orderValue = new Date(orderValue);
+          }
+
+          slicingWhere[orderAttribute] = {
+            [orderDirection === 'ASC' ? '$gte' : '$lte']: orderValue
+          };
+        });
+        if (options.where.$and) options.where.$and.push(slicingWhere);
+        else options.where = {$and: [options.where, slicingWhere]};
       }
       options.attributes = _.uniq(options.attributes);
       return before(options, args, context, info);
@@ -287,49 +287,29 @@ export function sequelizeConnection({
         return resolveEdge(value, idx, cursor, args, source);
       });
 
-      let firstEdge = edges[0];
-      let lastEdge = edges[edges.length - 1];
-      let fullCount = values[0] && values[0].dataValues.full_count && parseInt(values[0].dataValues.full_count, 10);
-
-      if (!values[0]) {
-        fullCount = 0;
-      }
-
-      if ((args.first || args.last) && (fullCount === null || fullCount === undefined)) {
-        // In case of `OVER()` is not available, we need to get the full count from a second query.
-        const options = await Promise.resolve(before({
-          where: argsToWhere(args)
-        }, args, context, info));
-
-        if (target.count) {
-          if (target.associationType) {
-            fullCount = await target.count(source, options);
-          } else {
-            fullCount = await target.count(options);
-          }
-        } else {
-          fullCount = await target.manyFromSource.count(source, options);
-        }
-      }
-
       let hasNextPage = false;
       let hasPreviousPage = false;
       if (args.first || args.last) {
-        const count = parseInt(args.first || args.last, 10);
-        let index = cursor ? Number(cursor.index) : null;
-        if (index !== null) {
-          index++;
-        } else {
-          index = 0;
+        if (args.first) {
+          const count = parseInt(args.first, 10);
+          hasPreviousPage = edges.length && edges[0].cursor === args.after;
+          if (hasPreviousPage) edges.shift();
+          else edges.pop();
+          hasNextPage = edges.length > args.first;
+          if (hasNextPage) edges.pop();
         }
-
-        hasNextPage = index + 1 + count <= fullCount;
-        hasPreviousPage = index - count >= 0;
-
-        if (args.last) {
-          [hasNextPage, hasPreviousPage] = [hasPreviousPage, hasNextPage];
+        else if (args.last) {
+          const count = parseInt(args.last, 10);
+          hasNextPage = edges.length && edges[0].cursor === args.before;
+          if (hasNextPage) edges.shift();
+          else edges.pop();
+          hasPreviousPage = edges.length > args.last;
+          if (hasPreviousPage) edges.pop();
         }
       }
+
+      let firstEdge = edges[0];
+      let lastEdge = edges[edges.length - 1];
 
       return after({
         source,
@@ -342,7 +322,6 @@ export function sequelizeConnection({
           hasNextPage: hasNextPage,
           hasPreviousPage: hasPreviousPage
         },
-        fullCount
       }, args, context, info);
     }
   });
