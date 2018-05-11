@@ -122,9 +122,6 @@ export function sequelizeConnection({
     edgeFields
   });
 
-  const SEPERATOR = '$';
-  const PREFIX = 'arrayconnection' + SEPERATOR;
-
   before = before || ((options) => options);
   after = after || ((result) => result);
 
