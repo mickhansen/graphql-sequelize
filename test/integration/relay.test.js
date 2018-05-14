@@ -398,14 +398,17 @@ describe('relay', function () {
     });
   });
 
-  it('should support last queries on connections', function () {
-    var user = this.userB;
+  it('should support first and before queries on connections', function () {
+    var user = this.userA;
 
     return graphql(schema, `
       {
         user(id: ${user.id}) {
           name
-          tasks(last: 1) {
+          tasks(first: 3) {
+            pageInfo {
+              endCursor
+            },
             edges {
               node {
                 name
@@ -414,28 +417,29 @@ describe('relay', function () {
           }
         }
       }
-    `).then(function (result) {
-      if (result.errors) throw new Error(result.errors[0].stack);
-
-      expect(result.data).to.deep.equal({
-        user: {
-          name: user.name,
-          tasks: {
-            edges: [
-              {
-                node: {
-                  name: user[User.Tasks.as][user[User.Tasks.as].length - 1].name
+    `)
+    .then(function (result) {
+      return graphql(schema, `
+        {
+          user(id: ${user.id}) {
+            name
+            tasks(first: 1, before: "${result.data.user.tasks.pageInfo.endCursor}") {
+              edges {
+                node {
+                  name
                 }
               }
-            ]
+            }
           }
         }
-      });
+      `);
+    })
+    .then(function (result) {
+      expect(result.data.user.tasks.edges[0].node.name).to.equal(user.taskItems[0].name);
     });
   });
 
-  // these two tests are not determenistic on postgres currently
-  it('should support after queries on connections', function () {
+  it('should support first and after queries on connections', function () {
     var user = this.userA;
 
     return graphql(schema, `
@@ -474,6 +478,124 @@ describe('relay', function () {
     })
     .then(function (result) {
       expect(result.data.user.tasks.edges[0].node.name).to.equal(user.taskItems[1].name);
+    });
+  });
+
+  it('should support last queries on connections', function () {
+    var user = this.userB;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+          tasks(last: 1) {
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data).to.deep.equal({
+        user: {
+          name: user.name,
+          tasks: {
+            edges: [
+              {
+                node: {
+                  name: user[User.Tasks.as][user[User.Tasks.as].length - 1].name
+                }
+              }
+            ]
+          }
+        }
+      });
+    });
+  });
+
+  it('should support last and before queries on connections', function () {
+    var user = this.userA;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+          tasks(first: 3) {
+            pageInfo {
+              endCursor
+            },
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+      }
+    `)
+    .then(function (result) {
+      return graphql(schema, `
+        {
+          user(id: ${user.id}) {
+            name
+            tasks(last: 1, before: "${result.data.user.tasks.pageInfo.endCursor}") {
+              edges {
+                node {
+                  name
+                }
+              }
+            }
+          }
+        }
+      `);
+    })
+    .then(function (result) {
+      expect(result.data.user.tasks.edges[0].node.name).to.equal(user.taskItems[1].name);
+    });
+  });
+
+  it('should support last and after queries on connections', function () {
+    var user = this.userA;
+
+    return graphql(schema, `
+      {
+        user(id: ${user.id}) {
+          name
+          tasks(first: 2) {
+            pageInfo {
+              endCursor
+            },
+            edges {
+              node {
+                name
+              }
+            }
+          }
+        }
+      }
+    `)
+    .then(function (result) {
+      return graphql(schema, `
+        {
+          user(id: ${user.id}) {
+            name
+            tasks(last: 1, after: "${result.data.user.tasks.pageInfo.endCursor}") {
+              edges {
+                node {
+                  name
+                }
+              }
+            }
+          }
+        }
+      `);
+    })
+    .then(function (result) {
+      expect(result.data.user.tasks.edges[0].node.name).to.equal(user.taskItems[2].name);
     });
   });
 
