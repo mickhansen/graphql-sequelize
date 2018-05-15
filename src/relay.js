@@ -161,7 +161,8 @@ export function sequelizeConnection({
    * @return {String}          The Base64 encoded cursor string
    */
   let toCursor = function (item, index) {
-    let id = item.get(getModelOfInstance(item).primaryKeyAttribute);
+    const {primaryKeyAttribute} = getModelOfInstance(item);
+    const id = typeof primaryKeyAttribute === 'string' ? item.get(primaryKeyAttribute) : null;
     return base64(JSON.stringify([id, index]));
   };
 
