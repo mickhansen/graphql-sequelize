@@ -18,10 +18,10 @@ import {
 import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 
-import {Model} from 'sequelize'
+import {Model} from 'sequelize';
 
 function getModelOfInstance(instance) {
-  return instance instanceof Model ? instance.constructor : instance.Model
+  return instance instanceof Model ? instance.constructor : instance.Model;
 }
 
 export class NodeTypeMapper {
