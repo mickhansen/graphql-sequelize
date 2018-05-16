@@ -18,6 +18,12 @@ import {
 import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 
+import {Model} from 'sequelize';
+
+function getModelOfInstance(instance) {
+  return instance instanceof Model ? instance.constructor : instance.Model;
+}
+
 export class NodeTypeMapper {
   constructor() {
     this.map = { };
@@ -155,7 +161,8 @@ export function sequelizeConnection({
    * @return {String}          The Base64 encoded cursor string
    */
   let toCursor = function (item, index) {
-    let id = item.get(item.constructor ? item.constructor.primaryKeyAttribute : item.Model.primaryKeyAttribute);
+    const {primaryKeyAttribute} = getModelOfInstance(item);
+    const id = typeof primaryKeyAttribute === 'string' ? item.get(primaryKeyAttribute) : null;
     return base64(JSON.stringify([id, index]));
   };
 
