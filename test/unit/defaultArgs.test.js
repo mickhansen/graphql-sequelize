@@ -75,10 +75,10 @@ describe('defaultArgs', function () {
 
     args = defaultArgs(Model);
 
-    expect(args.userId.type).to.equal(GraphQLInt);    
-    expect(args.timestamp.type).to.equal(GraphQLString);    
-  })
-  
+    expect(args.userId.type).to.equal(GraphQLInt);
+    expect(args.timestamp.type).to.equal(GraphQLString);
+  });
+
   describe('will have an "where" argument', function () {
 
     it('that is an GraphQLScalarType', function () {
