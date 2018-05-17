@@ -122,9 +122,6 @@ export function sequelizeConnection({
     edgeFields
   });
 
-  const SEPERATOR = '$';
-  const PREFIX = 'arrayconnection' + SEPERATOR;
-
   before = before || ((options) => options);
   after = after || ((result) => result);
 
@@ -160,7 +157,7 @@ export function sequelizeConnection({
       orderByDirection(orderDirection, args),
     ]);
     model.primaryKeyAttributes.forEach(primaryKeyAttribute => {
-      if (explicitOrderAttributes.indexOf(primaryKeyAttribute) < 0) {
+      if (result.findIndex(([attr]) => attr === primaryKeyAttribute) < 0) {
         result.push([primaryKeyAttribute, orderByDirection('ASC', args)]);
       }
     });
@@ -169,29 +166,21 @@ export function sequelizeConnection({
 
   /**
    * Creates a cursor given a item returned from the Database
-   * @param  {Object}   item   sequelize model instance
-   * @param  {Integer}  index  the index of this item within the results, 0 indexed
-   * @return {String}          The Base64 encoded cursor string
+   * @param  {Object}   item            sequelize model instance
+   * @param  {String[]} orerAttributes  the attributes pertaining in ordering
+   * @return {String}                   The Base64 encoded cursor string
    */
-  let toCursor = function (item, index) {
-    let id = item.get(item.constructor ? item.constructor.primaryKeyAttribute : item.Model.primaryKeyAttribute);
-    return base64(PREFIX + id + SEPERATOR + index);
+  let toCursor = function (item, orderAttributes) {
+    return base64(JSON.stringify(orderAttributes.map(attr => item.get(attr))));
   };
 
   /**
    * Decode a cursor into its component parts
    * @param  {String} cursor Base64 encoded cursor
-   * @return {Object}        Object containing ID and index
+   * @return {any[]}         array containing values of attributes pertaining to ordering
    */
   let fromCursor = function (cursor) {
-    cursor = unbase64(cursor);
-    cursor = cursor.substring(PREFIX.length, cursor.length);
-    let [id, index] = cursor.split(SEPERATOR);
-
-    return {
-      id,
-      index
-    };
+    return JSON.parse(unbase64(cursor));
   };
 
   let argsToWhere = function (args) {
@@ -207,17 +196,9 @@ export function sequelizeConnection({
     return result;
   };
 
-  let resolveEdge = function (item, index, queriedCursor, args = {}, source) {
-    let startIndex = null;
-    if (queriedCursor) startIndex = Number(queriedCursor.index);
-    if (startIndex !== null) {
-      startIndex++;
-    } else {
-      startIndex = 0;
-    }
-
+  let resolveEdge = function (item, index, queriedCursor, args = {}, source, info) {
     return {
-      cursor: toCursor(item, index + startIndex),
+      cursor: toCursor(item, info.orderAttributes),
       node: item,
       source: source
     };
@@ -237,25 +218,19 @@ export function sequelizeConnection({
         if (args.after) options.limit++;
       }
 
-      let orderBy = args.orderBy ? args.orderBy :
-                    orderByEnum ? [orderByEnum._values[0].value] :
-                    [[model.primaryKeyAttribute, 'ASC']];
-
-      if (orderByEnum && typeof orderBy === 'string') {
-        orderBy = [orderByEnum._nameLookup[args.orderBy].value];
-      }
-
-      options.order = getOrder(orderBy, {options, args, context, info});
-      const orderAttributes = options.order.map(([attribute]) => attribute);
-      options.attributes.push(...orderAttributes);
+      options.order = info.order;
+      options.attributes.push(...info.orderAttributes);
 
       options.where = argsToWhere(args);
 
       if (args.after || args.before) {
         const cursor = fromCursor(args.after || args.before);
-        const slicingWhere = {}
-        options.order.forEach(([orderAttribute, orderDirection]) => {
-          let orderValue = cursor[orderAttribute];
+        if (cursor.length !== info.order.length) {
+          throw new Error('cursor appears to be for a different ordering');
+        }
+        const slicingWhere = {};
+        info.order.forEach(([orderAttribute, orderDirection], index) => {
+          let orderValue = cursor[index];
 
           if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
             orderValue = new Date(orderValue);
@@ -274,7 +249,6 @@ export function sequelizeConnection({
     after: async function (values, args, context, info) {
       const {
         source,
-        target
       } = info;
 
       var cursor = null;
@@ -284,7 +258,7 @@ export function sequelizeConnection({
       }
 
       let edges = values.map((value, idx) => {
-        return resolveEdge(value, idx, cursor, args, source);
+        return resolveEdge(value, idx, cursor, args, source, info);
       });
 
       let hasNextPage = false;
@@ -295,15 +269,14 @@ export function sequelizeConnection({
           hasPreviousPage = edges.length && edges[0].cursor === args.after;
           if (hasPreviousPage) edges.shift();
           else edges.pop();
-          hasNextPage = edges.length > args.first;
+          hasNextPage = edges.length > count;
           if (hasNextPage) edges.pop();
-        }
-        else if (args.last) {
+        } else if (args.last) {
           const count = parseInt(args.last, 10);
           hasNextPage = edges.length && edges[0].cursor === args.before;
           if (hasNextPage) edges.shift();
           else edges.pop();
-          hasPreviousPage = edges.length > args.last;
+          hasPreviousPage = edges.length > count;
           if (hasPreviousPage) edges.pop();
         }
       }
@@ -326,7 +299,28 @@ export function sequelizeConnection({
     }
   });
 
-  let resolver = (source, args, context, info) => {
+  let resolver = async (source, args, context, info) => {
+    const target = typeof targetMaybeThunk === 'function' && targetMaybeThunk.findAndCountAll === undefined ?
+                   await Promise.resolve(targetMaybeThunk(source, args, context, info)) : targetMaybeThunk
+        , model = target.target ? target.target : target;
+
+    let orderBy = args.orderBy ? args.orderBy :
+                  orderByEnum ? [orderByEnum._values[0].value] :
+                  [[model.primaryKeyAttribute, 'ASC']];
+
+    if (orderByEnum && typeof orderBy === 'string') {
+      orderBy = [orderByEnum._nameLookup[args.orderBy].value];
+    }
+
+    const order = getOrder(orderBy, {source, args, context, info})
+        , orderAttributes = order.map(([attribute]) => attribute);
+
+    info = {
+      ...info,
+      order,
+      orderAttributes,
+    };
+
     var fieldNodes = info.fieldASTs || info.fieldNodes;
     if (simplifyAST(fieldNodes[0], info).fields.edges) {
       return $resolver(source, args, context, info);
