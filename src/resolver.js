@@ -6,11 +6,16 @@ import invariant from 'assert';
 import Promise from 'bluebird';
 
 function whereQueryVarsToValues(o, vals) {
-  _.forEach(o, (v, k) => {
-    if (typeof v === 'function') {
+  [
+    ...Object.getOwnPropertyNames(o),
+    ...Object.getOwnPropertySymbols(o)
+  ].forEach(k => {
+    if (_.isFunction(o[k])) {
       o[k] = o[k](vals);
-    } else if (v && typeof v === 'object') {
-      whereQueryVarsToValues(v, vals);
+      return;
+    }
+    if (_.isObject(o[k])) {
+      whereQueryVarsToValues(o[k], vals);
     }
   });
 }

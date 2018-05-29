@@ -1,3 +1,5 @@
+import sequelizeOps from './sequelizeOps';
+
 /**
  * Replace a key deeply in an object
  * @param obj
@@ -36,26 +38,5 @@ function replaceKeyDeep(obj, keyMap) {
  * @returns {Object}
  */
 export function replaceWhereOperators(where) {
-  return replaceKeyDeep(where, {
-    and: '$and',
-    or: '$or',
-    gt: '$gt',
-    gte: '$gte',
-    lt: '$lt',
-    lte: '$lte',
-    ne: '$ne',
-    between: '$between',
-    notBetween: '$notBetween',
-    in: '$in',
-    notIn: '$notIn',
-    notLike: '$notLike',
-    iLike: '$iLike',
-    notILike: '$notILike',
-    like: '$like',
-    overlap: '$overlap',
-    contains: '$contains',
-    contained: '$contained',
-    any: '$any',
-    col: '$col'
-  });
+  return replaceKeyDeep(where, sequelizeOps);
 }
