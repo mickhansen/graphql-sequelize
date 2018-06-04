@@ -16,7 +16,6 @@ import {
 } from './base64.js';
 
 import _ from 'lodash';
-import simplifyAST from './simplifyAST';
 
 export class NodeTypeMapper {
   constructor() {
@@ -101,6 +100,102 @@ export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
 }
 
+function orderByAttribute(orderAttr, {source, args, context, info}) {
+  return typeof orderAttr === 'function' ? orderAttr(source, args, context, info) : orderAttr;
+}
+
+function getOrder(orderBy, options) {
+  const {model} = options;
+  const result = orderBy.map(([orderAttr, orderDirection]) => [
+    orderByAttribute(orderAttr, options),
+    orderDirection,
+  ]);
+  model.primaryKeyAttributes.forEach(primaryKeyAttribute => {
+    if (result.findIndex(([attr]) => attr === primaryKeyAttribute) < 0) {
+      result.push([primaryKeyAttribute, 'ASC']);
+    }
+  });
+  return result;
+}
+
+function reverseDirection(direction) {
+  return direction.indexOf('ASC') >= 0
+    ? direction.replace('ASC', 'DESC')
+    : direction.replace('DESC', 'ASC');
+}
+
+function reverseOrder(order) {
+  return order.map(([orderAttr, orderDirection]) => [orderAttr, reverseDirection(orderDirection)]);
+}
+
+
+/**
+ * Creates a cursor given a item returned from the Database
+ * @param  {Object}   item            sequelize model instance
+ * @param  {String[]} orerAttributes  the attributes pertaining in ordering
+ * @return {String}                   The Base64 encoded cursor string
+ */
+function toCursor(item, orderAttributes) {
+  return base64(JSON.stringify(orderAttributes.map(attr => item.get(attr))));
+}
+
+/**
+ * Decode a cursor into its component parts
+ * @param  {String} cursor Base64 encoded cursor
+ * @return {any[]}         array containing values of attributes pertaining to ordering
+ */
+function fromCursor(cursor) {
+  return JSON.parse(unbase64(cursor));
+}
+
+function getWindow({model, cursor, order, inclusive}) {
+  const values = fromCursor(cursor);
+  order.forEach(([orderAttribute], index) => {
+    if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
+      values[index] = new Date(values[index]);
+    }
+  });
+  const $or = [];
+  const window = {$or};
+
+  if (inclusive) {
+    // include any rows with all values equal to the cursor
+    const isEqualToCursor = {};
+    values.forEach((value, i) => {
+      const [attr] = order[i];
+      isEqualToCursor[attr] = value;
+    });
+    $or.push(isEqualToCursor);
+  }
+
+  // include any rows that are beyond the cursor
+
+  // given ORDER BY A ASC, B DESC, C ASC, the following code would create this logic:
+  // (A > cursorValues[A]) OR
+  // (A = cursorValues[A] AND B < cursorValues[B]) OR
+  // (A = cursorValues[A] AND B = cursorValues[B] AND C > cursorValues[C])
+
+  for (let inequalAttrIndex = 0; inequalAttrIndex < order.length; inequalAttrIndex++) {
+    const isBeyondCursor = {};
+    for (let equalAttrIndex = 0; equalAttrIndex < inequalAttrIndex; equalAttrIndex++) {
+      const [attr] = order[equalAttrIndex];
+      const value = values[equalAttrIndex];
+      isBeyondCursor[attr] = value;
+    }
+
+    const [attr, direction] = order[inequalAttrIndex];
+    const value = values[inequalAttrIndex];
+    if (direction.indexOf('ASC') >= 0) {
+      isBeyondCursor[attr] = {$gt: value};
+    } else {
+      isBeyondCursor[attr] = {$lt: value};
+    }
+    $or.push(isBeyondCursor);
+  }
+
+  return window;
+}
+
 export function sequelizeConnection({
   name,
   nodeType,
@@ -135,54 +230,6 @@ export function sequelizeConnection({
     };
   }
 
-  let orderByDirection = function (orderDirection, args) {
-    if (args.last) {
-      return orderDirection.indexOf('ASC') >= 0
-              ? orderDirection.replace('ASC', 'DESC')
-              : orderDirection.replace('DESC', 'ASC');
-    }
-    return orderDirection;
-  };
-
-  let orderByAttribute = function (orderAttr, {source, args, context, info}) {
-    return typeof orderAttr === 'function' ? orderAttr(source, args, context, info) : orderAttr;
-  };
-
-  function getOrder(orderBy, options) {
-    const {args, info} = options;
-    const target = info.target;
-    const model = target.target ? target.target : target;
-    const result = orderBy.map(([orderAttr, orderDirection]) => [
-      orderByAttribute(orderAttr, options),
-      orderByDirection(orderDirection, args),
-    ]);
-    model.primaryKeyAttributes.forEach(primaryKeyAttribute => {
-      if (result.findIndex(([attr]) => attr === primaryKeyAttribute) < 0) {
-        result.push([primaryKeyAttribute, orderByDirection('ASC', args)]);
-      }
-    });
-    return result;
-  }
-
-  /**
-   * Creates a cursor given a item returned from the Database
-   * @param  {Object}   item            sequelize model instance
-   * @param  {String[]} orerAttributes  the attributes pertaining in ordering
-   * @return {String}                   The Base64 encoded cursor string
-   */
-  let toCursor = function (item, orderAttributes) {
-    return base64(JSON.stringify(orderAttributes.map(attr => item.get(attr))));
-  };
-
-  /**
-   * Decode a cursor into its component parts
-   * @param  {String} cursor Base64 encoded cursor
-   * @return {any[]}         array containing values of attributes pertaining to ordering
-   */
-  let fromCursor = function (cursor) {
-    return JSON.parse(unbase64(cursor));
-  };
-
   let argsToWhere = function (args) {
     let result = {};
 
@@ -208,101 +255,25 @@ export function sequelizeConnection({
     handleConnection: false,
     list: true,
     before: function (options, args, context, info) {
-      const target = info.target;
-      const model = target.target ? target.target : target;
-
-      if (args.first || args.last) {
-        options.limit = parseInt(args.first || args.last, 10);
-        // include edges at before/after cursors, if given, to determine if there's a prev/next page
-        if (args.before) options.limit++;
-        if (args.after) options.limit++;
-      }
-
-      options.order = info.order;
-      options.attributes.push(...info.orderAttributes);
-
-      options.where = argsToWhere(args);
-
-      if (args.after || args.before) {
-        const cursor = fromCursor(args.after || args.before);
-        if (cursor.length !== info.order.length) {
-          throw new Error('cursor appears to be for a different ordering');
-        }
-        const slicingWhere = {};
-        info.order.forEach(([orderAttribute, orderDirection], index) => {
-          let orderValue = cursor[index];
-
-          if (model.rawAttributes[orderAttribute].type instanceof model.sequelize.constructor.DATE) {
-            orderValue = new Date(orderValue);
-          }
-
-          slicingWhere[orderAttribute] = {
-            [orderDirection === 'ASC' ? '$gte' : '$lte']: orderValue
-          };
-        });
-        if (options.where.$and) options.where.$and.push(slicingWhere);
-        else options.where = {$and: [options.where, slicingWhere]};
-      }
-      options.attributes = _.uniq(options.attributes);
-      return before(options, args, context, info);
-    },
-    after: async function (values, args, context, info) {
-      const {
-        source,
-      } = info;
-
-      var cursor = null;
-
-      if (args.after || args.before) {
-        cursor = fromCursor(args.after || args.before);
-      }
-
-      let edges = values.map((value, idx) => {
-        return resolveEdge(value, idx, cursor, args, source, info);
-      });
-
-      let hasNextPage = false;
-      let hasPreviousPage = false;
-      if (args.first || args.last) {
-        if (args.first) {
-          const count = parseInt(args.first, 10);
-          hasPreviousPage = edges.length && edges[0].cursor === args.after;
-          if (hasPreviousPage) edges.shift();
-          else edges.pop();
-          hasNextPage = edges.length > count;
-          if (hasNextPage) edges.pop();
-        } else if (args.last) {
-          const count = parseInt(args.last, 10);
-          hasNextPage = edges.length && edges[0].cursor === args.before;
-          if (hasNextPage) edges.shift();
-          else edges.pop();
-          hasPreviousPage = edges.length > count;
-          if (hasPreviousPage) edges.pop();
-        }
-      }
-
-      let firstEdge = edges[0];
-      let lastEdge = edges[edges.length - 1];
-
-      return after({
-        source,
-        args,
-        where: argsToWhere(args),
-        edges,
-        pageInfo: {
-          startCursor: firstEdge ? firstEdge.cursor : null,
-          endCursor: lastEdge ? lastEdge.cursor : null,
-          hasNextPage: hasNextPage,
-          hasPreviousPage: hasPreviousPage
-        },
+      return before({
+        ...info.options,
+        attributes: _.uniq([...info.options.attributes, ...options.attributes]),
       }, args, context, info);
-    }
+    },
+    after,
   });
 
   let resolver = async (source, args, context, info) => {
+    const {first, last} = args;
+    if (first < 0) throw new Error('first must be >= 0 if given');
+    if (last < 0) throw new Error('last must be >= 0 if given');
+
     const target = typeof targetMaybeThunk === 'function' && targetMaybeThunk.findAndCountAll === undefined ?
                    await Promise.resolve(targetMaybeThunk(source, args, context, info)) : targetMaybeThunk
         , model = target.target ? target.target : target;
+
+    const where = argsToWhere(args);
+    const $and = where.$and || (where.$and = []);
 
     let orderBy = args.orderBy ? args.orderBy :
                   orderByEnum ? [orderByEnum._values[0].value] :
@@ -312,24 +283,110 @@ export function sequelizeConnection({
       orderBy = [orderByEnum._nameLookup[args.orderBy].value];
     }
 
-    const order = getOrder(orderBy, {source, args, context, info})
-        , orderAttributes = order.map(([attribute]) => attribute);
+    const order = getOrder(orderBy, {source, args, context, info, model})
+        , attributes = order.map(([attribute]) => attribute);
 
-    info = {
+    // const fieldNodes = info.fieldASTs || info.fieldNodes;
+    // if (simplifyAST(fieldNodes[0], info).fields.edges) {
+      // search in main direction
+      // get query window from before/after
+      // limit = min(first, last) + 1
+    let limit;
+    if (first || last) limit = Math.min(first || Infinity, last || Infinity) + 1;
+
+    if (args.before) $and.push(getWindow({
+      model,
+      cursor: args.before,
+      order: reverseOrder(order),
+    }));
+    if (args.after) $and.push(getWindow({
+      model,
+      cursor: args.after,
+      order,
+    }));
+
+    const finalOrder = last ? reverseOrder(order) : order;
+
+    const nodes = await $resolver(source, args, context, {
       ...info,
       order,
-      orderAttributes,
-    };
+      orderAttributes: attributes,
+      options: {
+        attributes,
+        where,
+        order: finalOrder,
+        limit,
+      },
+    });
 
-    var fieldNodes = info.fieldASTs || info.fieldNodes;
-    if (simplifyAST(fieldNodes[0], info).fields.edges) {
-      return $resolver(source, args, context, info);
+    let hasNextPage = false;
+    let hasPreviousPage = false;
+
+    if (first) hasNextPage = nodes.length > first;
+    else if (args.before) {
+      const where = argsToWhere(args);
+      const $and = where.$and || (where.$and = []);
+      $and.push(getWindow({
+        model,
+        cursor: args.before,
+        order,
+        inclusive: true,
+      }));
+      const nextNodes = await $resolver(source, args, context, {
+        ...info,
+        order,
+        orderAttributes: attributes,
+        options: {
+          attributes,
+          where,
+          order,
+          limit: 1,
+        },
+      });
+      hasNextPage = nextNodes.length > 0;
     }
 
-    return after({
+    if (last) hasPreviousPage = nodes.length > last;
+    else if (args.after) {
+      const where = argsToWhere(args);
+      const $and = where.$and || (where.$and = []);
+      $and.push(getWindow({
+        model,
+        cursor: args.after,
+        order: reverseOrder(order),
+        inclusive: true,
+      }));
+      const prevNodes = await $resolver(source, args, context, {
+        ...info,
+        order,
+        orderAttributes: attributes,
+        options: {
+          attributes,
+          where,
+          order: reverseOrder(order),
+          limit: 1,
+        },
+      });
+      hasPreviousPage = prevNodes.length > 0;
+    }
+
+    const edges = nodes.slice(0, Math.min(first || Infinity, last || Infinity)).map(node => ({
+      node,
+      cursor: toCursor(node, attributes),
       source,
-      args,
-      where: argsToWhere(args)
+    }));
+
+    const firstEdge = edges[0];
+    const lastEdge = edges[edges.length - 1];
+
+    return after({
+      edges,
+      pageInfo: {
+        startCursor: firstEdge ? firstEdge.cursor : null,
+        endCursor: lastEdge ? lastEdge.cursor : null,
+        hasNextPage: hasNextPage,
+        hasPreviousPage: hasPreviousPage
+      },
     }, args, context, info);
   };
 
