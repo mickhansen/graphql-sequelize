@@ -256,6 +256,7 @@ export function sequelizeConnection({
     list: true,
     before: function (options, args, context, info) {
       return before({
+        ...options,
         ...info.options,
         attributes: _.uniq([...info.options.attributes, ...options.attributes]),
       }, args, context, info);
