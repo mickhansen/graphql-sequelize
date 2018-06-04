@@ -243,7 +243,7 @@ export function sequelizeConnection({
     return result;
   };
 
-  let resolveEdge = function (item, index, queriedCursor, args = {}, source, info) {
+  let resolveEdge = function (item, info, source) {
     return {
       cursor: toCursor(item, info.orderAttributes),
       node: item,
@@ -307,7 +307,7 @@ export function sequelizeConnection({
 
     const finalOrder = last ? reverseOrder(order) : order;
 
-    const nodes = await $resolver(source, args, context, {
+    const extendedInfo = {
       ...info,
       order,
       orderAttributes: attributes,
@@ -317,22 +317,22 @@ export function sequelizeConnection({
         order: finalOrder,
         limit,
       },
-    });
+    };
+    const nodes = await $resolver(source, args, context, extendedInfo);
 
     let hasNextPage = false;
     let hasPreviousPage = false;
 
-    if (first) hasNextPage = nodes.length > first;
-    else if (args.before) {
+    async function hasAnotherPage(cursor, order) {
       const where = argsToWhere(args);
       const $and = where.$and || (where.$and = []);
       $and.push(getWindow({
         model,
-        cursor: args.before,
+        cursor,
         order,
         inclusive: true,
       }));
-      const nextNodes = await $resolver(source, args, context, {
+      const otherNodes = await $resolver(source, args, context, {
         ...info,
         order,
         orderAttributes: attributes,
@@ -343,43 +343,24 @@ export function sequelizeConnection({
           limit: 1,
         },
       });
-      hasNextPage = nextNodes.length > 0;
+      return otherNodes.length > 0;      
     }
+
+    if (first) hasNextPage = nodes.length > first;
+    else if (args.before) hasNextPage = await hasAnotherPage(args.before, order);
 
     if (last) hasPreviousPage = nodes.length > last;
-    else if (args.after) {
-      const where = argsToWhere(args);
-      const $and = where.$and || (where.$and = []);
-      $and.push(getWindow({
-        model,
-        cursor: args.after,
-        order: reverseOrder(order),
-        inclusive: true,
-      }));
-      const prevNodes = await $resolver(source, args, context, {
-        ...info,
-        order,
-        orderAttributes: attributes,
-        options: {
-          attributes,
-          where,
-          order: reverseOrder(order),
-          limit: 1,
-        },
-      });
-      hasPreviousPage = prevNodes.length > 0;
-    }
+    else if (args.after) hasPreviousPage = await hasAnotherPage(args.after, reverseOrder(order));
 
-    const edges = nodes.slice(0, Math.min(first || Infinity, last || Infinity)).map(node => ({
-      node,
-      cursor: toCursor(node, attributes),
-      source,
-    }));
-
+    const edges = nodes.slice(0, Math.min(first || Infinity, last || Infinity)).map(node => resolveEdge(node, extendedInfo, source));
+     
     const firstEdge = edges[0];
     const lastEdge = edges[edges.length - 1];
 
     return after({
+      source,
+      args,
+      where: argsToWhere(args),
       edges,
       pageInfo: {
         startCursor: firstEdge ? firstEdge.cursor : null,
