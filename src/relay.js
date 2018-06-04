@@ -16,6 +16,7 @@ import {
 } from './base64.js';
 
 import _ from 'lodash';
+import simplifyAST from './simplifyAST';
 
 export class NodeTypeMapper {
   constructor() {
@@ -324,6 +325,9 @@ export function sequelizeConnection({
     let hasNextPage = false;
     let hasPreviousPage = false;
 
+    const fieldNodes = info.fieldASTs || info.fieldNodes;
+    const ast = simplifyAST(fieldNodes[0], info);
+
     async function hasAnotherPage(cursor, order) {
       const where = argsToWhere(args);
       const $and = where.$and || (where.$and = []);
@@ -344,17 +348,23 @@ export function sequelizeConnection({
           limit: 1,
         },
       });
-      return otherNodes.length > 0;      
+      return otherNodes.length > 0;
     }
 
     if (first) hasNextPage = nodes.length > first;
-    else if (args.before) hasNextPage = await hasAnotherPage(args.before, order);
+    else if (args.before && _.has(ast, ['fields', 'pageInfo', 'fields', 'hasNextPage'])) {
+      hasNextPage = await hasAnotherPage(args.before, order);
+    }
 
     if (last) hasPreviousPage = nodes.length > last;
-    else if (args.after) hasPreviousPage = await hasAnotherPage(args.after, reverseOrder(order));
+    else if (args.after && _.has(ast, ['fields', 'pageInfo', 'fields', 'hasPreviousPage'])) {
+      hasPreviousPage = await hasAnotherPage(args.after, reverseOrder(order));
+    }
 
-    const edges = nodes.slice(0, Math.min(first || Infinity, last || Infinity)).map(node => resolveEdge(node, extendedInfo, source));
-     
+    const edges = nodes.slice(0, Math.min(first || Infinity, last || Infinity)).map(
+      node => resolveEdge(node, extendedInfo, source)
+    );
+
     const firstEdge = edges[0];
     const lastEdge = edges[edges.length - 1];
 

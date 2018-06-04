@@ -124,15 +124,15 @@ describe('relay', function () {
         before: (options) => {
           if (options.order && options.order[0][0] === 'updatedAt') {
             if (sequelize.dialect.name === 'postgres') {
-              options.order = Sequelize.literal(`
+              options.order[0][0] = Sequelize.literal(`
                 CASE
                   WHEN completed = true THEN "createdAt"
-                  ELSE "otherDate" End ASC`);
+                  ELSE "otherDate" End`);
             } else {
-              options.order = Sequelize.literal(`
+              options.order[0][0] = Sequelize.literal(`
                 CASE
                   WHEN completed = true THEN \`createdAt\`
-                  ELSE \`otherDate\` End ASC`);
+                  ELSE \`otherDate\` End`);
             }
           }
           return options;
