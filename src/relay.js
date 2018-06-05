@@ -221,7 +221,7 @@ export function sequelizeConnection({
   before = before || ((options) => options);
   after = after || ((result) => result);
 
-  let $connectionArgs = {
+  const $connectionArgs = {
     ...connectionArgs
   };
 
@@ -231,7 +231,7 @@ export function sequelizeConnection({
     };
   }
 
-  let argsToWhere = function (args) {
+  const argsToWhere = function (args) {
     let result = {};
 
     if (where === undefined) return result;
@@ -244,7 +244,7 @@ export function sequelizeConnection({
     return result;
   };
 
-  let resolveEdge = function (item, info, source) {
+  const resolveEdge = function (item, info, source) {
     return {
       cursor: toCursor(item, info.orderAttributes),
       node: item,
@@ -252,20 +252,20 @@ export function sequelizeConnection({
     };
   };
 
-  let $resolver = require('./resolver')(targetMaybeThunk, {
+  const $resolver = require('./resolver')(targetMaybeThunk, {
     handleConnection: false,
     list: true,
     before: function (options, args, context, info) {
       return before({
         ...options,
         ...info.options,
-        attributes: _.uniq([...info.options.attributes, ...options.attributes]),
+        attributes: _.uniq([...info.orderAttributes, ...options.attributes]),
       }, args, context, info);
     },
     after,
   });
 
-  let resolver = async (source, args, context, info) => {
+  const resolver = async (source, args, context, info) => {
     const {first, last} = args;
     if (first < 0) throw new Error('first must be >= 0 if given');
     if (last < 0) throw new Error('last must be >= 0 if given');
@@ -286,13 +286,8 @@ export function sequelizeConnection({
     }
 
     const order = getOrder(orderBy, {source, args, context, info, model})
-        , attributes = order.map(([attribute]) => attribute);
+        , orderAttributes = order.map(([attribute]) => attribute);
 
-    // const fieldNodes = info.fieldASTs || info.fieldNodes;
-    // if (simplifyAST(fieldNodes[0], info).fields.edges) {
-      // search in main direction
-      // get query window from before/after
-      // limit = min(first, last) + 1
     let limit;
     if (first || last) limit = Math.min(first || Infinity, last || Infinity) + 1;
 
@@ -312,9 +307,8 @@ export function sequelizeConnection({
     const extendedInfo = {
       ...info,
       order,
-      orderAttributes: attributes,
+      orderAttributes,
       options: {
-        attributes,
         where,
         order: finalOrder,
         limit,
@@ -340,9 +334,8 @@ export function sequelizeConnection({
       const otherNodes = await $resolver(source, args, context, {
         ...info,
         order,
-        orderAttributes: attributes,
+        orderAttributes,
         options: {
-          attributes,
           where,
           order,
           limit: 1,
