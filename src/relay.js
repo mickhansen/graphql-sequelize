@@ -132,12 +132,12 @@ function reverseOrder(order) {
 
 /**
  * Creates a cursor given a item returned from the Database
- * @param  {Object}   item            sequelize model instance
- * @param  {String[]} orerAttributes  the attributes pertaining in ordering
+ * @param  {Object}   node            sequelize model instance
+ * @param  {String[]} orderAttributes  the attributes pertaining in ordering
  * @return {String}                   The Base64 encoded cursor string
  */
-function toCursor(item, orderAttributes) {
-  return base64(JSON.stringify(orderAttributes.map(attr => item.get(attr))));
+function toCursor(node, orderAttributes) {
+  return base64(JSON.stringify(orderAttributes.map(attr => node.get(attr))));
 }
 
 /**
@@ -244,10 +244,10 @@ export function sequelizeConnection({
     return result;
   };
 
-  const resolveEdge = function (item, info, source) {
+  const resolveEdge = function (node, info, source) {
     return {
-      cursor: toCursor(item, info.orderAttributes),
-      node: item,
+      cursor: toCursor(node, info.orderAttributes),
+      node,
       source: source
     };
   };
