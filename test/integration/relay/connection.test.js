@@ -108,6 +108,7 @@ describe('relay', function () {
       });
 
       this.userTaskConnectionFieldSpy = sinon.spy();
+      const {QueryGenerator} = sequelize.dialect
       this.userTaskConnection = sequelizeConnection({
         name: 'userTask',
         nodeType: this.taskType,
@@ -118,15 +119,10 @@ describe('relay', function () {
             ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
             LATEST: {value: ['createdAt', 'DESC']},
             CUSTOM: {value: [
-              Sequelize.literal(sequelize.dialect.name === 'postgres'
-                ? `
+              Sequelize.literal(`
                 CASE
-                  WHEN completed = true THEN "createdAt"
-                  ELSE "otherDate" End`
-                : `
-                CASE
-                  WHEN completed = true THEN \`createdAt\`
-                  ELSE \`otherDate\` End`
+                  WHEN completed = true THEN ${QueryGenerator.quoteIdentifier('createdAt')}
+                  ELSE ${QueryGenerator.quoteIdentifier('otherDate')} End`
               ),
               'DESC',
             ]},
