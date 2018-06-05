@@ -68,10 +68,6 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof FLOAT ||
       sequelizeType instanceof DOUBLE) return GraphQLFloat;
 
-  if (sequelizeType instanceof INTEGER) {
-    return GraphQLInt;
-  }
-
   if (sequelizeType instanceof CHAR ||
       sequelizeType instanceof STRING ||
       sequelizeType instanceof TEXT ||
@@ -82,6 +78,10 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
       sequelizeType instanceof BIGINT ||
       sequelizeType instanceof DECIMAL) {
     return GraphQLString;
+  }
+
+  if (sequelizeType instanceof INTEGER) {
+    return GraphQLInt;
   }
 
   if (sequelizeType instanceof ARRAY) {

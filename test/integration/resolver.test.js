@@ -1170,6 +1170,44 @@ describe('resolver', function () {
 
       expect(result.data.users[0].id).to.equal(2);
       expect(result.data.users.length).to.equal(1);
+      });
+  });
+
+  it('should allow list queries set as NonNullable', function () { 
+    var user = this.userA
+      , schema;
+
+    schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: 'RootQueryType',
+        fields: {
+          users: {
+            type: new GraphQLNonNull(new GraphQLList(userType)),
+            resolve: resolver(User, {
+              before: function (options, args, { name }) {
+                options.where = options.where || {};
+                options.where.name = name;
+                return options;
+              }
+            })
+          }
+        }
+      })
     });
+
+    return graphql(schema, `
+      {
+        users {
+          name
+        }
+      }
+    `, null, {
+        name: user.name
+      }).then(function (result) {
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        expect(result.data.users).to.have.length(1);
+        expect(result.data.users[0].name).to.equal(user.name);
+      });
   });
 });

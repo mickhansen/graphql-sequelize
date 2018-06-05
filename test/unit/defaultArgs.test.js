@@ -42,7 +42,7 @@ describe('defaultArgs', function () {
     expect(args.modelId.type).to.equal(GraphQLString);
   });
 
-  it('should return a key for a string primary key', function () {
+  it('should return a key for a UUID primary key', function () {
     var Model
       , args;
 
@@ -56,6 +56,27 @@ describe('defaultArgs', function () {
     args = defaultArgs(Model);
 
     expect(args.uuid.type).to.equal(GraphQLString);
+  });
+
+  it('should return multiple keys for a compound primary key', function () {
+    var Model
+      , args;
+
+    Model = sequelize.define('UserHistory', {
+      userId: {
+        type: Sequelize.INTEGER,
+        primaryKey: true,
+      },
+      timestamp: {
+        type: Sequelize.DATE,
+        primaryKey: true,
+      },
+    });
+
+    args = defaultArgs(Model);
+
+    expect(args.userId.type).to.equal(GraphQLInt);
+    expect(args.timestamp.type).to.equal(GraphQLString);
   });
 
   describe('will have an "where" argument', function () {
