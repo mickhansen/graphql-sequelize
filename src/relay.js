@@ -18,6 +18,12 @@ import {
 import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 
+import {Model} from 'sequelize';
+
+function getModelOfInstance(instance) {
+  return instance instanceof Model ? instance.constructor : instance.Model;
+}
+
 export class NodeTypeMapper {
   constructor() {
     this.map = { };
@@ -131,13 +137,26 @@ function reverseOrder(order) {
 
 
 /**
- * Creates a cursor given a item returned from the Database
+ * Creates a cursor given a node returned from the Database
  * @param  {Object}   node            sequelize model instance
  * @param  {String[]} orderAttributes  the attributes pertaining in ordering
  * @return {String}                   The Base64 encoded cursor string
  */
-function toCursor(node, orderAttributes) {
-  return base64(JSON.stringify(orderAttributes.map(attr => node.get(attr))));
+function toCursor(node, info) {
+  return base64(JSON.stringify(info.orderAttributes.map(attr => node.get(attr))));
+}
+
+/**
+ * Creates a cursor given a node returned from the Database
+ * (in the case that an offset had to be used instead of a window)
+ * @param  {Object}   node            sequelize model instance
+ * @param  {String[]} orderAttributes  the attributes pertaining in ordering
+ * @return {String}                   The Base64 encoded cursor string
+ */
+function toOffsetCursor(node, index) {
+  const {primaryKeyAttribute} = getModelOfInstance(node);
+  const id = typeof primaryKeyAttribute === 'string' ? node.get(primaryKeyAttribute) : null;
+  return base64(JSON.stringify([id, index]));
 }
 
 /**
@@ -244,11 +263,27 @@ export function sequelizeConnection({
     return result;
   };
 
-  const resolveEdge = function (node, info, source) {
+  const resolveEdge = function (node, index, queriedCursor, info, source) {
+    if (info.mustUseOffset) {
+      let startIndex = null;
+      if (queriedCursor) startIndex = Number(queriedCursor[1]);
+      if (startIndex !== null) {
+        startIndex++;
+      } else {
+        startIndex = 0;
+      }
+
+      return {
+        cursor: toOffsetCursor(node, index + startIndex),
+        node,
+        source,
+      };
+    }
+
     return {
-      cursor: toCursor(node, info.orderAttributes),
+      cursor: toCursor(node, info),
       node,
-      source: source
+      source,
     };
   };
 
@@ -286,21 +321,32 @@ export function sequelizeConnection({
     }
 
     const order = getOrder(orderBy, {source, args, context, info, model})
-        , orderAttributes = order.map(([attribute]) => attribute);
+        , orderAttributes = order.map(([attribute]) => attribute).filter(attribute => typeof attribute === 'string');
 
     let limit;
     if (first || last) limit = Math.min(first || Infinity, last || Infinity) + 1;
 
-    if (args.before) $and.push(getWindow({
-      model,
-      cursor: args.before,
-      order: reverseOrder(order),
-    }));
-    if (args.after) $and.push(getWindow({
-      model,
-      cursor: args.after,
-      order,
-    }));
+    let offset;
+    const mustUseOffset = _.some(order, ([attribute]) => typeof attribute !== 'string');
+    if (mustUseOffset) {
+      offset = 0;
+      if (args.after || args.before) {
+        const cursor = fromCursor(args.after || args.before);
+        const startIndex = Number(cursor[1]);
+        if (startIndex >= 0) offset = startIndex + 1;
+      }
+    } else {
+      if (args.before) $and.push(getWindow({
+        model,
+        cursor: args.before,
+        order: reverseOrder(order),
+      }));
+      if (args.after) $and.push(getWindow({
+        model,
+        cursor: args.after,
+        order,
+      }));
+    }
 
     const finalOrder = last ? reverseOrder(order) : order;
 
@@ -308,10 +354,12 @@ export function sequelizeConnection({
       ...info,
       order,
       orderAttributes,
+      mustUseOffset,
       options: {
         where,
         order: finalOrder,
         limit,
+        offset, // may be null
       },
     };
     const nodes = await $resolver(source, args, context, extendedInfo);
@@ -319,10 +367,9 @@ export function sequelizeConnection({
     let hasNextPage = false;
     let hasPreviousPage = false;
 
-    const fieldNodes = info.fieldASTs || info.fieldNodes;
-    const ast = simplifyAST(fieldNodes[0], info);
-
     async function hasAnotherPage(cursor, order) {
+      if (mustUseOffset) return offset > 0;
+
       const where = argsToWhere(args);
       const $and = where.$and || (where.$and = []);
       $and.push(getWindow({
@@ -344,18 +391,29 @@ export function sequelizeConnection({
       return otherNodes.length > 0;
     }
 
+    const fieldNodes = info.fieldASTs || info.fieldNodes;
+    const ast = simplifyAST(fieldNodes[0], info);
+    const hasNextPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasNextPage']);
+    const hasPreviousPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasPreviousPage']);
+
     if (first) hasNextPage = nodes.length > first;
-    else if (args.before && _.has(ast, ['fields', 'pageInfo', 'fields', 'hasNextPage'])) {
+    else if (args.before && hasNextPageRequested) {
       hasNextPage = await hasAnotherPage(args.before, order);
     }
 
     if (last) hasPreviousPage = nodes.length > last;
-    else if (args.after && _.has(ast, ['fields', 'pageInfo', 'fields', 'hasPreviousPage'])) {
+    else if (args.after && hasPreviousPageRequested) {
       hasPreviousPage = await hasAnotherPage(args.after, reverseOrder(order));
     }
 
+    let queriedCursor = null;
+
+    if (args.after || args.before) {
+      queriedCursor = fromCursor(args.after || args.before);
+    }
+
     const edges = nodes.slice(0, Math.min(first || Infinity, last || Infinity)).map(
-      node => resolveEdge(node, extendedInfo, source)
+      (node, index) => resolveEdge(node, index, queriedCursor, extendedInfo, source)
     );
 
     const firstEdge = edges[0];
@@ -372,7 +430,7 @@ export function sequelizeConnection({
         hasNextPage: hasNextPage,
         hasPreviousPage: hasPreviousPage
       },
-    }, args, context, info);
+    }, args, context, extendedInfo);
   };
 
   return {

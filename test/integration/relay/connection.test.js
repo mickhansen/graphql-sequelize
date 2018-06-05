@@ -117,26 +117,22 @@ describe('relay', function () {
           values: {
             ID: {value: [this.Task.primaryKeyAttribute, 'ASC']},
             LATEST: {value: ['createdAt', 'DESC']},
-            CUSTOM: {value: ['updatedAt', 'DESC']},
+            CUSTOM: {value: [
+              Sequelize.literal(sequelize.dialect.name === 'postgres'
+                ? `
+                CASE
+                  WHEN completed = true THEN "createdAt"
+                  ELSE "otherDate" End`
+                : `
+                CASE
+                  WHEN completed = true THEN \`createdAt\`
+                  ELSE \`otherDate\` End`
+              ),
+              'DESC',
+            ]},
             NAME: {value: ['name', 'ASC']}
           }
         }),
-        before: (options) => {
-          if (options.order && options.order[0][0] === 'updatedAt') {
-            if (sequelize.dialect.name === 'postgres') {
-              options.order[0][0] = Sequelize.literal(`
-                CASE
-                  WHEN completed = true THEN "createdAt"
-                  ELSE "otherDate" End`);
-            } else {
-              options.order[0][0] = Sequelize.literal(`
-                CASE
-                  WHEN completed = true THEN \`createdAt\`
-                  ELSE \`otherDate\` End`);
-            }
-          }
-          return options;
-        },
         connectionFields: () => ({
           totalCount: {
             type: GraphQLInt,
