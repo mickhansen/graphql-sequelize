@@ -125,7 +125,6 @@ describe('relay', function () {
 
       expect(this.afterSpy).to.have.been.calledWithMatch(
         sinon.match({
-          fullCount: sinon.match.number
         }),
         sinon.match({
           first: sinon.match.any
