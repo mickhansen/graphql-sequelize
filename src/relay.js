@@ -305,6 +305,16 @@ export function sequelizeConnection({
     if (first < 0) throw new Error('first must be >= 0 if given');
     if (last < 0) throw new Error('last must be >= 0 if given');
 
+    const fieldNodes = info.fieldASTs || info.fieldNodes;
+    const ast = simplifyAST(fieldNodes[0], info);
+    if (!ast.fields.edges) {
+      return after({
+        source,
+        args,
+        where: argsToWhere(args)
+      }, args, context, info);
+    }
+
     const target = typeof targetMaybeThunk === 'function' && targetMaybeThunk.findAndCountAll === undefined ?
                    await Promise.resolve(targetMaybeThunk(source, args, context, info)) : targetMaybeThunk
         , model = target.target ? target.target : target;
@@ -391,8 +401,6 @@ export function sequelizeConnection({
       return otherNodes.length > 0;
     }
 
-    const fieldNodes = info.fieldASTs || info.fieldNodes;
-    const ast = simplifyAST(fieldNodes[0], info);
     const hasNextPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasNextPage']);
     const hasPreviousPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasPreviousPage']);
 
