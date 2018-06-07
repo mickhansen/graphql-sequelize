@@ -168,6 +168,22 @@ function fromCursor(cursor) {
   return JSON.parse(unbase64(cursor));
 }
 
+const dialectsThatSupportTupleComparison = {
+  mysql: true,
+  postgres: true,
+  sqlite: true,
+};
+
+function tupleComparison(model, attributes, inequality, values) {
+  const {sequelize, QueryGenerator} = model;
+  const attributesStr = attributes.map(attribute => QueryGenerator.quoteIdentifier(attribute)).join(', ');
+  const escapeOptions = {context: 'SELECT'};
+  const valuesStr = attributes.map((attribute, i) =>
+    QueryGenerator.escape(values[i], model.attributes[attribute], escapeOptions)
+  ).join(', ');
+  return sequelize.literal(`(${attributesStr}) ${inequality} (${valuesStr})`);
+}
+
 function getWindow({model, cursor, order, inclusive}) {
   const values = fromCursor(cursor);
   order.forEach(([orderAttribute], index) => {
@@ -175,6 +191,17 @@ function getWindow({model, cursor, order, inclusive}) {
       values[index] = new Date(values[index]);
     }
   });
+
+  const {sequelize} = model;
+  const allAscending = _.every(order, item => item[1].indexOf('ASC') >= 0);
+  const allDescending = _.every(order, item => item[1].indexOf('DESC') >= 0);
+
+  if ((allAscending || allDescending) && dialectsThatSupportTupleComparison[sequelize.getDialect()]) {
+    let inequality = allAscending ? '>' : '<';
+    if (inclusive) inequality += '=';
+    const attributes = order.map(([attribute]) => attribute);
+    return tupleComparison(model, attributes, inequality, values);
+  }
 
   // given ORDER BY A ASC, B DESC, C ASC, the following code would create this logic:
   // A > cursorValues[A] OR
