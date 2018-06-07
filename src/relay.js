@@ -175,45 +175,30 @@ function getWindow({model, cursor, order, inclusive}) {
       values[index] = new Date(values[index]);
     }
   });
-  const $or = [];
-  const window = {$or};
-
-  if (inclusive) {
-    // include any rows with all values equal to the cursor
-    const isEqualToCursor = {};
-    values.forEach((value, i) => {
-      const [attr] = order[i];
-      isEqualToCursor[attr] = value;
-    });
-    $or.push(isEqualToCursor);
-  }
-
-  // include any rows that are beyond the cursor
 
   // given ORDER BY A ASC, B DESC, C ASC, the following code would create this logic:
-  // (A > cursorValues[A]) OR
-  // (A = cursorValues[A] AND B < cursorValues[B]) OR
-  // (A = cursorValues[A] AND B = cursorValues[B] AND C > cursorValues[C])
+  // A > cursorValues[A] OR
+  // (A = cursorValues[A] AND (
+  //   B < cursorValues[B] OR (
+  //     B = cursorValues[B] AND C > cursorValues[C]
+  //   )
+  // )
 
-  for (let inequalAttrIndex = 0; inequalAttrIndex < order.length; inequalAttrIndex++) {
-    const isBeyondCursor = {};
-    for (let equalAttrIndex = 0; equalAttrIndex < inequalAttrIndex; equalAttrIndex++) {
-      const [attr] = order[equalAttrIndex];
-      const value = values[equalAttrIndex];
-      isBeyondCursor[attr] = value;
+  function buildInequality(index) {
+    const [attr, direction] = order[index];
+    const value = values[index];
+    let inequality = direction.indexOf('ASC') >= 0 ? '$gt' : '$lt';
+    if (index === order.length - 1) {
+      if (inclusive) inequality += 'e';
+      return {[attr]: {[inequality]: value}};
     }
-
-    const [attr, direction] = order[inequalAttrIndex];
-    const value = values[inequalAttrIndex];
-    if (direction.indexOf('ASC') >= 0) {
-      isBeyondCursor[attr] = {$gt: value};
-    } else {
-      isBeyondCursor[attr] = {$lt: value};
-    }
-    $or.push(isBeyondCursor);
+    return {$or: [
+      {[attr]: {[inequality]: value}},
+      {[attr]: value, ...buildInequality(index + 1)},
+    ]};
   }
 
-  return window;
+  return buildInequality(0);
 }
 
 export function sequelizeConnection({
