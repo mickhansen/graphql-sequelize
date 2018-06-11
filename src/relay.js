@@ -435,6 +435,7 @@ export function sequelizeConnection({
     const edges = nodes.slice(0, Math.min(first || Infinity, last || Infinity)).map(
       (node, index) => resolveEdge(node, index, queriedCursor, extendedInfo, source)
     );
+    if (last) edges.reverse()
 
     const firstEdge = edges[0];
     const lastEdge = edges[edges.length - 1];

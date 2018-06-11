@@ -937,7 +937,7 @@ describe('relay', function () {
                 pageInfo {
                   hasNextPage
                   hasPreviousPage
-                  endCursor
+                  startCursor
                 }
               }
             }
@@ -950,15 +950,98 @@ describe('relay', function () {
       expect(firstResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
       expect(firstResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
 
-      let nextResult = await query(firstResult.data.user.tasks.pageInfo.endCursor);
+      let nextResult = await query(firstResult.data.user.tasks.pageInfo.startCursor);
       verify(nextResult, nextThree);
       expect(nextResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
       expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
 
-      let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor);
+      let lastResult = await query(nextResult.data.user.tasks.edges[0].cursor);
       verify(lastResult, lastThree);
       expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
       expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
+    });
+
+    it('should support paging forward and backward', async function () {
+      let oldestThree = this.userA.tasks.slice(0, 3).reverse();
+      let middleThree = this.userA.tasks.slice(3, 6).reverse();
+      let newestThree = this.userA.tasks.slice(6, 9).reverse();
+
+      expect(oldestThree.length).to.equal(3);
+      expect(middleThree.length).to.equal(3);
+      expect(newestThree.length).to.equal(3);
+
+      let verify = function (result, expectedTasks) {
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        var resultTasks = result.data.user.tasks.edges.map(function (edge) {
+          return edge.node;
+        });
+
+        let resultIds = resultTasks.map((task) => {
+          return parseInt(fromGlobalId(task.id).id, 10);
+        }).sort();
+
+        let expectedIds = expectedTasks.map(function (task) {
+          return task.get('id');
+        }).sort();
+
+        expect(resultTasks.length).to.equal(3);
+        expect(resultIds).to.deep.equal(expectedIds);
+      };
+
+      let query = (variables = {}) => {
+        return graphql(this.schema, `
+          query ($first: Int, $before: String, $last: Int, $after: String) {
+            user(id: ${this.userA.id}) {
+              tasks(first: $first, before: $before, last: $last, after: $after, orderBy: LATEST) {
+                edges {
+                  cursor
+                  node {
+                    id
+                    name
+                  }
+                }
+                pageInfo {
+                  hasNextPage
+                  hasPreviousPage
+                  startCursor
+                  endCursor
+                }
+              }
+            }
+          }
+        `, null, {}, variables);
+      };
+
+      let result;
+      result = await query({first: 3});
+      verify(result, newestThree);
+      expect(result.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+      expect(result.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
+
+      // go to next page
+      result = await query({first: 3, after: result.data.user.tasks.pageInfo.endCursor});
+      verify(result, middleThree);
+      expect(result.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+      expect(result.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+
+      // go to next page
+      result = await query({first: 3, after: result.data.user.tasks.edges[2].cursor});
+      verify(result, oldestThree);
+      expect(result.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+      expect(result.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+
+      // go to previous page
+      result = await query({last: 3, before: result.data.user.tasks.pageInfo.startCursor});
+      verify(result, middleThree);
+      expect(result.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+      expect(result.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+
+      // go to previous page
+      result = await query({last: 3, before: result.data.user.tasks.edges[0].cursor});
+      verify(result, newestThree);
+      expect(result.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+      expect(result.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
     });
 
     it('should support fetching the next element although it has the same orderValue', async function () {
