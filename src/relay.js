@@ -401,4 +401,4 @@ export function createConnection({
   };
 }
 
-export {createConnection as sequelizeConnection}
+export {createConnection as sequelizeConnection};
