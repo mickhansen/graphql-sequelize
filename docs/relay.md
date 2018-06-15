@@ -9,7 +9,7 @@ If you wish to use non-sequelize entities, or if you want to override the defaul
 behaviour for sequelize models, you can specify a resolve function.
 
 ```js
-import {relay: {sequelizeNodeInterface}} from 'graphql-sequelize';
+import {createNodeInterface} from 'graphql-sequelize';
 import sequelize from './your-sequelize-instance';
 
 const {
@@ -20,7 +20,7 @@ const {
   nodeInterface,
   nodeField,
   nodeTypeMapper
-} = sequelizeNodeInterface(sequelize);
+} = createNodeInterface(sequelize);
 
 const userType = new GraphQLObjectType({
   name: User.name,
@@ -70,10 +70,10 @@ You can also add any non-model mapping you'd like to `mapTypes'.
 
 ## connections
 
-graphql-sequelize's sequelizeConnection will automatically handle pagination via cursors, first, last, before, after and orderBy.
+graphql-sequelize's createConnection will automatically handle pagination via cursors, first, last, before, after and orderBy.
 
 ```js
-import {relay: {sequelizeConnection}} from 'graphql-sequelize';
+import {createConnection} from 'graphql-sequelize';
 import sequelize from './your-sequelize-instance';
 
 const {
@@ -92,7 +92,7 @@ const taskType = new GraphQLObjectType({
   }
 });
 
-const userTaskConnection = sequelizeConnection({
+const userTaskConnection = createConnection({
   name: 'userTask',
   nodeType: taskType,
   target: User.Tasks | Task, // Can be an association for parent related connections or a model for "anonymous" connections
@@ -178,10 +178,10 @@ fragment getCreated on userTaskEdge {
 
 You can pass custom args in your connection definition and they will
 automaticly be turned into where arguments. These can be further modified
-using the `where` option in `sequelizeConnection`.
+using the `where` option in `createConnection`.
 
 ```js
-const userTaskConnection = sequelizeConnection({
+const userTaskConnection = createConnection({
   name: 'userTask',
   nodeType: taskType,
   target: User.Tasks,
