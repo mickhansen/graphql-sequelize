@@ -172,7 +172,7 @@ export function createConnectionResolver({
     return result;
   };
 
-  let resolveEdge = function (item, index, queriedCursor, args = {}, source) {
+  let resolveEdge = function (item, index, queriedCursor, sourceArgs = {}, source) {
     let startIndex = null;
     if (queriedCursor) startIndex = Number(queriedCursor.index);
     if (startIndex !== null) {
@@ -184,7 +184,8 @@ export function createConnectionResolver({
     return {
       cursor: toCursor(item, index + startIndex),
       node: item,
-      source: source
+      source: source,
+      sourceArgs: args
     };
   };
 
