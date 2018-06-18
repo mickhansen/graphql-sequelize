@@ -185,7 +185,7 @@ export function createConnectionResolver({
       cursor: toCursor(item, index + startIndex),
       node: item,
       source: source,
-      sourceArgs: args
+      sourceArgs
     };
   };
 
