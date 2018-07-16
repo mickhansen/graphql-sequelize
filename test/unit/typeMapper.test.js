@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { mapType, toGraphQL } from '../../src/typeMapper';
 import JSONType from '../../src/types/jsonType';
+import DateType from '../../src/types/dateType';
 
 import Sequelize from 'sequelize';
 
@@ -87,14 +88,14 @@ describe('typeMapper', () => {
   });
 
   describe('DATE', function () {
-    it('should map to GraphQLString', function () {
-      expect(toGraphQL(new DATE(), Sequelize)).to.equal(GraphQLString);
+    it('should map to DateType', function () {
+      expect(toGraphQL(new DATE(), Sequelize)).to.equal(DateType);
     });
   });
 
   describe('DATEONLY', function () {
-    it('should map to GraphQLString', function () {
-      expect(toGraphQL(new DATEONLY(), Sequelize)).to.equal(GraphQLString);
+    it('should map to DateType', function () {
+      expect(toGraphQL(new DATEONLY(), Sequelize)).to.equal(DateType);
     });
   });
 
