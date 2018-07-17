@@ -94,7 +94,7 @@ describe('typeMapper', () => {
   });
 
   describe('DATEONLY', function () {
-    it('should map to DateType', function () {
+    it('should map to GraphQLString', function () {
       expect(toGraphQL(new DATEONLY(), Sequelize)).to.equal(GraphQLString);
     });
   });
