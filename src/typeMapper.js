@@ -1,11 +1,13 @@
 import {
-   GraphQLInt,
-   GraphQLString,
-   GraphQLBoolean,
-   GraphQLFloat,
-   GraphQLEnumType,
-   GraphQLList
- } from 'graphql';
+  GraphQLInt,
+  GraphQLString,
+  GraphQLBoolean,
+  GraphQLFloat,
+  GraphQLEnumType,
+  GraphQLList,
+} from 'graphql';
+
+import DateType from './types/dateType';
 import JSONType from './types/jsonType';
 import _ from 'lodash';
 
@@ -17,7 +19,6 @@ let customTypeMapper;
 export function mapType(mapFunc) {
   customTypeMapper = mapFunc;
 }
-
 
 /**
  * Checks the type of the sequelize data type and
@@ -68,11 +69,14 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof FLOAT ||
       sequelizeType instanceof DOUBLE) return GraphQLFloat;
 
+  if (sequelizeType instanceof DATE) {
+    return DateType;
+  }
+
   if (sequelizeType instanceof CHAR ||
       sequelizeType instanceof STRING ||
       sequelizeType instanceof TEXT ||
       sequelizeType instanceof UUID ||
-      sequelizeType instanceof DATE ||
       sequelizeType instanceof DATEONLY ||
       sequelizeType instanceof TIME ||
       sequelizeType instanceof BIGINT ||

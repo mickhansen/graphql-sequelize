@@ -12,4 +12,5 @@ module.exports = {
   createConnectionResolver: require('./relay').createConnectionResolver,
   createNodeInterface: require('./relay').createNodeInterface,
   JSONType: require('./types/jsonType'),
+  DateType: require('./types/DateType'),
 };
