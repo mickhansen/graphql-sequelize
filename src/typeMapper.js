@@ -69,8 +69,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof FLOAT ||
       sequelizeType instanceof DOUBLE) return GraphQLFloat;
 
-  if (sequelizeType instanceof DATE ||
-      sequelizeType instanceof DATEONLY) {
+  if (sequelizeType instanceof DATE) {
     return DateType;
   }
 
@@ -78,6 +77,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
       sequelizeType instanceof STRING ||
       sequelizeType instanceof TEXT ||
       sequelizeType instanceof UUID ||
+      sequelizeType instanceof DATEONLY ||
       sequelizeType instanceof TIME ||
       sequelizeType instanceof BIGINT ||
       sequelizeType instanceof DECIMAL) {

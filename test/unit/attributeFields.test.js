@@ -122,7 +122,7 @@ describe('attributeFields', function () {
 
     expect(fields.time.type).to.equal(GraphQLString);
 
-    expect(fields.dateonly.type).to.equal(DateType);
+    expect(fields.dateonly.type).to.equal(GraphQLString);
   });
 
   it('should be possible to rename fields with a object map',function () {
