@@ -53,9 +53,6 @@ resolver(SequelizeModel, {
   // Whether or not relay connections should be handled. Defaults to `true`.
   handleConnection: true,
 
-  // Whether or not Sequelize should be shimmed to use Dataloader. Disable by setting this value to boolean false.
-  dataLoader: false,
-
   /**
    * Manipulate the query before it's sent to Sequelize.
    * @param findOptions {object} - Options sent to Seqeulize model's find function
