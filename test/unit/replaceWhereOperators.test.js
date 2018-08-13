@@ -102,4 +102,35 @@ describe('replaceWhereOperators', () => {
     }
     expect(replaceWhereOperators(before)).to.deep.equal(after);
   });
+
+  it('should not mutate argument', () => {
+    const before = {
+      prop1: {gt: 12},
+      prop2: {or: [{eq: 3}, {eq: 4}]}
+    };
+    function proxify(target) {
+      return new Proxy(target, {
+        get(target, prop) {
+          const value = target[prop];
+          return typeof value === 'object' ? proxify(value) : value;
+        },
+        set(target, prop, value) {
+          expect.fail('It tryes to change argument');
+        }
+      });
+    }
+    let after;
+    if (seqMajVer <= 3) {
+      after = {
+        prop1: {$gt: 12},
+        prop2: {$or: [{$eq: 3}, {$eq: 4}]}
+      };
+    } else {
+      after = {
+        prop1: {[Sequelize.Op.gt]: 12},
+        prop2: {[Sequelize.Op.or]: [{[Sequelize.Op.eq]: 3}, {[Sequelize.Op.eq]: 4}]}
+      }
+    }
+    expect(replaceWhereOperators(proxify(before))).to.deep.equal(after);
+  });
 });
