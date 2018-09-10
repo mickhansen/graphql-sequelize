@@ -6,18 +6,19 @@ export const sequelize = createSequelize();
 export function createSequelize(options = {}) {
   const env = process.env;
   const dialect = env.DIALECT || 'sqlite';
+  const defaults = {
+    host: 'localhost',
+    user: 'graphql_sequelize_test',
+    password: 'graphql_sequelize_test',
+    database: 'graphql_sequelize_test'
+  };
   const config = Object.assign(
-    {
-      host: 'localhost',
-      user: 'graphql_sequelize_test',
-      password: 'graphql_sequelize_test',
-      database: 'graphql_sequelize_test'
-    },
+    defaults,
     dialect === 'postgres' && {
-      host: env.POSTGRES_PORT_5432_TCP_ADDR,
-      user: env.POSTGRES_ENV_POSTGRES_USER,
-      password: env.POSTGRES_ENV_POSTGRES_PASSWORD,
-      database: env.POSTGRES_ENV_POSTGRES_DATABASE
+      host: env.POSTGRES_PORT_5432_TCP_ADDR || defaults.host,
+      user: env.POSTGRES_ENV_POSTGRES_USER || defaults.user,
+      password: env.POSTGRES_ENV_POSTGRES_PASSWORD || defaults.password,
+      database: env.POSTGRES_ENV_POSTGRES_DATABASE || defaults.database
     },
     dialect === 'mysql' && {
       host: env.MYSQL_PORT_3306_TCP_ADDR,

@@ -384,7 +384,7 @@ export function sequelizeConnection({
         offset, // may be null
       },
     };
-    const nodes = await $resolver(source, args, context, extendedInfo);
+    const nodesPromise = $resolver(source, args, context, extendedInfo);
 
     let hasNextPage = false;
     let hasPreviousPage = false;
@@ -416,12 +416,12 @@ export function sequelizeConnection({
     const hasNextPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasNextPage']);
     const hasPreviousPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasPreviousPage']);
 
-    if (first) hasNextPage = nodes.length > first;
+    if (first) hasNextPage = (await nodesPromise).length > first;
     else if (args.before && hasNextPageRequested) {
       hasNextPage = await hasAnotherPage(args.before, order);
     }
 
-    if (last) hasPreviousPage = nodes.length > last;
+    if (last) hasPreviousPage = (await nodesPromise).length > last;
     else if (args.after && hasPreviousPageRequested) {
       hasPreviousPage = await hasAnotherPage(args.after, reverseOrder(order));
     }
@@ -432,6 +432,7 @@ export function sequelizeConnection({
       queriedCursor = fromCursor(args.after || args.before);
     }
 
+    const nodes = await nodesPromise;
     const edges = nodes.slice(0, Math.min(first || Infinity, last || Infinity)).map(
       (node, index) => resolveEdge(node, index, queriedCursor, extendedInfo, source)
     );
