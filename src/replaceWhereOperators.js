@@ -1,3 +1,5 @@
+import sequelizeOps from './sequelizeOps';
+
 /**
  * Replace a key deeply in an object
  * @param obj
@@ -10,19 +12,20 @@ function replaceKeyDeep(obj, keyMap) {
     // determine which key we are going to use
     let targetKey = keyMap[key] ? keyMap[key] : key;
 
-    // assign the new value
-    memo[targetKey] = obj[key];
-
-    // recurse if an array
-    if (Array.isArray(memo[targetKey])) {
-      memo[targetKey].forEach((val, idx) => {
+    if (Array.isArray(obj[key])) {
+      // recurse if an array
+      memo[targetKey] = obj[key].map((val) => {
         if (Object.prototype.toString.call(val) === '[object Object]') {
-          memo[targetKey][idx] = replaceKeyDeep(val, keyMap);
+          return replaceKeyDeep(val, keyMap);
         }
+        return val;
       });
-    } else if (Object.prototype.toString.call(memo[targetKey]) === '[object Object]') {
+    } else if (Object.prototype.toString.call(obj[key]) === '[object Object]') {
       // recurse if Object
-      memo[targetKey] = replaceKeyDeep(memo[targetKey], keyMap);
+      memo[targetKey] = replaceKeyDeep(obj[key], keyMap);
+    } else {
+      // assign the new value
+      memo[targetKey] = obj[key];
     }
 
     // return the modified object
@@ -36,26 +39,5 @@ function replaceKeyDeep(obj, keyMap) {
  * @returns {Object}
  */
 export function replaceWhereOperators(where) {
-  return replaceKeyDeep(where, {
-    and: '$and',
-    or: '$or',
-    gt: '$gt',
-    gte: '$gte',
-    lt: '$lt',
-    lte: '$lte',
-    ne: '$ne',
-    between: '$between',
-    notBetween: '$notBetween',
-    in: '$in',
-    notIn: '$notIn',
-    notLike: '$notLike',
-    iLike: '$iLike',
-    notILike: '$notILike',
-    like: '$like',
-    overlap: '$overlap',
-    contains: '$contains',
-    contained: '$contained',
-    any: '$any',
-    col: '$col'
-  });
+  return replaceKeyDeep(where, sequelizeOps);
 }

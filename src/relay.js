@@ -90,7 +90,7 @@ export function handleConnection(values, args) {
   return connectionFromArray(values, args);
 }
 
-export function sequelizeNodeInterface(sequelize) {
+export function createNodeInterface(sequelize) {
   let nodeTypeMapper = new NodeTypeMapper();
   const nodeObjects = nodeDefinitions(
     idFetcher(sequelize, nodeTypeMapper),
@@ -102,6 +102,8 @@ export function sequelizeNodeInterface(sequelize) {
     ...nodeObjects
   };
 }
+
+export {createNodeInterface as sequelizeNodeInterface};
 
 export function nodeType(connectionType) {
   return connectionType._fields.edges.type.ofType._fields.node.type;
@@ -228,39 +230,16 @@ function getWindow({model, cursor, order, inclusive}) {
   return buildInequality(0);
 }
 
-export function sequelizeConnection({
-  name,
-  nodeType,
+export function createConnectionResolver({
   target: targetMaybeThunk,
-  orderBy: orderByEnum,
   before,
   after,
-  connectionFields,
-  edgeFields,
-  where
+  where,
+  orderBy: orderByEnum,
+  ignoreArgs
 }) {
-  const {
-    edgeType,
-    connectionType
-  } = connectionDefinitions({
-    name,
-    nodeType,
-    connectionFields,
-    edgeFields
-  });
-
   before = before || ((options) => options);
   after = after || ((result) => result);
-
-  const $connectionArgs = {
-    ...connectionArgs
-  };
-
-  if (orderByEnum) {
-    $connectionArgs.orderBy = {
-      type: new GraphQLList(orderByEnum)
-    };
-  }
 
   const argsToWhere = function (args) {
     let result = {};
@@ -268,14 +247,14 @@ export function sequelizeConnection({
     if (where === undefined) return result;
 
     _.each(args, (value, key) => {
-      if (key in $connectionArgs) return;
+      if (ignoreArgs && key in ignoreArgs) return;
       _.assign(result, where(key, value, result));
     });
 
     return result;
   };
 
-  const resolveEdge = function (node, index, queriedCursor, info, source) {
+  const resolveEdge = function (node, index, queriedCursor, sourceArgs = {}, info, source) {
     if (info.mustUseOffset) {
       let startIndex = null;
       if (queriedCursor) startIndex = Number(queriedCursor[1]);
@@ -296,6 +275,7 @@ export function sequelizeConnection({
       cursor: toCursor(node, info),
       node,
       source,
+      sourceArgs,
     };
   };
 
@@ -434,7 +414,7 @@ export function sequelizeConnection({
 
     const nodes = await nodesPromise;
     const edges = nodes.slice(0, Math.min(first || Infinity, last || Infinity)).map(
-      (node, index) => resolveEdge(node, index, queriedCursor, extendedInfo, source)
+      (node, index) => resolveEdge(node, index, queriedCursor, args, extendedInfo, source)
     );
     if (last) edges.reverse();
 
@@ -456,11 +436,63 @@ export function sequelizeConnection({
   };
 
   return {
+    resolveEdge,
+    resolveConnection: resolver,
+  };
+}
+
+export function createConnection({
+  name,
+  nodeType,
+  target: targetMaybeThunk,
+  orderBy: orderByEnum,
+  before,
+  after,
+  connectionFields,
+  edgeFields,
+  where
+}) {
+  const {
+    edgeType,
+    connectionType
+  } = connectionDefinitions({
+    name,
+    nodeType,
+    connectionFields,
+    edgeFields
+  });
+
+  let $connectionArgs = {
+    ...connectionArgs
+  };
+
+  if (orderByEnum) {
+    $connectionArgs.orderBy = {
+      type: new GraphQLList(orderByEnum)
+    };
+  }
+
+  const {
+    resolveEdge,
+    resolveConnection
+  } = createConnectionResolver({
+    orderBy: orderByEnum,
+    target: targetMaybeThunk,
+    before,
+    after,
+    where,
+    ignoreArgs: $connectionArgs
+  });
+
+  return {
     connectionType,
     edgeType,
     nodeType,
     resolveEdge,
+    resolveConnection,
     connectionArgs: $connectionArgs,
-    resolve: resolver
+    resolve: resolveConnection
   };
 }
+
+export {createConnection as sequelizeConnection};

@@ -4,6 +4,7 @@
 import {expect} from 'chai';
 import Sequelize from 'sequelize';
 import defaultArgs from '../../src/defaultArgs';
+import DateType from '../../src/types/dateType';
 
 import { sequelize } from '../support/helper';
 
@@ -76,7 +77,7 @@ describe('defaultArgs', function () {
     args = defaultArgs(Model);
 
     expect(args.userId.type).to.equal(GraphQLInt);
-    expect(args.timestamp.type).to.equal(GraphQLString);
+    expect(args.timestamp.type).to.equal(DateType);
   });
 
   describe('will have an "where" argument', function () {
