@@ -37,4 +37,18 @@ describe('argsToFindOptions', function () {
     expect(findOptions).to.have.ownProperty('offset');
     expect(findOptions.offset).to.be.equal(1);
   });
+
+  it('should allow filtering by "order" column when in targetAttributes', function () {
+    var findOptions = argsToFindOptions({ where: { order: 1 } });
+    expect(findOptions).to.have.ownProperty('where');
+    expect(findOptions.where).to.have.ownProperty('order');
+  });
+
+  it('should allow filtering and ordering by "order" column when in targetAttributes', function () {
+    var findOptions = argsToFindOptions({ where: { order: 1 }, order: 'order' });
+    expect(findOptions).to.have.ownProperty('where');
+    expect(findOptions.where).to.have.ownProperty('order');
+    expect(findOptions).to.have.ownProperty('order');
+    expect(findOptions.order).to.be.an.instanceOf(Array);
+  });
 });
