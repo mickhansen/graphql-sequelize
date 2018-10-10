@@ -51,4 +51,14 @@ describe('argsToFindOptions', function () {
     expect(findOptions).to.have.ownProperty('order');
     expect(findOptions.order).to.be.an.instanceOf(Array);
   });
+
+  it('should allow value = 0', function () {
+    var findOptions = argsToFindOptions({ where: { order: 0 }, offset: 0, limit: 0 }, []);
+    expect(findOptions).to.have.ownProperty('where');
+    expect(findOptions.where).to.have.ownProperty('order');
+    expect(findOptions).to.have.ownProperty('offset');
+    expect(findOptions.where.order).to.be.equal(0);
+    expect(findOptions.offset).to.be.equal(0);
+    expect(findOptions.limit).to.be.equal(0);
+  });
 });
