@@ -95,14 +95,11 @@ function resolverFactory(targetMaybeThunk, options = {}) {
         }
       }
 
-      if (options.handleConnection && isConnection(info.returnType)) {
-        return model['findAll'](findOptions).then(function (result) {
-          return handleConnection(result, args);
-        });
-
-      } else {
-        return model[list ? 'findAll' : 'findOne'](findOptions);
-      }
+      // eslint-disable-next-line max-len,no-extra-parens
+      return model[(list || options.handleConnection && isConnection(info.returnType)) ? 'findAll' : 'findOne'](findOptions).then(function (result) {
+        if (options.handleConnection && isConnection(info.returnType)) return handleConnection(result, args);
+        return result;
+      });
 
     }).then(function (result) {
       return options.after(result, args, context, info);
