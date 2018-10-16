@@ -95,7 +95,15 @@ function resolverFactory(targetMaybeThunk, options = {}) {
         }
       }
 
-      return model[list ? 'findAll' : 'findOne'](findOptions);
+      if (options.handleConnection && isConnection(info.returnType)) {
+        return model['findAll'](findOptions).then(function (result) {
+          return handleConnection(result, args);
+        });
+
+      } else {
+        return model[list ? 'findAll' : 'findOne'](findOptions);
+      }
+
     }).then(function (result) {
       return options.after(result, args, context, info);
     });

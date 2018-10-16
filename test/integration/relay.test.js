@@ -233,6 +233,11 @@ describe('relay', function () {
             },
             resolve: generateCustom
           },
+          userConnection: {
+            type: userConnection.connectionType,
+            args: connectionArgs,
+            resolve: resolver(User)
+          },
           node: nodeField
         }
       })
@@ -628,4 +633,52 @@ describe('relay', function () {
       expect(result.errors).to.exist.and.have.length(1);
     });
   });
+
+
+  it('should support root query on connections', function () {
+    var user = this.userA;
+
+    return graphql(schema, `
+      {
+        userConnection(first: 1) {
+          edges {
+            node {
+              name
+              tasks(first: 1) {
+                edges {
+                  node {
+                    name
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `).then(function (result) {
+      if (result.errors) throw new Error(result.errors[0].stack);
+
+      expect(result.data).to.deep.equal({
+        userConnection: {
+          edges: [
+            {
+              node: {
+                name: user.name,
+                tasks: {
+                  edges: [
+                    {
+                      node: {
+                        name: user.taskItems[0].name
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+          ],
+        }
+      });
+    });
+  });
+
 });
