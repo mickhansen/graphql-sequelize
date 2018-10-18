@@ -76,29 +76,32 @@ function resolverFactory(targetMaybeThunk, options = {}) {
         findOptions.order = [[model.primaryKeyAttribute, 'ASC']];
       }
 
+      function checkConnection() {
+        return options.handleConnection && isConnection(info.returnType);
+      }
+
+      function handleConnectionIfNeeded(result) {
+        if (checkConnection()) {
+          return handleConnection(result, args);
+        }
+        return result;
+      }
+
       if (association) {
         if (source.get(association.as) !== undefined) {
           // The user did a manual include
           const result = source.get(association.as);
-          if (options.handleConnection && isConnection(info.returnType)) {
-            return handleConnection(result, args);
-          }
+          return handleConnectionIfNeeded(result);
 
-          return result;
         } else {
           return source[association.accessors.get](findOptions).then(function (result) {
-            if (options.handleConnection && isConnection(info.returnType)) {
-              return handleConnection(result, args);
-            }
-            return result;
+            return handleConnectionIfNeeded(result);
           });
         }
       }
 
-      // eslint-disable-next-line max-len,no-extra-parens
-      return model[(list || options.handleConnection && isConnection(info.returnType)) ? 'findAll' : 'findOne'](findOptions).then(function (result) {
-        if (options.handleConnection && isConnection(info.returnType)) return handleConnection(result, args);
-        return result;
+      return model[list || checkConnection() ? 'findAll' : 'findOne'](findOptions).then(function (result) {
+        return handleConnectionIfNeeded(result);
       });
 
     }).then(function (result) {
