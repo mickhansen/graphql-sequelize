@@ -20,6 +20,17 @@ function whereQueryVarsToValues(o, vals) {
   });
 }
 
+function checkConnection(options, info) {
+  return options.handleConnection && isConnection(info.returnType);
+}
+
+function handleConnectionIfNeeded(options, info, result, args) {
+  if (checkConnection(options, info)) {
+    return handleConnection(result, args);
+  }
+  return result;
+}
+
 function resolverFactory(targetMaybeThunk, options = {}) {
   const contextToOptions = _.assign({}, resolverFactory.contextToOptions, options.contextToOptions);
 
@@ -76,32 +87,21 @@ function resolverFactory(targetMaybeThunk, options = {}) {
         findOptions.order = [[model.primaryKeyAttribute, 'ASC']];
       }
 
-      function checkConnection() {
-        return options.handleConnection && isConnection(info.returnType);
-      }
-
-      function handleConnectionIfNeeded(result) {
-        if (checkConnection()) {
-          return handleConnection(result, args);
-        }
-        return result;
-      }
-
       if (association) {
         if (source.get(association.as) !== undefined) {
           // The user did a manual include
           const result = source.get(association.as);
-          return handleConnectionIfNeeded(result);
+          return handleConnectionIfNeeded(options, info, result, args);
 
         } else {
           return source[association.accessors.get](findOptions).then(function (result) {
-            return handleConnectionIfNeeded(result);
+            return handleConnectionIfNeeded(options, info, result, args);
           });
         }
       }
 
-      return model[list || checkConnection() ? 'findAll' : 'findOne'](findOptions).then(function (result) {
-        return handleConnectionIfNeeded(result);
+      return model[list || checkConnection(options, info) ? 'findAll' : 'findOne'](findOptions).then(function (result) {
+        return handleConnectionIfNeeded(options, info, result, args);
       });
 
     }).then(function (result) {
