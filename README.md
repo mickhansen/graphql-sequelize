@@ -516,3 +516,22 @@ args: _.assign(defaultListArgs(), {
   // ... additional args
 })
 ```
+
+ `order` expects a valid field name and will sort `ASC` by default. For `DESC` you would prepend `reverse:` to the field name.
+
+
+ ```
+ /* with GraphiQL */
+ // users represents a GraphQLList of type user
+
+ query($limit: Int, $order: String, $where: SequelizeJSON) {
+   users(limit: $limit, order: $order, where: $where) {
+     name
+   }
+ }
+
+ // query variables
+ {
+   "order": "name" // OR "reverse:name" for DESC
+ }
+ ```
