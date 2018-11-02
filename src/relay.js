@@ -166,7 +166,7 @@ export function createConnectionResolver({
 
     _.each(args, (value, key) => {
       if (ignoreArgs && key in ignoreArgs) return;
-      _.assign(result, where(key, value, result));
+      Object.assign(result, where(key, value, result));
     });
 
     return result;
