@@ -118,6 +118,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
 
   function sanitizeEnumValue(value) {
     return value
+      .toString()
       .trim()
       .replace(/([^_a-zA-Z0-9])/g, (_, p) => specialCharsMap.get(p) || ' ')
       .split(' ')
