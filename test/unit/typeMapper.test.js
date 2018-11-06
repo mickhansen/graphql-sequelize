@@ -9,6 +9,7 @@ const {
   BOOLEAN,
   ENUM,
   FLOAT,
+  REAL,
   CHAR,
   DECIMAL,
   DOUBLE,
@@ -138,6 +139,11 @@ describe('typeMapper', () => {
     });
   });
 
+  describe('REAL', function () {
+    it('should map to GraphQLFloat', function () {
+      expect(toGraphQL(new REAL(), Sequelize)).to.equal(GraphQLFloat);
+    });
+  });
 
   describe('INTEGER', function () {
     it('should map to GraphQLInt', function () {
