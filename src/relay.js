@@ -44,27 +44,31 @@ export class NodeTypeMapper {
 }
 
 export function idFetcher(sequelize, nodeTypeMapper) {
-  return async (globalId, context) => {
+  return async (globalId, context, info) => {
     const {type, id} = fromGlobalId(globalId);
 
     const nodeType = nodeTypeMapper.item(type);
     if (nodeType && typeof nodeType.resolve === 'function') {
-      const res = await Promise.resolve(nodeType.resolve(globalId, context));
+      const res = await Promise.resolve(nodeType.resolve(globalId, context, info));
       if (res) res.__graphqlType__ = type;
       return res;
     }
 
     const model = Object.keys(sequelize.models).find(model => model === type);
-    return model
-      ? sequelize.models[model].findById(id)
-      : nodeType
-        ? nodeType.type
-        : null;
+    if (model) {
+      return sequelize.models[model].findById(id);
+    }
+
+    if (nodeType) {
+      return typeof nodeType.type === 'string' ? info.schema.getType(nodeType.type) : nodeType.type;
+    }
+
+    return null;
   };
 }
 
 export function typeResolver(nodeTypeMapper) {
-  return obj => {
+  return (obj, context, info) => {
     var type = obj.__graphqlType__
                || (obj.Model
                  ? obj.Model.options.name.singular
@@ -78,7 +82,11 @@ export function typeResolver(nodeTypeMapper) {
     }
 
     const nodeType = nodeTypeMapper.item(type);
-    return nodeType && nodeType.type || null;
+    if (nodeType) {
+      return typeof nodeType.type === 'string' ? info.schema.getType(nodeType.type) : nodeType.type;
+    }
+
+    return null;
   };
 }
 

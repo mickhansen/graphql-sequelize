@@ -218,13 +218,24 @@ Alongside `createConnection` you can also use `createConnectionResolver` which c
 
 ```ts
 import {makeExecutableSchema} from 'graphql-tools';
-import {resolver, createConnectionResolver} from 'graphql-sequelize';
+import {resolver, createNodeInterface, createConnectionResolver} from 'graphql-sequelize';
 import gql from 'graphql-tag';
+
+const { nodeField, nodeTypeMapper } = createNodeInterface(sequelize);
+
+nodeTypeMapper.mapTypes({
+  [User.name]: 'User' // Supports both new GraphQLObjectType({...}) and type name
+});
 
 const typeDefs = gql`
   type Query {
+    node(id: ID!): Node
     user(id: ID!): User
     users(after: String, before: String, first: Int, last: Int, order: UserOrderBy): UserConnection
+  }
+
+  interface Node {
+    id: ID!
   }
 
   type User {
@@ -256,6 +267,7 @@ const resolvers = {
     ID: ['id', 'ASC'],
   },
   Query: {
+    node: nodeField.resolve,
     user: resolver(User),
     users: createConnectionResolver({
       target: User,
