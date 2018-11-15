@@ -200,6 +200,9 @@ export function createConnectionResolver({
         options.limit = parseInt(args.first || args.last, 10);
       }
 
+      // Grab enum type by name if it's a string
+      orderByEnum = typeof orderByEnum === 'string' ? info.schema.getType(orderByEnum) : orderByEnum;
+
       let orderBy = args.orderBy ? args.orderBy :
                     orderByEnum ? [orderByEnum._values[0].value] :
                     [[model.primaryKeyAttribute, 'ASC']];
