@@ -169,7 +169,7 @@ describe('relay', function () {
     });
 
     nodeTypeMapper.mapTypes({
-      [User.name]: { type: userType },
+      [User.name]: { type: 'User' },
       [Project.name]: { type: projectType},
       [Task.name]: { type: taskType },
       Viewer: { type: viewerType },
