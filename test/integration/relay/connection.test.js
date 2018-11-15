@@ -9,7 +9,8 @@ import {uniq, property, sortBy} from 'lodash';
 import { Promise, sequelize } from '../../support/helper';
 
 import {
-  sequelizeConnection
+  sequelizeConnection,
+  createConnectionResolver
 } from '../../../src/relay';
 
 import {
@@ -17,6 +18,7 @@ import {
   GraphQLNonNull,
   GraphQLBoolean,
   GraphQLEnumType,
+  GraphQLList,
   GraphQLObjectType,
   GraphQLSchema,
   graphql
@@ -175,16 +177,19 @@ describe('relay', function () {
         }
       });
 
+      this.orderByEnum = new GraphQLEnumType({
+        name: this.User.name + this.Project.name + 'ConnectionOrder',
+        values: {
+          ID: {value: [this.Project.primaryKeyAttribute, 'ASC']},
+          LATEST: {value: [this.Project.primaryKeyAttribute, 'DESC']}
+        }
+      });
+
       this.userProjectConnection = sequelizeConnection({
         name: 'userProject',
         nodeType: this.projectType,
         target: this.User.Projects,
-        orderBy: new GraphQLEnumType({
-          name: this.User.name + this.Project.name + 'ConnectionOrder',
-          values: {
-            ID: {value: [this.Project.primaryKeyAttribute, 'ASC']}
-          }
-        }),
+        orderBy: this.orderByEnum,
         edgeFields: {
           isOwner: {
             type: GraphQLBoolean,
@@ -194,6 +199,27 @@ describe('relay', function () {
           }
         }
       });
+
+      this.userProjectConnection2 = new GraphQLObjectType({
+        name: 'UserProjectConnection2',
+        fields: {
+          edges: {
+            type: new GraphQLList(new GraphQLObjectType({
+              name: 'UserProjectEdge2',
+              fields: {
+                node: {
+                  type: this.projectType,
+                }
+              }
+            })),
+          }
+        }
+      });
+
+      this.userProjectConnection2Resolver = createConnectionResolver({
+        target: this.User.Projects,
+        orderBy: this.orderByEnum.name,
+      })
 
       this.userType = new GraphQLObjectType({
         name: this.User.name,
@@ -220,7 +246,12 @@ describe('relay', function () {
             type: this.userProjectConnection.connectionType,
             args: this.userProjectConnection.connectionArgs,
             resolve: this.userProjectConnection.resolve
-          }
+          },
+          projects2: {
+            type: this.userProjectConnection2,
+            args: this.userProjectConnection.connectionArgs,
+            resolve: this.userProjectConnection2Resolver.resolveConnection,
+          },
         }
       });
       this.viewerTaskConnection = sequelizeConnection({
@@ -533,6 +564,27 @@ describe('relay', function () {
 
       expect(this.projectOrderSpy).to.have.been.calledOnce;
       expect(this.projectOrderSpy.alwaysCalledWithMatch({}, { first: 5 })).to.be.ok;
+    });
+
+    it('should support connectionResolver orderBy enum references via name', async function () {
+      const result = await graphql(this.schema, `
+        {
+          user(id: ${this.userA.id}) {
+            projects2(orderBy: LATEST) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
+          }
+        }
+      `, null, {});
+
+      if (result.errors) throw new Error(result.errors[0]);
+      
+      const node = result.data.user.projects2.edges[0].node;
+      expect(+fromGlobalId(node.id).id).to.equal(5);
     });
 
     it('should properly reverse orderBy with NULLS and last', async function () {
