@@ -446,7 +446,7 @@ export function createConnectionResolver({
     return after({
       source,
       args,
-      where: argsToWhere(args),
+      where,
       edges,
       pageInfo: {
         startCursor: firstEdge ? firstEdge.cursor : null,
