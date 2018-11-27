@@ -327,16 +327,21 @@ export function createConnectionResolver({
     const hasNextPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasNextPage']);
     const hasPreviousPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasPreviousPage']);
 
-    const startOnly = last && !edgesRequested && !endCursorRequested;
-    const endOnly = first && !edgesRequested && !startCursorRequested;
+    const startOnly = last > 1 && !edgesRequested && !endCursorRequested;
+    const endOnly = first > 1 && !edgesRequested && !startCursorRequested;
+
+    let queriedCursor = null;
+
+    if (args.after || args.before) {
+      queriedCursor = fromCursor(args.after || args.before);
+    }
 
     let offset, queriedOffset;
     const mustUseOffset = _.some(order, ([attribute]) => typeof attribute !== 'string');
     if (mustUseOffset) {
       offset = 0;
-      if (args.after || args.before) {
-        const cursor = fromCursor(args.after || args.before);
-        const startIndex = Number(cursor[1]);
+      if (queriedCursor) {
+        const startIndex = Number(queriedCursor[1]);
         if (startIndex >= 0) offset = queriedOffset = startIndex + 1;
       }
     } else {
@@ -415,12 +420,6 @@ export function createConnectionResolver({
     if (last) hasPreviousPage = (await nodesPromise).length > (startOnly ? 1 : last);
     else if (args.after && hasPreviousPageRequested) {
       hasPreviousPage = await hasAnotherPage(args.after, reverseOrder(order));
-    }
-
-    let queriedCursor = null;
-
-    if (args.after || args.before) {
-      queriedCursor = fromCursor(args.after || args.before);
     }
 
     const nodes = await nodesPromise;
