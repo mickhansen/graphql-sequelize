@@ -108,7 +108,7 @@ describe('relay', function () {
       });
 
       this.userTaskConnectionFieldSpy = sinon.spy();
-      const {QueryGenerator} = sequelize.dialect
+      const {QueryGenerator} = sequelize.dialect;
       this.userTaskConnection = sequelizeConnection({
         name: 'userTask',
         nodeType: this.taskType,
@@ -621,6 +621,57 @@ describe('relay', function () {
       expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
     });
 
+    it('should optimize in-query slicing and pagination with first and orderBy, when only requesting endCursor', async function () {
+      let firstThree = this.userA.tasks.slice(this.userA.tasks.length - 3, this.userA.tasks.length);
+      let nextThree = this.userA.tasks.slice(this.userA.tasks.length - 6, this.userA.tasks.length - 3);
+      let lastThree = this.userA.tasks.slice(this.userA.tasks.length - 9, this.userA.tasks.length - 6);
+
+      expect(firstThree.length).to.equal(3);
+      expect(nextThree.length).to.equal(3);
+      expect(lastThree.length).to.equal(3);
+
+      let query = (after, {full} = {}) => {
+        return graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              tasks(first: 3, ${after ? 'after: "' + after + '", ' : ''}, orderBy: LATEST) {
+                ${full ? `edges {
+                  cursor
+                  node {
+                    id
+                    name
+                  }
+                }` : ''}
+                pageInfo {
+                  hasNextPage
+                  hasPreviousPage
+                  endCursor
+                }
+              }
+            }
+          }
+        `, null, {});
+      };
+
+      let firstResult = await query(null, {full: true});
+      let firstResultNoEdges = await query();
+      expect(firstResultNoEdges.data.user.tasks.pageInfo).to.deep.equal(firstResult.data.user.tasks.pageInfo);
+      expect(firstResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+      expect(firstResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
+
+      let nextResult = await query(firstResult.data.user.tasks.pageInfo.endCursor, {full: true});
+      let nextResultNoEdges = await query(firstResult.data.user.tasks.pageInfo.endCursor);
+      expect(nextResultNoEdges.data.user.tasks.pageInfo).to.deep.equal(nextResult.data.user.tasks.pageInfo);
+      expect(nextResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+      expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+
+      let lastResult = await query(nextResult.data.user.tasks.pageInfo.endCursor, {full: true});
+      let lastResultNoEdges = await query(nextResult.data.user.tasks.pageInfo.endCursor);
+      expect(lastResultNoEdges.data.user.tasks.pageInfo).to.deep.equal(lastResult.data.user.tasks.pageInfo);
+      expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+      expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+    });
+
     it('should support in-query slicing and pagination with first and CUSTOM orderBy', async function () {
       const correctOrder = await graphql(this.schema, `
         {
@@ -710,6 +761,106 @@ describe('relay', function () {
       expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
 
       let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor);
+      verify(lastResult, lastThree);
+      expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+      expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+    });
+
+    it('should optimize in-query slicing and pagination with first and CUSTOM orderBy when only endCursor is requested', async function () {
+      const correctOrder = await graphql(this.schema, `
+        {
+          user(id: ${this.userA.id}) {
+            tasks(first: 9, orderBy: CUSTOM) {
+              edges {
+                cursor
+                node {
+                  id
+                  name
+                }
+              }
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+            }
+          }
+        }
+      `);
+      const reordered = correctOrder.data.user.tasks.edges.map(({node}) => {
+        const targetId = fromGlobalId(node.id).id;
+        return this.userA.tasks.find(task => {
+          return task.id === Number(targetId);
+        });
+      });
+
+      let lastThree = reordered.slice(this.userA.tasks.length - 3, this.userA.tasks.length);
+      let nextThree = reordered.slice(this.userA.tasks.length - 6, this.userA.tasks.length - 3);
+      let firstThree = reordered.slice(this.userA.tasks.length - 9, this.userA.tasks.length - 6);
+
+      expect(firstThree.length).to.equal(3);
+      expect(nextThree.length).to.equal(3);
+      expect(lastThree.length).to.equal(3);
+
+
+      let verify = function (result, expectedTasks) {
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        var resultTasks = result.data.user.tasks.edges.map(function (edge) {
+          return edge.node;
+        });
+
+        let resultIds = resultTasks.map((task) => {
+          return parseInt(fromGlobalId(task.id).id, 10);
+        }).sort();
+
+        let expectedIds = expectedTasks.map(function (task) {
+          return task.get('id');
+        }).sort();
+
+        expect(resultTasks.length).to.equal(3);
+        expect(resultIds).to.deep.equal(expectedIds);
+      };
+
+      let query = (after, {full} = {}) => {
+        return graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              tasks(first: 3, ${after ? 'after: "' + after + '", ' : ''} orderBy: CUSTOM) {
+                ${full ? `edges {
+                  cursor
+                  node {
+                    id
+                    name
+                  }
+                }` : ''}
+                pageInfo {
+                  hasNextPage
+                  hasPreviousPage
+                  endCursor
+                }
+              }
+            }
+          }
+        `);
+      };
+
+      let firstResult = await query(null, {full: true});
+      let firstResultNoEdges = await query();
+      expect(firstResultNoEdges.data.user.tasks.pageInfo).to.deep.equal(firstResult.data.user.tasks.pageInfo);
+      verify(firstResult, firstThree);
+      expect(firstResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+      expect(firstResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
+
+      let nextResult = await query(firstResult.data.user.tasks.pageInfo.endCursor, {full: true});
+      let nextResultNoEdges = await query(firstResult.data.user.tasks.pageInfo.endCursor);
+      expect(nextResultNoEdges.data.user.tasks.pageInfo).to.deep.equal(nextResult.data.user.tasks.pageInfo);
+      verify(nextResult, nextThree);
+      expect(nextResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+      expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+
+      let lastResult = await query(nextResult.data.user.tasks.edges[2].cursor, {full: true});
+      let lastResultNoEdges = await query(nextResult.data.user.tasks.edges[2].cursor);
+      expect(lastResultNoEdges.data.user.tasks.pageInfo).to.deep.equal(lastResult.data.user.tasks.pageInfo);
       verify(lastResult, lastThree);
       expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
       expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
@@ -957,6 +1108,76 @@ describe('relay', function () {
 
       let lastResult = await query(nextResult.data.user.tasks.edges[0].cursor);
       verify(lastResult, lastThree);
+      expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+      expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
+    });
+
+    it('should optimize reverse pagination with last and orderBy when only startCursor is selected', async function () {
+      let firstThree = this.userA.tasks.slice(0, 3);
+      let nextThree = this.userA.tasks.slice(3, 6);
+      let lastThree = this.userA.tasks.slice(6, 9);
+
+      expect(firstThree.length).to.equal(3);
+      expect(nextThree.length).to.equal(3);
+      expect(lastThree.length).to.equal(3);
+
+      let verify = function (result, expectedTasks) {
+        if (result.errors) throw new Error(result.errors[0].stack);
+
+        var resultTasks = result.data.user.tasks.edges.map(function (edge) {
+          return edge.node;
+        });
+
+        let resultIds = resultTasks.map((task) => {
+          return parseInt(fromGlobalId(task.id).id, 10);
+        }).sort();
+
+        let expectedIds = expectedTasks.map(function (task) {
+          return task.get('id');
+        }).sort();
+
+        expect(resultTasks.length).to.equal(3);
+        expect(resultIds).to.deep.equal(expectedIds);
+      };
+
+      let query = (before, {full} = {}) => {
+        return graphql(this.schema, `
+          {
+            user(id: ${this.userA.id}) {
+              tasks(last: 3, ${before ? 'before: "' + before + '", ' : ''} orderBy: LATEST) {
+                ${full ? `edges {
+                  cursor
+                  node {
+                    id
+                    name
+                  }
+                }` : ''}
+                pageInfo {
+                  hasNextPage
+                  hasPreviousPage
+                  startCursor
+                }
+              }
+            }
+          }
+        `, null, {});
+      };
+
+      let firstResult = await query(null, {full: true});
+      let firstResultNoEdges = await query();
+      expect(firstResultNoEdges.data.user.tasks.pageInfo).to.deep.equal(firstResult.data.user.tasks.pageInfo);
+      expect(firstResult.data.user.tasks.pageInfo.hasNextPage).to.equal(false);
+      expect(firstResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+
+      let nextResult = await query(firstResult.data.user.tasks.pageInfo.startCursor, {full: true});
+      let nextResultNoEdges = await query(firstResult.data.user.tasks.pageInfo.startCursor);
+      expect(nextResultNoEdges.data.user.tasks.pageInfo).to.deep.equal(nextResult.data.user.tasks.pageInfo);
+      expect(nextResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
+      expect(nextResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(true);
+
+      let lastResult = await query(nextResult.data.user.tasks.edges[0].cursor, {full: true});
+      let lastResultNoEdges = await query(nextResult.data.user.tasks.edges[0].cursor);
+      expect(lastResultNoEdges.data.user.tasks.pageInfo).to.deep.equal(lastResult.data.user.tasks.pageInfo);
       expect(lastResult.data.user.tasks.pageInfo.hasNextPage).to.equal(true);
       expect(lastResult.data.user.tasks.pageInfo.hasPreviousPage).to.equal(false);
     });

@@ -299,13 +299,6 @@ export function createConnectionResolver({
 
     const fieldNodes = info.fieldASTs || info.fieldNodes;
     const ast = simplifyAST(fieldNodes[0], info);
-    if (!ast.fields.edges) {
-      return after({
-        source,
-        args,
-        where: argsToWhere(args)
-      }, args, context, info);
-    }
 
     const target = typeof targetMaybeThunk === 'function' && targetMaybeThunk.findAndCountAll === undefined ?
                    await Promise.resolve(targetMaybeThunk(source, args, context, info)) : targetMaybeThunk
@@ -328,26 +321,47 @@ export function createConnectionResolver({
     let limit;
     if (first || last) limit = Math.min(first || Infinity, last || Infinity) + 1;
 
-    let offset;
+    const edgesRequested = _.has(ast, ['fields', 'edges']);
+    const startCursorRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'startCursor']);
+    const endCursorRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'endCursor']);
+    const hasNextPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasNextPage']);
+    const hasPreviousPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasPreviousPage']);
+
+    const startOnly = last && !edgesRequested && !endCursorRequested;
+    const endOnly = first && !edgesRequested && !startCursorRequested;
+
+    let offset, offsetFromCursor;
     const mustUseOffset = _.some(order, ([attribute]) => typeof attribute !== 'string');
     if (mustUseOffset) {
       offset = 0;
       if (args.after || args.before) {
         const cursor = fromCursor(args.after || args.before);
         const startIndex = Number(cursor[1]);
-        if (startIndex >= 0) offset = startIndex + 1;
+        if (startIndex >= 0) offset = offsetFromCursor = startIndex + 1;
       }
     } else {
-      if (args.before) $and.push(getWindow({
-        model,
-        cursor: args.before,
-        order: reverseOrder(order),
-      }));
-      if (args.after) $and.push(getWindow({
-        model,
-        cursor: args.after,
-        order,
-      }));
+      if (args.before) {
+        $and.push(getWindow({
+          model,
+          cursor: args.before,
+          order: reverseOrder(order),
+        }));
+      }
+      if (args.after) {
+        $and.push(getWindow({
+          model,
+          cursor: args.after,
+          order,
+        }));
+      }
+    }
+    if (startOnly) {
+      offset = (offset || 0) + last - 1;
+      limit = 2;
+    }
+    if (endOnly) {
+      offset = (offset || 0) + first - 1;
+      limit = 2;
     }
 
     const finalOrder = last ? reverseOrder(order) : order;
@@ -370,7 +384,7 @@ export function createConnectionResolver({
     let hasPreviousPage = false;
 
     async function hasAnotherPage(cursor, order) {
-      if (mustUseOffset) return offset > 0;
+      if (mustUseOffset) return offsetFromCursor > 0;
 
       const where = argsToWhere(args);
       const $and = where.$and || (where.$and = []);
@@ -393,15 +407,12 @@ export function createConnectionResolver({
       return otherNodes.length > 0;
     }
 
-    const hasNextPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasNextPage']);
-    const hasPreviousPageRequested = _.has(ast, ['fields', 'pageInfo', 'fields', 'hasPreviousPage']);
-
-    if (first) hasNextPage = (await nodesPromise).length > first;
+    if (first) hasNextPage = (await nodesPromise).length > (endOnly ? 1 : first);
     else if (args.before && hasNextPageRequested) {
       hasNextPage = await hasAnotherPage(args.before, order);
     }
 
-    if (last) hasPreviousPage = (await nodesPromise).length > last;
+    if (last) hasPreviousPage = (await nodesPromise).length > (startOnly ? 1 : last);
     else if (args.after && hasPreviousPageRequested) {
       hasPreviousPage = await hasAnotherPage(args.after, reverseOrder(order));
     }
@@ -413,13 +424,25 @@ export function createConnectionResolver({
     }
 
     const nodes = await nodesPromise;
-    const edges = nodes.slice(0, Math.min(first || Infinity, last || Infinity)).map(
-      (node, index) => resolveEdge(node, index, queriedCursor, args, extendedInfo, source)
+    const edges = nodes.slice(
+      0,
+      startOnly || endOnly
+        ? 1
+        : Math.min(first || Infinity, last || Infinity)
+    ).map(
+      (node, index) => resolveEdge(
+        node,
+        endOnly ? index + first - 1 : startOnly ? index + last - 1 : index,
+        queriedCursor,
+        args,
+        extendedInfo,
+        source
+      )
     );
     if (last) edges.reverse();
 
-    const firstEdge = edges[0];
-    const lastEdge = edges[edges.length - 1];
+    const firstEdge = endOnly ? null : edges[0];
+    const lastEdge = startOnly ? null : edges[edges.length - 1];
 
     return after({
       source,
