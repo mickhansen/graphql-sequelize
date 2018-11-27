@@ -330,14 +330,14 @@ export function createConnectionResolver({
     const startOnly = last && !edgesRequested && !endCursorRequested;
     const endOnly = first && !edgesRequested && !startCursorRequested;
 
-    let offset, offsetFromCursor;
+    let offset, queriedOffset;
     const mustUseOffset = _.some(order, ([attribute]) => typeof attribute !== 'string');
     if (mustUseOffset) {
       offset = 0;
       if (args.after || args.before) {
         const cursor = fromCursor(args.after || args.before);
         const startIndex = Number(cursor[1]);
-        if (startIndex >= 0) offset = offsetFromCursor = startIndex + 1;
+        if (startIndex >= 0) offset = queriedOffset = startIndex + 1;
       }
     } else {
       if (args.before) {
@@ -384,7 +384,7 @@ export function createConnectionResolver({
     let hasPreviousPage = false;
 
     async function hasAnotherPage(cursor, order) {
-      if (mustUseOffset) return offsetFromCursor > 0;
+      if (mustUseOffset) return queriedOffset > 0;
 
       const where = argsToWhere(args);
       const $and = where.$and || (where.$and = []);
