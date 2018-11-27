@@ -423,12 +423,9 @@ export function createConnectionResolver({
     }
 
     const nodes = await nodesPromise;
-    const edges = nodes.slice(
-      0,
-      startOnly || endOnly
-        ? 1
-        : Math.min(first || Infinity, last || Infinity)
-    ).map(
+    const numEdges =
+      startOnly || endOnly ? 1 : Math.min(first || Infinity, last || Infinity);
+    const edges = nodes.slice(0, numEdges).map(
       (node, index) => resolveEdge(
         node,
         endOnly ? index + first - 1 : startOnly ? index + last - 1 : index,
@@ -447,7 +444,7 @@ export function createConnectionResolver({
       source,
       args,
       where,
-      edges,
+      edges: startOnly || endOnly ? null : edges,
       pageInfo: {
         startCursor: firstEdge ? firstEdge.cursor : null,
         endCursor: lastEdge ? lastEdge.cursor : null,
