@@ -279,7 +279,7 @@ export function createConnectionResolver({
     };
   };
 
-  const $resolver = require('./resolver')(targetMaybeThunk, {
+  const resolveNodes = require('./resolver')(targetMaybeThunk, {
     handleConnection: false,
     list: true,
     before: function (options, args, context, info) {
@@ -289,10 +289,9 @@ export function createConnectionResolver({
         attributes: _.uniq([...info.orderAttributes, ...options.attributes]),
       }, args, context, info);
     },
-    after,
   });
 
-  const resolver = async (source, args, context, info) => {
+  const resolveConnection = async (source, args, context, info) => {
     const {first, last} = args;
     if (first < 0) throw new Error('first must be >= 0 if given');
     if (last < 0) throw new Error('last must be >= 0 if given');
@@ -383,7 +382,7 @@ export function createConnectionResolver({
         offset, // may be null
       },
     };
-    const nodesPromise = $resolver(source, args, context, extendedInfo);
+    const nodesPromise = resolveNodes(source, args, context, extendedInfo);
 
     let hasNextPage = false;
     let hasPreviousPage = false;
@@ -399,7 +398,7 @@ export function createConnectionResolver({
         order,
         inclusive: true,
       }));
-      const otherNodes = await $resolver(source, args, context, {
+      const otherNodes = await resolveNodes(source, args, context, {
         ...info,
         order,
         orderAttributes,
@@ -456,7 +455,7 @@ export function createConnectionResolver({
 
   return {
     resolveEdge,
-    resolveConnection: resolver,
+    resolveConnection,
   };
 }
 
