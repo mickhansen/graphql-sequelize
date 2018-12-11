@@ -1,9 +1,10 @@
 import * as typeMapper from './typeMapper';
 import { GraphQLNonNull, GraphQLEnumType } from 'graphql';
 import { globalIdField } from 'graphql-relay';
+var cache;
 
 module.exports = function (Model, options = {}) {
-  var cache = options.cache || {};
+  cache = options.cache || cache || {};
   var result = Object.keys(Model.rawAttributes).reduce(function (memo, key) {
     if (options.exclude) {
       if (typeof options.exclude === 'function' && options.exclude(key)) return memo;
