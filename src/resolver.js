@@ -77,9 +77,9 @@ function resolverFactory(targetMaybeThunk, options = {}) {
       }
 
       if (association) {
-        if (source.get(association.as) !== undefined) {
+        if (source[association.as] !== undefined) {
           // The user did a manual include
-          const result = source.get(association.as);
+          const result = source[association.as];
           if (options.handleConnection && isConnection(info.returnType)) {
             return handleConnection(result, args);
           }
