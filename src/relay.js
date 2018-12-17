@@ -143,13 +143,15 @@ export function createConnectionResolver({
 
   /**
    * Creates a cursor given a item returned from the Database
-   * @param  {Object}   item   sequelize model instance
+   * @param  {Object}   item   sequelize row
    * @param  {Integer}  index  the index of this item within the results, 0 indexed
    * @return {String}          The Base64 encoded cursor string
    */
   let toCursor = function (item, index) {
-    const {primaryKeyAttribute} = getModelOfInstance(item);
-    const id = typeof primaryKeyAttribute === 'string' ? item.get(primaryKeyAttribute) : null;
+    const model = getModelOfInstance(item);
+    const id = model ?
+               typeof model.primaryKeyAttribute === 'string' ? item[model.primaryKeyAttribute] : null :
+               item[Object.keys(item)[0]];
     return base64(JSON.stringify([id, index]));
   };
 
@@ -261,6 +263,8 @@ export function createConnectionResolver({
 
         if (startIndex >= 0) options.offset = startIndex + 1;
       }
+
+      options.attributes.unshift(model.primaryKeyAttribute); // Ensure the primary key is always the first selected attribute
       options.attributes = _.uniq(options.attributes);
       return before(options, args, context, info);
     },
@@ -282,7 +286,7 @@ export function createConnectionResolver({
 
       let firstEdge = edges[0];
       let lastEdge = edges[edges.length - 1];
-      let fullCount = values[0] && values[0].dataValues.full_count && parseInt(values[0].dataValues.full_count, 10);
+      let fullCount = values[0] && (values[0].dataValues || values[0]).full_count && parseInt((values[0].dataValues || values[0]).full_count, 10);
 
       if (!values[0]) {
         fullCount = 0;

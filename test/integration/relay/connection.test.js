@@ -124,6 +124,7 @@ describe('relay', function () {
           }
         }),
         before: (options) => {
+          options.raw = true;
           if (options.order && options.order[0][0] === 'updatedAt') {
             if (sequelize.dialect.name === 'postgres') {
               options.order = Sequelize.literal(`
@@ -582,7 +583,7 @@ describe('relay', function () {
       `, null, {});
 
       if (result.errors) throw new Error(result.errors[0]);
-      
+
       const node = result.data.user.projects2.edges[0].node;
       expect(+fromGlobalId(node.id).id).to.equal(5);
     });
