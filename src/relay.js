@@ -286,7 +286,9 @@ export function createConnectionResolver({
 
       let firstEdge = edges[0];
       let lastEdge = edges[edges.length - 1];
-      let fullCount = values[0] && (values[0].dataValues || values[0]).full_count && parseInt((values[0].dataValues || values[0]).full_count, 10);
+      let fullCount = values[0] &&
+                      (values[0].dataValues || values[0]).full_count &&
+                      parseInt((values[0].dataValues || values[0]).full_count, 10);
 
       if (!values[0]) {
         fullCount = 0;
