@@ -29,7 +29,10 @@ function checkIsAssociation(target) {
 }
 
 function resolverFactory(targetMaybeThunk, options = {}) {
-  assert(typeof targetMaybeThunk === 'function' || checkIsModel(targetMaybeThunk) || checkIsAssociation(targetMaybeThunk), 'resolverFactory should be called with a model, an association or a function (which resolves to a model or an association)');
+  assert(
+    typeof targetMaybeThunk === 'function' || checkIsModel(targetMaybeThunk) || checkIsAssociation(targetMaybeThunk),
+    'resolverFactory should be called with a model, an association or a function (which resolves to a model or an association)'
+  );
 
   const contextToOptions = _.assign({}, resolverFactory.contextToOptions, options.contextToOptions);
 
