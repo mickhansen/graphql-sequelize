@@ -247,7 +247,7 @@ export function createConnectionResolver({
             model.sequelize.literal('COUNT(*) OVER()'),
             'full_count'
           ]);
-        } else if (model.sequelize.dialect.name === 'mssql') {
+        } else if (model.sequelize.dialect.name === 'mssql' || model.sequelize.dialect.name === 'sqlite') {
           options.attributes.push([
             model.sequelize.literal('COUNT(1) OVER()'),
             'full_count'
