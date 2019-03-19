@@ -102,7 +102,7 @@ module.exports = function simplifyAST(ast, info, parent) {
       simpleAST.fields[key].key = name;
     }
 
-    simpleAST.fields[key].args = selection.arguments.reduce(function (args, arg) {
+    simpleAST.fields[key].args = (selection.arguments || []).reduce(function (args, arg) {
       args[arg.name.value] = simplifyValue(arg.value, info);
       return args;
     }, {});
