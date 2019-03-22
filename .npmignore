@@ -28,3 +28,10 @@ node_modules
 src
 test
 scripts
+
+# Docker/tests
+Dockerfile
+docker-compose.yml
+
+# Git
+pre-commit
