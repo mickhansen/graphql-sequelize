@@ -19,6 +19,7 @@ import _ from 'lodash';
 import simplifyAST from './simplifyAST';
 
 import {Model} from 'sequelize';
+import {replaceWhereOperators} from './replaceWhereOperators.js';
 
 function getModelOfInstance(instance) {
   return instance instanceof Model ? instance.constructor : instance.Model;
@@ -179,7 +180,7 @@ export function createConnectionResolver({
       Object.assign(result, where(key, value, result));
     });
 
-    return result;
+    return replaceWhereOperators(result);
   };
 
   let resolveEdge = function (item, index, queriedCursor, sourceArgs = {}, source) {
