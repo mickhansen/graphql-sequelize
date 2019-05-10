@@ -271,7 +271,7 @@ attributeFields(Model, {
 userType = new GraphQLObjectType({
   name: 'User',
   description: 'A user',
-  fields: _.assign(attributeFields(Model), {
+  fields: Object.assign(attributeFields(Model), {
     // ... extra fields
   })
 });
@@ -512,7 +512,7 @@ Should be used with fields of type `GraphQLList`.
 ```js
 import {defaultListArgs} from 'graphql-sequelize'
 
-args: _.assign(defaultListArgs(), {
+args: Object.assign(defaultListArgs(), {
   // ... additional args
 })
 ```
