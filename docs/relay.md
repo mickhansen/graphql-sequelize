@@ -177,7 +177,7 @@ fragment getCreated on userTaskEdge {
 ```
 
 You can pass custom args in your connection definition and they will
-automaticly be turned into where arguments. These can be further modified
+automatically be turned into where arguments. These can be further modified
 using the `where` option in `createConnection`.
 
 ```js
@@ -212,3 +212,69 @@ const userType = new GraphQLObjectType({
     }
   }
 });
+```
+
+Alongside `createConnection` you can also use `createConnectionResolver` which can be useful for schemas defined via separated SDL and Resolver functions:
+
+```ts
+import {makeExecutableSchema} from 'graphql-tools';
+import {resolver, createNodeInterface, createConnectionResolver} from 'graphql-sequelize';
+import gql from 'graphql-tag';
+
+const { nodeField, nodeTypeMapper } = createNodeInterface(sequelize);
+
+nodeTypeMapper.mapTypes({
+  [User.name]: 'User' // Supports both new GraphQLObjectType({...}) and type name
+});
+
+const typeDefs = gql`
+  type Query {
+    node(id: ID!): Node
+    user(id: ID!): User
+    users(after: String, before: String, first: Int, last: Int, order: UserOrderBy): UserConnection
+  }
+
+  interface Node {
+    id: ID!
+  }
+
+  type User {
+    id: ID!
+    name: String
+  }
+
+  type UserConnection {
+    pageInfo: PageInfo!
+    edges: [UserEdge]
+    total: Int
+  }
+
+  type UserEdge {
+    node: User
+    cursor: String!
+  }
+
+  enum UserOrderBy {
+    ID
+  }
+`;
+
+const resolvers = {
+  User: {
+    name: (user) => user.name,
+  },
+  UserOrderBy: {
+    ID: ['id', 'ASC'],
+  },
+  Query: {
+    node: nodeField.resolve,
+    user: resolver(User),
+    users: createConnectionResolver({
+      target: User,
+      orderBy: 'UserOrderBy', // supports both new GraphQLEnumType({...}) and type name
+    }).resolveConnection,
+  },
+};
+
+const schema = makeExecutableSchema({ typeDefs , resolvers });
+```

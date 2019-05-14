@@ -41,6 +41,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     BOOLEAN,
     ENUM,
     FLOAT,
+    REAL,
     CHAR,
     DECIMAL,
     DOUBLE,
@@ -54,7 +55,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     TIME,
     ARRAY,
     VIRTUAL,
-    JSON
+    JSON,
+    JSONB
   } = sequelizeTypes;
 
   // Map of special characters
@@ -67,6 +69,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
 
   if (sequelizeType instanceof FLOAT ||
+      sequelizeType instanceof REAL ||
       sequelizeType instanceof DOUBLE) return GraphQLFloat;
 
   if (sequelizeType instanceof DATE) {
@@ -110,7 +113,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     return returnType;
   }
 
-  if (sequelizeType instanceof JSON) {
+  if (sequelizeType instanceof JSONB ||
+      sequelizeType instanceof JSON) {
     return JSONType;
   }
 

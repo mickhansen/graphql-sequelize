@@ -2,7 +2,7 @@ import { GraphQLList, GraphQLNonNull } from 'graphql';
 import _ from 'lodash';
 import argsToFindOptions from './argsToFindOptions';
 import { isConnection, handleConnection, nodeType } from './relay';
-import invariant from 'assert';
+import assert from 'assert';
 import Promise from 'bluebird';
 
 function whereQueryVarsToValues(o, vals) {
@@ -20,6 +20,14 @@ function whereQueryVarsToValues(o, vals) {
   });
 }
 
+function checkIsModel(target) {
+  return !!target.getTableName;
+}
+
+function checkIsAssociation(target) {
+  return !!target.associationType;
+}
+
 function checkConnection(options, info) {
   return options.handleConnection && isConnection(info.returnType);
 }
@@ -32,18 +40,23 @@ function handleConnectionIfNeeded(options, info, result, args) {
 }
 
 function resolverFactory(targetMaybeThunk, options = {}) {
+  assert(
+    typeof targetMaybeThunk === 'function' || checkIsModel(targetMaybeThunk) || checkIsAssociation(targetMaybeThunk),
+    'resolverFactory should be called with a model, an association or a function (which resolves to a model or an association)'
+  );
+
   const contextToOptions = _.assign({}, resolverFactory.contextToOptions, options.contextToOptions);
 
-  invariant(options.include === undefined, 'Include support has been removed in favor of dataloader batching');
+  assert(options.include === undefined, 'Include support has been removed in favor of dataloader batching');
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
 
   return async function (source, args, context, info) {
-    let target = typeof targetMaybeThunk === 'function' && targetMaybeThunk.findAndCountAll === undefined ?
+    let target = typeof targetMaybeThunk === 'function' && !checkIsModel(targetMaybeThunk) ?
                  await Promise.resolve(targetMaybeThunk(source, args, context, info)) : targetMaybeThunk
-      , isModel = !!target.getTableName
-      , isAssociation = !!target.associationType
+      , isModel = checkIsModel(target)
+      , isAssociation = checkIsAssociation(target)
       , association = isAssociation && target
       , model = isAssociation && target.target || isModel && target
       , type = info.returnType
@@ -88,9 +101,9 @@ function resolverFactory(targetMaybeThunk, options = {}) {
       }
 
       if (association) {
-        if (source.get(association.as) !== undefined) {
+        if (source[association.as] !== undefined) {
           // The user did a manual include
-          const result = source.get(association.as);
+          const result = source[association.as];
           return handleConnectionIfNeeded(options, info, result, args);
 
         } else {
