@@ -538,6 +538,55 @@ describe('relay', function () {
 
     });
 
+    it('should support sequelize literals in where clause', async function () {
+      let sqlSpy = sinon.spy();
+
+      const usersConnection = sequelizeConnection({
+        name: 'users',
+        nodeType: this.userType,
+        target: this.User,
+        where: () => ({
+          id: {
+            $eq: sequelize.literal("(SELECT 1)"),
+          },
+        }),
+      });
+
+      const schema = new GraphQLSchema({
+        query: new GraphQLObjectType({
+          name: 'RootQueryType',
+          fields: {
+            users: {
+              type: usersConnection.connectionType,
+              args: {
+                ...usersConnection.connectionArgs,
+                random: {
+                  type: GraphQLInt,
+                }
+              },
+              resolve: usersConnection.resolveConnection,
+            },
+          }
+        })
+      });
+
+      const { data } = await graphql(schema, `
+        {
+          users(random: 1) {
+            edges {
+              node {
+                id
+              }
+            }
+          }
+        }
+      `, null, {
+        logging: sqlSpy
+      });
+
+      expect(data.users.edges.length).to.equal(1);
+    });
+
     it('should handle orderBy function case', async function () {
       const result = await graphql(this.schema, `
         {
