@@ -52,12 +52,8 @@ const server = new GraphQLServer({
 
     // Using the same EXPECTED_OPTIONS_KEY, store the DataLoader context
     // in the global request context
-    resolver.contextToOptions = {
-      dataloaderContext: [EXPECTED_OPTIONS_KEY]
-    };
-
     return {
-      dataloaderContext,
+      [EXPECTED_OPTIONS_KEY]: dataloaderContext,
     };
   },
 });
