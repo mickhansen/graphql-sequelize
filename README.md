@@ -35,6 +35,10 @@ Please take a look at [the tests](https://github.com/mickhansen/graphql-sequeliz
 - Automatically converts an arg named 'limit' to a sequelize limit
 - Automatically converts an arg named 'order' to a sequelize order
 
+### Example: graphql-sequelize + graphql-yoga + dataloader-sequelize
+
+You can find a great example [here](https://github.com/mickhansen/graphql-sequelize/tree/master/examples/graphql-yoga) with graphql-yoga and dataloader-sequelize.
+
 ### Relay & Connections
 
 [Relay documentation](docs/relay.md)
