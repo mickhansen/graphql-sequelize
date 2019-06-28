@@ -26,16 +26,16 @@ const typeDefs = `
 
 const resolvers = {
   Query: {
-    pet: resolver(models.Pet),
-    pets: resolver(models.Pet),
-    user: resolver(models.User),
-    users: resolver(models.User),
+    pet: (...args) => resolver(models.Pet)(...args),
+    pets: (...args) => resolver(models.Pet)(...args),
+    user: (...args) => resolver(models.User)(...args),
+    users: (...args) => resolver(models.User)(...args),
   },
   User: {
-    pets: resolver(models.User.Pets),
+    pets: (...args) => resolver(models.User.Pets)(...args),
   },
   Pet: {
-    owner: resolver(models.Pet.Owner),
+    owner: (...args) => resolver(models.Pet.Owner)(...args),
   },
 };
 
@@ -52,8 +52,12 @@ const server = new GraphQLServer({
 
     // Using the same EXPECTED_OPTIONS_KEY, store the DataLoader context
     // in the global request context
+    resolver.contextToOptions = {
+      dataloaderContext: [EXPECTED_OPTIONS_KEY]
+    };
+
     return {
-      [EXPECTED_OPTIONS_KEY]: dataloaderContext,
+      dataloaderContext,
     };
   },
 });
