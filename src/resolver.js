@@ -86,7 +86,7 @@ function resolverFactory(targetMaybeThunk, options = {}) {
       }
 
       if (list && !findOptions.order) {
-        findOptions.order = [[model.primaryKeyAttribute, 'ASC']];
+        findOptions.order = model._scope.order || [[model.primaryKeyAttribute, 'ASC']];
       }
 
       if (association) {
