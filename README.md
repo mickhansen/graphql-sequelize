@@ -96,6 +96,9 @@ about those is available in their [resolver docs](http://graphql.org/learn/execu
 
 ```js
 import {resolver} from 'graphql-sequelize';
+const Sequelize = require('sequelize');
+const Op = Sequelize.Op
+
 
 let User = sequelize.define('user', {
   name: Sequelize.STRING
@@ -172,7 +175,7 @@ let schema = new GraphQLSchema({
           // alphabetical sort by username
           before: (findOptions, args) => {
             findOptions.where = {
-              name: { "$like": `%${args.query}%` },
+              name: { [Op.like]: `%${args.query}%` },
             };
             findOptions.order = [['name', 'ASC']];
             return findOptions;
