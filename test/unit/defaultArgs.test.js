@@ -59,6 +59,22 @@ describe('defaultArgs', function () {
     expect(args.uuid.type).to.equal(GraphQLString);
   });
 
+  it('should return a key for a UUIDV4 primary key', function () {
+    var Model
+      , args;
+
+    Model = sequelize.define('DefaultArgModel', {
+      uuidv4: {
+        type: Sequelize.UUIDV4,
+        primaryKey: true
+      }
+    });
+
+    args = defaultArgs(Model);
+
+    expect(args.uuidv4.type).to.equal(GraphQLString);
+  });
+
   it('should return multiple keys for a compound primary key', function () {
     var Model
       , args;

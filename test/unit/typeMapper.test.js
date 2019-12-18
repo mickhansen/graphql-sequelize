@@ -18,6 +18,7 @@ const {
   STRING,
   TEXT,
   UUID,
+  UUIDV4,
   DATE,
   DATEONLY,
   TIME,
@@ -172,6 +173,12 @@ describe('typeMapper', () => {
   describe('UUID', function () {
     it('should map to GraphQLString', function () {
       expect(toGraphQL(new UUID(), Sequelize)).to.equal(GraphQLString);
+    });
+  });
+
+  describe('UUIDV4', function () {
+    it('should map to GraphQLString', function () {
+      expect(toGraphQL(new UUIDV4(), Sequelize)).to.equal(GraphQLString);
     });
   });
 
