@@ -50,6 +50,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     STRING,
     TEXT,
     UUID,
+    UUIDV4,
     DATE,
     DATEONLY,
     TIME,
@@ -80,6 +81,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
       sequelizeType instanceof STRING ||
       sequelizeType instanceof TEXT ||
       sequelizeType instanceof UUID ||
+      sequelizeType instanceof UUIDV4 ||
       sequelizeType instanceof DATEONLY ||
       sequelizeType instanceof TIME ||
       sequelizeType instanceof BIGINT ||
