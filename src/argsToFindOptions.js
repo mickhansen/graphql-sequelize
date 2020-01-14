@@ -11,11 +11,15 @@ export default function argsToFindOptions(args, targetAttributes) {
         } else if (key === 'offset') {
           result.offset = parseInt(args[key], 10);
         } else if (key === 'order') {
-          if (args[key].indexOf('reverse:') === 0) {
-            result.order = [[args[key].substring(8), 'DESC']];
-          } else {
-            result.order = [[args[key], 'ASC']];
-          }
+          result.order = [];
+          var orders = args[key].split(',');
+          orders.map(v => {
+            if (v.indexOf('reverse:') === 0) {
+              result.order.push([v.substring(8), 'DESC']);
+            } else {
+              result.order.push([v, 'ASC']);
+            }
+          });
         } else if (key === 'where') {
           // setup where
           result.where = replaceWhereOperators(args.where);
