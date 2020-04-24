@@ -9,7 +9,7 @@ If you wish to use non-sequelize entities, or if you want to override the defaul
 behaviour for sequelize models, you can specify a resolve function.
 
 ```js
-import {relay: {sequelizeNodeInterface}} from 'graphql-sequelize';
+import {createNodeInterface} from 'graphql-sequelize';
 import sequelize from './your-sequelize-instance';
 
 const {
@@ -20,7 +20,7 @@ const {
   nodeInterface,
   nodeField,
   nodeTypeMapper
-} = sequelizeNodeInterface(sequelize);
+} = createNodeInterface(sequelize);
 
 const userType = new GraphQLObjectType({
   name: User.name,
@@ -70,10 +70,10 @@ You can also add any non-model mapping you'd like to `mapTypes'.
 
 ## connections
 
-graphql-sequelize's sequelizeConnection will automatically handle pagination via cursors, first, last, before, after and orderBy.
+graphql-sequelize's createConnection will automatically handle pagination via cursors, first, last, before, after and orderBy.
 
 ```js
-import {relay: {sequelizeConnection}} from 'graphql-sequelize';
+import {createConnection} from 'graphql-sequelize';
 import sequelize from './your-sequelize-instance';
 
 const {
@@ -92,7 +92,7 @@ const taskType = new GraphQLObjectType({
   }
 });
 
-const userTaskConnection = sequelizeConnection({
+const userTaskConnection = createConnection({
   name: 'userTask',
   nodeType: taskType,
   target: User.Tasks | Task, // Can be an association for parent related connections or a model for "anonymous" connections
@@ -177,11 +177,11 @@ fragment getCreated on userTaskEdge {
 ```
 
 You can pass custom args in your connection definition and they will
-automaticly be turned into where arguments. These can be further modified
-using the `where` option in `sequelizeConnection`.
+automatically be turned into where arguments. These can be further modified
+using the `where` option in `createConnection`.
 
 ```js
-const userTaskConnection = sequelizeConnection({
+const userTaskConnection = createConnection({
   name: 'userTask',
   nodeType: taskType,
   target: User.Tasks,
@@ -212,3 +212,69 @@ const userType = new GraphQLObjectType({
     }
   }
 });
+```
+
+Alongside `createConnection` you can also use `createConnectionResolver` which can be useful for schemas defined via separated SDL and Resolver functions:
+
+```ts
+import {makeExecutableSchema} from 'graphql-tools';
+import {resolver, createNodeInterface, createConnectionResolver} from 'graphql-sequelize';
+import gql from 'graphql-tag';
+
+const { nodeField, nodeTypeMapper } = createNodeInterface(sequelize);
+
+nodeTypeMapper.mapTypes({
+  [User.name]: 'User' // Supports both new GraphQLObjectType({...}) and type name
+});
+
+const typeDefs = gql`
+  type Query {
+    node(id: ID!): Node
+    user(id: ID!): User
+    users(after: String, before: String, first: Int, last: Int, order: UserOrderBy): UserConnection
+  }
+
+  interface Node {
+    id: ID!
+  }
+
+  type User {
+    id: ID!
+    name: String
+  }
+
+  type UserConnection {
+    pageInfo: PageInfo!
+    edges: [UserEdge]
+    total: Int
+  }
+
+  type UserEdge {
+    node: User
+    cursor: String!
+  }
+
+  enum UserOrderBy {
+    ID
+  }
+`;
+
+const resolvers = {
+  User: {
+    name: (user) => user.name,
+  },
+  UserOrderBy: {
+    ID: ['id', 'ASC'],
+  },
+  Query: {
+    node: nodeField.resolve,
+    user: resolver(User),
+    users: createConnectionResolver({
+      target: User,
+      orderBy: 'UserOrderBy', // supports both new GraphQLEnumType({...}) and type name
+    }).resolveConnection,
+  },
+};
+
+const schema = makeExecutableSchema({ typeDefs , resolvers });
+```

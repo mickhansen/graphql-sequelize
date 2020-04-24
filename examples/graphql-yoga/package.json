@@ -1,0 +1,24 @@
+{
+  "name": "graphql-sequelize-example",
+  "private": true,
+  "version": "0.1.0",
+  "description": "An example of using graphql-sequelize in a NodeJS application",
+  "scripts": {
+    "build": "NODE_ENV=production babel src -d build",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dataloader-sequelize": "^1.7.2",
+    "express": "^4.16.3",
+    "graphql-relay": "^0.5.5",
+    "graphql-sequelize": "^8.3.1",
+    "graphql-yoga": "^1.14.12",
+    "sequelize": "^4.38.0",
+    "sqlite3": "^4.0.1"
+  },
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-transform-class-properties": "^6.24.1",
+    "babel-preset-env": "^1.7.0"
+  }
+}

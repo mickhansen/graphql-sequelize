@@ -1,49 +1,66 @@
-import { GraphQLList } from 'graphql';
+import { GraphQLList, GraphQLNonNull } from 'graphql';
 import _ from 'lodash';
 import argsToFindOptions from './argsToFindOptions';
 import { isConnection, handleConnection, nodeType } from './relay';
-import invariant from 'assert';
+import assert from 'assert';
 import Promise from 'bluebird';
-import dataLoaderSequelize from 'dataloader-sequelize';
 
 function whereQueryVarsToValues(o, vals) {
-  _.forEach(o, (v, k) => {
-    if (typeof v === 'function') {
+  [
+    ...Object.getOwnPropertyNames(o),
+    ...Object.getOwnPropertySymbols(o)
+  ].forEach(k => {
+    if (_.isFunction(o[k])) {
       o[k] = o[k](vals);
-    } else if (v && typeof v === 'object') {
-      whereQueryVarsToValues(v, vals);
+      return;
+    }
+    if (_.isObject(o[k])) {
+      whereQueryVarsToValues(o[k], vals);
     }
   });
 }
 
-function resolverFactory(target, options = {}) {
-  if (options.dataLoader !== false) {
-    dataLoaderSequelize(target);
-  }
+function checkIsModel(target) {
+  return !!target.getTableName;
+}
 
-  var resolver
-    , targetAttributes
-    , isModel = !!target.getTableName
-    , isAssociation = !!target.associationType
-    , association = isAssociation && target
-    , model = isAssociation && target.target || isModel && target;
+function checkIsAssociation(target) {
+  return !!target.associationType;
+}
 
-  targetAttributes = Object.keys(model.rawAttributes);
+function resolverFactory(targetMaybeThunk, options = {}) {
+  assert(
+    typeof targetMaybeThunk === 'function' || checkIsModel(targetMaybeThunk) || checkIsAssociation(targetMaybeThunk),
+    'resolverFactory should be called with a model, an association or a function (which resolves to a model or an association)'
+  );
 
-  invariant(options.include === undefined, 'Include support has been removed in favor of dataloader batching');
+  const contextToOptions = _.assign({}, resolverFactory.contextToOptions, options.contextToOptions);
+
+  assert(options.include === undefined, 'Include support has been removed in favor of dataloader batching');
   if (options.before === undefined) options.before = (options) => options;
   if (options.after === undefined) options.after = (result) => result;
   if (options.handleConnection === undefined) options.handleConnection = true;
 
-  resolver = function (source, args, context, info) {
-    var type = info.returnType
-      , list = options.list || type instanceof GraphQLList
+  return async function (source, args, context, info) {
+    let target = typeof targetMaybeThunk === 'function' && !checkIsModel(targetMaybeThunk) ?
+                 await Promise.resolve(targetMaybeThunk(source, args, context, info)) : targetMaybeThunk
+      , isModel = checkIsModel(target)
+      , isAssociation = checkIsAssociation(target)
+      , association = isAssociation && target
+      , model = isAssociation && target.target || isModel && target
+      , type = info.returnType
+      , list = options.list ||
+        type instanceof GraphQLList ||
+        type instanceof GraphQLNonNull && type.ofType instanceof GraphQLList;
+
+    let targetAttributes = Object.keys(model.rawAttributes)
       , findOptions = argsToFindOptions(args, targetAttributes);
 
     info = {
       ...info,
       type: type,
-      source: source
+      source: source,
+      target: target
     };
 
     context = context || {};
@@ -58,6 +75,10 @@ function resolverFactory(target, options = {}) {
     findOptions.logging = findOptions.logging || context.logging;
     findOptions.graphqlContext = context;
 
+    _.each(contextToOptions, (as, key) => {
+      findOptions[as] = context[key];
+    });
+
     return Promise.resolve(options.before(findOptions, args, context, info)).then(function (findOptions) {
       if (args.where && !_.isEmpty(info.variableValues)) {
         whereQueryVarsToValues(args.where, info.variableValues);
@@ -69,9 +90,9 @@ function resolverFactory(target, options = {}) {
       }
 
       if (association) {
-        if (source.get(association.as) !== undefined) {
+        if (source[association.as] !== undefined) {
           // The user did a manual include
-          const result = source.get(association.as);
+          const result = source[association.as];
           if (options.handleConnection && isConnection(info.returnType)) {
             return handleConnection(result, args);
           }
@@ -92,8 +113,8 @@ function resolverFactory(target, options = {}) {
       return options.after(result, args, context, info);
     });
   };
-
-  return resolver;
 }
+
+resolverFactory.contextToOptions = {};
 
 module.exports = resolverFactory;

@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { mapType, toGraphQL } from '../../src/typeMapper';
 import JSONType from '../../src/types/jsonType';
+import DateType from '../../src/types/dateType';
 
 import Sequelize from 'sequelize';
 
@@ -8,6 +9,7 @@ const {
   BOOLEAN,
   ENUM,
   FLOAT,
+  REAL,
   CHAR,
   DECIMAL,
   DOUBLE,
@@ -16,6 +18,7 @@ const {
   STRING,
   TEXT,
   UUID,
+  UUIDV4,
   DATE,
   DATEONLY,
   TIME,
@@ -87,8 +90,8 @@ describe('typeMapper', () => {
   });
 
   describe('DATE', function () {
-    it('should map to GraphQLString', function () {
-      expect(toGraphQL(new DATE(), Sequelize)).to.equal(GraphQLString);
+    it('should map to DateType', function () {
+      expect(toGraphQL(new DATE(), Sequelize)).to.equal(DateType);
     });
   });
 
@@ -137,6 +140,11 @@ describe('typeMapper', () => {
     });
   });
 
+  describe('REAL', function () {
+    it('should map to GraphQLFloat', function () {
+      expect(toGraphQL(new REAL(), Sequelize)).to.equal(GraphQLFloat);
+    });
+  });
 
   describe('INTEGER', function () {
     it('should map to GraphQLInt', function () {
@@ -165,6 +173,12 @@ describe('typeMapper', () => {
   describe('UUID', function () {
     it('should map to GraphQLString', function () {
       expect(toGraphQL(new UUID(), Sequelize)).to.equal(GraphQLString);
+    });
+  });
+
+  describe('UUIDV4', function () {
+    it('should map to GraphQLString', function () {
+      expect(toGraphQL(new UUIDV4(), Sequelize)).to.equal(GraphQLString);
     });
   });
 
