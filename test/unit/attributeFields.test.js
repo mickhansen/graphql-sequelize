@@ -3,8 +3,10 @@
 import {expect} from 'chai';
 import Sequelize from 'sequelize';
 import attributeFields from '../../src/attributeFields';
+import DateType from '../../src/types/dateType';
 
 import { sequelize } from '../support/helper';
+
 
 import {
   GraphQLString,
@@ -116,7 +118,7 @@ describe('attributeFields', function () {
 
     expect(fields.virtualBoolean.type).to.equal(GraphQLBoolean);
 
-    expect(fields.date.type).to.equal(GraphQLString);
+    expect(fields.date.type).to.equal(DateType);
 
     expect(fields.time.type).to.equal(GraphQLString);
 

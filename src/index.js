@@ -7,5 +7,10 @@ module.exports = {
   attributeFields: require('./attributeFields'),
   simplifyAST: require('./simplifyAST'),
   relay: require('./relay'),
+  sequelizeConnection: require('./relay').sequelizeConnection,
+  createConnection: require('./relay').createConnection,
+  createConnectionResolver: require('./relay').createConnectionResolver,
+  createNodeInterface: require('./relay').createNodeInterface,
   JSONType: require('./types/jsonType'),
+  DateType: require('./types/dateType'),
 };

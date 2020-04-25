@@ -9,7 +9,8 @@ import {uniq, property, sortBy} from 'lodash';
 import { Promise, sequelize } from '../../support/helper';
 
 import {
-  sequelizeConnection
+  sequelizeConnection,
+  createConnectionResolver
 } from '../../../src/relay';
 
 import {
@@ -17,6 +18,7 @@ import {
   GraphQLNonNull,
   GraphQLBoolean,
   GraphQLEnumType,
+  GraphQLList,
   GraphQLObjectType,
   GraphQLSchema,
   graphql
@@ -111,7 +113,7 @@ describe('relay', function () {
       this.userTaskConnection = sequelizeConnection({
         name: 'userTask',
         nodeType: this.taskType,
-        target: this.User.Tasks,
+        target: () => this.User.Tasks,
         orderBy: new GraphQLEnumType({
           name: this.User.name + this.Task.name + 'ConnectionOrder',
           values: {
@@ -122,6 +124,7 @@ describe('relay', function () {
           }
         }),
         before: (options) => {
+          options.raw = true;
           if (options.order && options.order[0][0] === 'updatedAt') {
             if (sequelize.dialect.name === 'postgres') {
               options.order = Sequelize.literal(`
@@ -175,16 +178,19 @@ describe('relay', function () {
         }
       });
 
+      this.orderByEnum = new GraphQLEnumType({
+        name: this.User.name + this.Project.name + 'ConnectionOrder',
+        values: {
+          ID: {value: [this.Project.primaryKeyAttribute, 'ASC']},
+          LATEST: {value: [this.Project.primaryKeyAttribute, 'DESC']}
+        }
+      });
+
       this.userProjectConnection = sequelizeConnection({
         name: 'userProject',
         nodeType: this.projectType,
         target: this.User.Projects,
-        orderBy: new GraphQLEnumType({
-          name: this.User.name + this.Project.name + 'ConnectionOrder',
-          values: {
-            ID: {value: [this.Project.primaryKeyAttribute, 'ASC']}
-          }
-        }),
+        orderBy: this.orderByEnum,
         edgeFields: {
           isOwner: {
             type: GraphQLBoolean,
@@ -194,6 +200,27 @@ describe('relay', function () {
           }
         }
       });
+
+      this.userProjectConnection2 = new GraphQLObjectType({
+        name: 'UserProjectConnection2',
+        fields: {
+          edges: {
+            type: new GraphQLList(new GraphQLObjectType({
+              name: 'UserProjectEdge2',
+              fields: {
+                node: {
+                  type: this.projectType,
+                }
+              }
+            })),
+          }
+        }
+      });
+
+      this.userProjectConnection2Resolver = createConnectionResolver({
+        target: this.User.Projects,
+        orderBy: this.orderByEnum.name,
+      })
 
       this.userType = new GraphQLObjectType({
         name: this.User.name,
@@ -220,7 +247,12 @@ describe('relay', function () {
             type: this.userProjectConnection.connectionType,
             args: this.userProjectConnection.connectionArgs,
             resolve: this.userProjectConnection.resolve
-          }
+          },
+          projects2: {
+            type: this.userProjectConnection2,
+            args: this.userProjectConnection.connectionArgs,
+            resolve: this.userProjectConnection2Resolver.resolveConnection,
+          },
         }
       });
       this.viewerTaskConnection = sequelizeConnection({
@@ -507,7 +539,7 @@ describe('relay', function () {
     });
 
     it('should handle orderBy function case', async function () {
-      await graphql(this.schema, `
+      const result = await graphql(this.schema, `
         {
           user(id: ${this.userA.id}) {
             projects(first: 1) {
@@ -529,8 +561,31 @@ describe('relay', function () {
         }
       `, null, {});
 
+      if (result.errors) throw new Error(result.errors[0]);
+
       expect(this.projectOrderSpy).to.have.been.calledOnce;
       expect(this.projectOrderSpy.alwaysCalledWithMatch({}, { first: 5 })).to.be.ok;
+    });
+
+    it('should support connectionResolver orderBy enum references via name', async function () {
+      const result = await graphql(this.schema, `
+        {
+          user(id: ${this.userA.id}) {
+            projects2(orderBy: LATEST) {
+              edges {
+                node {
+                  id
+                }
+              }
+            }
+          }
+        }
+      `, null, {});
+
+      if (result.errors) throw new Error(result.errors[0]);
+
+      const node = result.data.user.projects2.edges[0].node;
+      expect(+fromGlobalId(node.id).id).to.equal(5);
     });
 
     it('should properly reverse orderBy with NULLS and last', async function () {
@@ -1034,13 +1089,9 @@ describe('relay', function () {
             }
           }
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null);
 
       if (result.errors) throw new Error(result.errors[0].stack);
-
-      expect(sqlSpy.callCount).to.equal(3);
 
       const nodeNames = result.data.user.projects.edges.map(edge => {
         return edge.node.tasks.edges.map(edge => {
@@ -1093,9 +1144,7 @@ describe('relay', function () {
             }
           }
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null);
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
@@ -1108,13 +1157,9 @@ describe('relay', function () {
 
       expect(projects[0].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[4].get('id')));
       expect(projects[1].tasks.edges[0].node.id).to.equal(toGlobalId(this.Task.name, this.userA.tasks[8].get('id')));
-
-      expect(sqlSpy.callCount).to.equal(3);
     });
 
     it('should support connection fields', async function () {
-      let sqlSpy = sinon.spy();
-
       let result = await graphql(this.schema, `
         {
           user(id: ${this.userA.id}) {
@@ -1123,9 +1168,7 @@ describe('relay', function () {
             }
           }
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null, {});
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
@@ -1134,8 +1177,6 @@ describe('relay', function () {
     });
 
     it('should support connection fields on nested connections', async function () {
-      let sqlSpy = sinon.spy();
-
       let result = await graphql(this.schema, `
         {
           user(id: ${this.userA.id}) {
@@ -1150,9 +1191,7 @@ describe('relay', function () {
             }
           }
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null, {});
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
@@ -1181,9 +1220,7 @@ describe('relay', function () {
         fragment projectOwner on userProjectEdge {
           isOwner
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null);
 
       if (result.errors) throw new Error(result.errors[0].stack);
 
@@ -1202,9 +1239,7 @@ describe('relay', function () {
             }
           }
         }
-      `, null, {
-        logging: sqlSpy
-      });
+      `, null, {});
 
       if (result.errors) throw new Error(result.errors[0].stack);
 

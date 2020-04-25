@@ -1,11 +1,13 @@
 import {
-   GraphQLInt,
-   GraphQLString,
-   GraphQLBoolean,
-   GraphQLFloat,
-   GraphQLEnumType,
-   GraphQLList
- } from 'graphql';
+  GraphQLInt,
+  GraphQLString,
+  GraphQLBoolean,
+  GraphQLFloat,
+  GraphQLEnumType,
+  GraphQLList,
+} from 'graphql';
+
+import DateType from './types/dateType';
 import JSONType from './types/jsonType';
 import _ from 'lodash';
 
@@ -17,7 +19,6 @@ let customTypeMapper;
 export function mapType(mapFunc) {
   customTypeMapper = mapFunc;
 }
-
 
 /**
  * Checks the type of the sequelize data type and
@@ -40,6 +41,7 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     BOOLEAN,
     ENUM,
     FLOAT,
+    REAL,
     CHAR,
     DECIMAL,
     DOUBLE,
@@ -48,12 +50,14 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     STRING,
     TEXT,
     UUID,
+    UUIDV4,
     DATE,
     DATEONLY,
     TIME,
     ARRAY,
     VIRTUAL,
-    JSON
+    JSON,
+    JSONB
   } = sequelizeTypes;
 
   // Map of special characters
@@ -66,22 +70,27 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
   if (sequelizeType instanceof BOOLEAN) return GraphQLBoolean;
 
   if (sequelizeType instanceof FLOAT ||
+      sequelizeType instanceof REAL ||
       sequelizeType instanceof DOUBLE) return GraphQLFloat;
 
-  if (sequelizeType instanceof INTEGER) {
-    return GraphQLInt;
+  if (sequelizeType instanceof DATE) {
+    return DateType;
   }
 
   if (sequelizeType instanceof CHAR ||
       sequelizeType instanceof STRING ||
       sequelizeType instanceof TEXT ||
       sequelizeType instanceof UUID ||
-      sequelizeType instanceof DATE ||
+      sequelizeType instanceof UUIDV4 ||
       sequelizeType instanceof DATEONLY ||
       sequelizeType instanceof TIME ||
       sequelizeType instanceof BIGINT ||
       sequelizeType instanceof DECIMAL) {
     return GraphQLString;
+  }
+
+  if (sequelizeType instanceof INTEGER) {
+    return GraphQLInt;
   }
 
   if (sequelizeType instanceof ARRAY) {
@@ -106,7 +115,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     return returnType;
   }
 
-  if (sequelizeType instanceof JSON) {
+  if (sequelizeType instanceof JSONB ||
+      sequelizeType instanceof JSON) {
     return JSONType;
   }
 

@@ -1,12 +1,7 @@
-import { resetCache } from 'dataloader-sequelize';
 import Sequelize from 'sequelize';
 
 export const Promise = Sequelize.Promise;
 export const sequelize = createSequelize();
-
-if (typeof afterEach !== 'undefined') {
-  afterEach(resetCache);
-}
 
 export function createSequelize(options = {}) {
   const env = process.env;

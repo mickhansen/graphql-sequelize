@@ -169,7 +169,7 @@ describe('relay', function () {
     });
 
     nodeTypeMapper.mapTypes({
-      [User.name]: { type: userType },
+      [User.name]: { type: 'User' },
       [Project.name]: { type: projectType},
       [Task.name]: { type: taskType },
       Viewer: { type: viewerType },
@@ -567,9 +567,7 @@ describe('relay', function () {
           }
         }
       }
-    `, null, {
-      logging: sqlSpy
-    }).then(result => {
+    `, null).then(result => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.project.users.edges).to.have.length(2);
@@ -584,8 +582,6 @@ describe('relay', function () {
       expect(userB).to.have.property('tasks');
       expect(userB.tasks.edges).to.have.length.above(0);
       expect(userB.tasks.edges[0].node.name).to.be.ok;
-
-      expect(sqlSpy).to.have.been.calledThrice;
     });
   });
 
