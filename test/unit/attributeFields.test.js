@@ -54,6 +54,9 @@ describe('attributeFields', function () {
       enumSpecial: {
         type: Sequelize.ENUM('foo_bar', 'foo-bar', '25.8', 'two--specials', '¼', ' ¼--½_¾ - ')
       },
+      enumArray: {
+        type: Sequelize.ARRAY(Sequelize.ENUM('first', 'second'))
+      },
       list: {
         type: Sequelize.ARRAY(Sequelize.STRING)
       },
@@ -87,7 +90,7 @@ describe('attributeFields', function () {
     expect(Object.keys(fields)).to.deep.equal([
       'id', 'email', 'firstName', 'lastName',
       'char', 'float', 'decimal',
-      'enum', 'enumSpecial',
+      'enum', 'enumSpecial', 'enumArray',
       'list', 'virtualInteger', 'virtualBoolean',
       'date', 'time', 'dateonly', 'comment'
     ]);
@@ -107,6 +110,9 @@ describe('attributeFields', function () {
     expect(fields.enum.type).to.be.an.instanceOf(GraphQLEnumType);
 
     expect(fields.enumSpecial.type).to.be.an.instanceOf(GraphQLEnumType);
+
+    expect(fields.enumArray.type).to.be.an.instanceOf(GraphQLList);
+    expect(fields.enumArray.type.ofType).to.be.an.instanceOf(GraphQLEnumType);
 
     expect(fields.list.type).to.be.an.instanceOf(GraphQLList);
 
@@ -129,7 +135,7 @@ describe('attributeFields', function () {
     var fields = attributeFields(Model, {map: {id: 'mappedId'}});
     expect(Object.keys(fields)).to.deep.equal([
       'mappedId', 'email', 'firstName', 'lastName', 'char', 'float', 'decimal',
-      'enum', 'enumSpecial',
+      'enum', 'enumSpecial', 'enumArray',
       'list', 'virtualInteger', 'virtualBoolean', 'date',
       'time', 'dateonly', 'comment'
     ]);
@@ -141,7 +147,7 @@ describe('attributeFields', function () {
     });
     expect(Object.keys(fields)).to.deep.equal([
       'ids', 'emails', 'firstNames', 'lastNames', 'chars', 'floats', 'decimals',
-      'enums', 'enumSpecials',
+      'enums', 'enumSpecials', 'enumArrays',
       'lists', 'virtualIntegers', 'virtualBooleans',
       'dates', 'times', 'dateonlys', 'comments'
     ]);
@@ -151,7 +157,7 @@ describe('attributeFields', function () {
     var fields = attributeFields(Model, {
       exclude: [
         'id', 'email', 'char', 'float', 'decimal',
-        'enum', 'enumSpecial',
+        'enum', 'enumSpecial', 'enumArray',
         'list', 'virtualInteger', 'virtualBoolean',
         'date','time','dateonly','comment'
       ]
@@ -164,7 +170,7 @@ describe('attributeFields', function () {
     var fields = attributeFields(Model, {
       exclude: field => ~[
         'id', 'email', 'char', 'float', 'decimal',
-        'enum', 'enumSpecial',
+        'enum', 'enumSpecial', 'enumArray',
         'list', 'virtualInteger', 'virtualBoolean',
         'date','time','dateonly','comment'
       ].indexOf(field)
@@ -209,6 +215,7 @@ describe('attributeFields', function () {
 
     expect(fields.enum.type.name).to.equal(modelName + 'enum' + 'EnumType');
     expect(fields.enumSpecial.type.name).to.equal(modelName + 'enumSpecial' + 'EnumType');
+    expect(fields.enumArray.type.ofType.name).to.equal(modelName + 'enumArray' + 'EnumType');
   });
 
   it('should support enum values with characters not allowed by GraphQL', function () {

@@ -1,5 +1,5 @@
 import * as typeMapper from './typeMapper';
-import { GraphQLNonNull, GraphQLEnumType } from 'graphql';
+import { GraphQLNonNull, GraphQLEnumType, GraphQLList } from 'graphql';
 import { globalIdField } from 'graphql-relay';
 
 module.exports = function (Model, options = {}) {
@@ -30,17 +30,28 @@ module.exports = function (Model, options = {}) {
       type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
     };
 
-    if (memo[key].type instanceof GraphQLEnumType ) {
+    if (memo[key].type instanceof GraphQLEnumType || 
+      (memo[key].type instanceof GraphQLList && memo[key].type.ofType instanceof GraphQLEnumType)
+    ) {
       var typeName = `${Model.name}${key}EnumType`;
       /*
       Cache enum types to prevent duplicate type name error
       when calling attributeFields multiple times on the same model
       */
       if (cache[typeName]) {
-        memo[key].type = cache[typeName];
+        if (memo[key].type.ofType) {
+          memo[key].type.ofType = cache[typeName];
+        } else {
+          memo[key].type = cache[typeName];
+        }
       } else {
-        memo[key].type.name = typeName;
-        cache[typeName] = memo[key].type;
+        if (memo[key].type.ofType) {
+          memo[key].type.ofType.name = typeName;
+          cache[typeName] = memo[key].type.ofType;
+        } else {
+          memo[key].type.name = typeName;
+          cache[typeName] = memo[key].type;
+        }
       }
 
     }
