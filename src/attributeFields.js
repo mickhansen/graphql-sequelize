@@ -30,8 +30,8 @@ module.exports = function (Model, options = {}) {
       type: typeMapper.toGraphQL(type, Model.sequelize.constructor)
     };
 
-    if (memo[key].type instanceof GraphQLEnumType || 
-      (memo[key].type instanceof GraphQLList && memo[key].type.ofType instanceof GraphQLEnumType)
+    if (memo[key].type instanceof GraphQLEnumType ||
+      memo[key].type instanceof GraphQLList && memo[key].type.ofType instanceof GraphQLEnumType
     ) {
       var typeName = `${Model.name}${key}EnumType`;
       /*
@@ -44,14 +44,12 @@ module.exports = function (Model, options = {}) {
         } else {
           memo[key].type = cache[typeName];
         }
+      } else if (memo[key].type.ofType) {
+        memo[key].type.ofType.name = typeName;
+        cache[typeName] = memo[key].type.ofType;
       } else {
-        if (memo[key].type.ofType) {
-          memo[key].type.ofType.name = typeName;
-          cache[typeName] = memo[key].type.ofType;
-        } else {
-          memo[key].type.name = typeName;
-          cache[typeName] = memo[key].type;
-        }
+        memo[key].type.name = typeName;
+        cache[typeName] = memo[key].type;
       }
 
     }
