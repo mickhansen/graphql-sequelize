@@ -57,7 +57,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
     ARRAY,
     VIRTUAL,
     JSON,
-    JSONB
+    JSONB,
+    CITEXT,
   } = sequelizeTypes;
 
   // Map of special characters
@@ -85,7 +86,8 @@ export function toGraphQL(sequelizeType, sequelizeTypes) {
       sequelizeType instanceof DATEONLY ||
       sequelizeType instanceof TIME ||
       sequelizeType instanceof BIGINT ||
-      sequelizeType instanceof DECIMAL) {
+      sequelizeType instanceof DECIMAL ||
+      sequelizeType instanceof CITEXT) {
     return GraphQLString;
   }
 
