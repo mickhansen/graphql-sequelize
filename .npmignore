@@ -35,3 +35,8 @@ docker-compose.yml
 
 # Git
 pre-commit
+
+# Examples / Docs
+exampels
+README.md
+docs
