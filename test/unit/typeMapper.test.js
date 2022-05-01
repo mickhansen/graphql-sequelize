@@ -25,7 +25,8 @@ const {
   ARRAY,
   VIRTUAL,
   JSON,
-  JSONB
+  JSONB,
+  INET,
   } = Sequelize;
 
 import {
@@ -203,6 +204,12 @@ describe('typeMapper', () => {
   describe('JSONB', function () {
     it('should map to JSONType', function () {
       expect(toGraphQL(new JSONB(), Sequelize)).to.equal(JSONType);
+    });
+  });
+
+  describe('INET', function () {
+    it('should map to instance of GraphQLString', function () {
+      expect(toGraphQL(new INET('127.0.0.1'), Sequelize)).to.equal(GraphQLString);
     });
   });
 });
