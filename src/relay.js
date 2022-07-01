@@ -211,36 +211,39 @@ export function createConnectionResolver({
         options.limit = parseInt(args.first || args.last, 10);
       }
 
-      // Grab enum type by name if it's a string
-      orderByEnum = typeof orderByEnum === 'string' ? info.schema.getType(orderByEnum) : orderByEnum;
+      if (!options.order) {
+        // Grab enum type by name if it's a string
+        orderByEnum = typeof orderByEnum === 'string' ? info.schema.getType(orderByEnum) : orderByEnum;
 
-      let orderBy = args.orderBy ? args.orderBy :
-                    orderByEnum ? [orderByEnum._values[0].value] :
-                    [[model.primaryKeyAttribute, 'ASC']];
+        let orderBy = args.orderBy ? args.orderBy :
+            orderByEnum ? [orderByEnum._values[0].value] :
+                [[model.primaryKeyAttribute, 'ASC']];
 
-      if (orderByEnum && typeof orderBy === 'string') {
-        orderBy = [orderByEnum._nameLookup[args.orderBy].value];
+        if (orderByEnum && typeof orderBy === 'string') {
+          orderBy = [orderByEnum._nameLookup[args.orderBy].value];
+        }
+
+        let orderAttribute = orderByAttribute(orderBy[0][0], {
+          source: info.source,
+          args,
+          context,
+          info
+        });
+        let orderDirection = orderByDirection(orderBy[0][1], args);
+
+        options.order = [
+          [orderAttribute, orderDirection]
+        ];
+
+        if (orderAttribute !== model.primaryKeyAttribute) {
+          options.order.push([model.primaryKeyAttribute, orderByDirection('ASC', args)]);
+        }
+
+        if (typeof orderAttribute === 'string') {
+          options.attributes.push(orderAttribute);
+        }
       }
 
-      let orderAttribute = orderByAttribute(orderBy[0][0], {
-        source: info.source,
-        args,
-        context,
-        info
-      });
-      let orderDirection = orderByDirection(orderBy[0][1], args);
-
-      options.order = [
-        [orderAttribute, orderDirection]
-      ];
-
-      if (orderAttribute !== model.primaryKeyAttribute) {
-        options.order.push([model.primaryKeyAttribute, orderByDirection('ASC', args)]);
-      }
-
-      if (typeof orderAttribute === 'string') {
-        options.attributes.push(orderAttribute);
-      }
 
       if (options.limit && !options.attributes.some(attribute => attribute.length === 2 && attribute[1] === 'full_count')) {
         if (model.sequelize.dialect.name === 'postgres') {
