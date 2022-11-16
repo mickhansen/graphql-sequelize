@@ -3,7 +3,6 @@ import _ from 'lodash';
 import argsToFindOptions from './argsToFindOptions';
 import { isConnection, handleConnection, nodeType } from './relay';
 import assert from 'assert';
-import Promise from 'bluebird';
 
 function whereQueryVarsToValues(o, vals) {
   [

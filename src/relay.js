@@ -57,7 +57,7 @@ export function idFetcher(sequelize, nodeTypeMapper) {
 
     const model = Object.keys(sequelize.models).find(model => model === type);
     if (model) {
-      return sequelize.models[model].findById(id);
+      return sequelize.models[model].findByPk ? sequelize.models[model].findByPk(id) : sequelize.models[model].findById(id);
     }
 
     if (nodeType) {
@@ -75,6 +75,8 @@ export function typeResolver(nodeTypeMapper) {
                  ? obj.Model.options.name.singular
                  : obj._modelOptions
                  ? obj._modelOptions.name.singular
+                 : obj.constructor.options
+                 ? obj.constructor.options.name.singular
                  : obj.name);
 
     if (!type) {
@@ -84,7 +86,7 @@ export function typeResolver(nodeTypeMapper) {
 
     const nodeType = nodeTypeMapper.item(type);
     if (nodeType) {
-      return typeof nodeType.type === 'string' ? info.schema.getType(nodeType.type) : nodeType.type;
+      return typeof nodeType.type === 'string' ? nodeType.type : nodeType.type.name;
     }
 
     return null;

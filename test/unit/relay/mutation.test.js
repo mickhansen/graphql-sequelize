@@ -152,24 +152,28 @@ describe('relay', function () {
             userId: this.viewer.get('id')
           }));
 
-          let result = await graphql(this.schema, `
-            mutation {
-              addTask(input: {title: "${title}", clientMutationId: "${Math.random().toString()}"}) {
-                task {
-                  id
-                }
-
-                newTaskEdge {
-                  cursor
-                  node {
+          let result = await graphql({
+            schema: this.schema,
+            source: `
+              mutation {
+                addTask(input: {title: "${title}", clientMutationId: "${Math.random().toString()}"}) {
+                  task {
                     id
-                    title
+                  }
+
+                  newTaskEdge {
+                    cursor
+                    node {
+                      id
+                      title
+                    }
                   }
                 }
               }
+            `,
+            contextValue: {
+              viewer: this.viewer
             }
-          `, null, {
-            viewer: this.viewer
           });
 
           if (result.errors) throw new Error(result.errors[0].stack);

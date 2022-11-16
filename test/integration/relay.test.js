@@ -1,6 +1,6 @@
 'use strict';
 
-import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper';
+import { sequelize, beforeRemoveAllTables } from '../support/helper';
 
 import { expect } from 'chai';
 import resolver from '../../src/resolver';
@@ -36,12 +36,12 @@ function generateTask(id) {
   };
 }
 
-const generateCustom = Promise.method(id => {
+async function generateCustom(id) {
   return {
     id,
     value: `custom type ${ id }`
   };
-});
+}
 
 describe('relay', function () {
   beforeRemoveAllTables();
@@ -57,7 +57,7 @@ describe('relay', function () {
     , nodeField
     , schema;
 
-  before(function () {
+  before(() => {
     sequelize.modelManager.models = [];
     sequelize.models = {};
     User = sequelize.define('User', {
@@ -136,14 +136,15 @@ describe('relay', function () {
           args: connectionArgs,
           resolve: resolver(Project.Users)
         }
-      }
+      },
+      interfaces: [nodeInterface]
     });
 
     viewerType = new GraphQLObjectType({
       name: 'Viewer',
       description: 'root viewer for queries',
       fields: () => ({
-        id: globalIdField('Viewer'),
+        id: globalIdField('Viewer', () => 1),
         name: {
           type: GraphQLString,
           resolve: () => 'Viewer!'
@@ -174,14 +175,13 @@ describe('relay', function () {
       [Task.name]: { type: taskType },
       Viewer: { type: viewerType },
       [customType.name]: {
-        type: customType,
+        type: 'Custom',
         resolve(globalId) {
           const { id } = fromGlobalId(globalId);
           return generateCustom(id);
         }
       }
     });
-
 
     schema = new GraphQLSchema({
       query: new GraphQLObjectType({
@@ -237,16 +237,15 @@ describe('relay', function () {
         }
       })
     });
-
   });
 
-  before(function () {
+  before(() => {
     var userId = 1
       , projectId = 1
       , taskId = 1;
 
-    return sequelize.sync({force: true}).bind(this).then(function () {
-      return Promise.join(
+    return sequelize.sync({ force: true }).then(() => {
+      return Promise.all([
         Project.create({
           id: projectId++,
           name: 'project-' + Math.random().toString()
@@ -265,7 +264,7 @@ describe('relay', function () {
         }, {
           include: [User.Tasks]
         })
-      ).bind(this).spread(function (project, userA, userB) {
+      ]).then(([project, userA, userB]) => {
         this.project = project;
         this.userA = userA;
         this.userB = userB;
@@ -274,86 +273,99 @@ describe('relay', function () {
     });
   });
 
-  before(function () {
+  before(() => {
     return this.project.setUsers([this.userA.id, this.userB.id]);
   });
 
-  it('should support unassociated GraphQL types', function () {
-    var globalId = toGlobalId('Viewer');
-    return graphql(schema, `
-      {
-        node(id: "${globalId}") {
-          id
+  it('should support unassociated GraphQL types', () => {
+    var globalId = toGlobalId('Viewer', 1);
+
+    return graphql({
+      schema,
+      source: `
+        {
+          node(id: "${globalId}") {
+            id
+          }
         }
-      }
-    `).then(result => {
+    `}).then(result => {
       expect(result.data.node.id).to.equal(globalId);
     });
 
   });
 
-  it('should return userA when running a node query', function () {
+  it('should return userA when running a node query', () => {
     var user = this.userA
       , globalId = toGlobalId('User', user.id);
 
-    return graphql(schema, `
-      {
-        node(id: "${globalId}") {
-          id
-          ... on User {
-            name
+    return graphql({
+      schema,
+      source: `
+        {
+          node(id: "${globalId}") {
+            id
+            ... on User {
+              name
+            }
           }
         }
-      }
-    `).then(result => {
+      `
+    }).then(result => {
       expect(result.data.node.id).to.equal(globalId);
       expect(result.data.node.name).to.equal(user.name);
     });
   });
 
-  describe('node queries', function () {
-    it('should allow returning a custom entity', function () {
-      generateCustom(1).then(custom => {
+  describe('node queries', () => {
+    it('should allow returning a custom entity', () => {
+      generateCustom(1).then(async custom => {
         const globalId = toGlobalId('Custom', custom.id);
 
-        return graphql(schema, `
-          {
-            node(id: "${globalId}") {
-              id
-              ... on Custom {
-                value
+        return graphql({
+          schema,
+          source: `
+            {
+              node(id: "${globalId}") {
+                id
+                ... on Custom {
+                  value
+                }
               }
             }
-          }
-        `).then(result => {
+          `
+        }).then(result => {
           expect(result.data.node.id).to.equal(globalId);
           expect(result.data.node.value).to.equal(custom.value);
         });
       });
     });
 
-    it('should merge nested queries from multiple fragments', function () {
-      var globalId = toGlobalId('Viewer');
-      return graphql(schema, `
-        {
-          node(id: "${globalId}") {
-            id
-            ... F0
-            ... F1
+    it('should merge nested queries from multiple fragments', () => {
+      var globalId = toGlobalId('Viewer', 1);
+
+      return graphql({
+        schema,
+        source: `
+          {
+            node(id: "${globalId}") {
+              id
+              ...F0
+              ...F1
+            }
           }
-        }
-        fragment F0 on Viewer {
-          allProjects {
-            id
+          fragment F0 on Viewer {
+            allProjects {
+              id
+            }
           }
-        }
-        fragment F1 on Viewer {
-          allProjects {
-            id
-            name
+          fragment F1 on Viewer {
+            allProjects {
+              id
+              name
+            }
           }
-        }
-      `).then(result => {
+        `
+      }).then(result => {
         if (result.errors) throw result.errors[0];
 
         expect(result.data.node.allProjects[0].id).to.not.be.null;
@@ -362,23 +374,26 @@ describe('relay', function () {
     });
   });
 
-  it('should support first queries on connections', function () {
+  it('should support first queries on connections', () => {
     var user = this.userB;
 
-    return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          tasks(first: 1) {
-            edges {
-              node {
-                name
+    return graphql({
+      schema,
+      source: `
+        {
+          user(id: ${user.id}) {
+            name
+            tasks(first: 1) {
+              edges {
+                node {
+                  name
+                }
               }
             }
           }
         }
-      }
-    `).then(function (result) {
+      `
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data).to.deep.equal({
@@ -398,23 +413,26 @@ describe('relay', function () {
     });
   });
 
-  it('should support last queries on connections', function () {
+  it('should support last queries on connections', () => {
     var user = this.userB;
 
-    return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          tasks(last: 1) {
-            edges {
-              node {
-                name
+    return graphql({
+      schema,
+      source: `
+        {
+          user(id: ${user.id}) {
+            name
+            tasks(last: 1) {
+              edges {
+                node {
+                  name
+                }
               }
             }
           }
         }
-      }
-    `).then(function (result) {
+      `
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data).to.deep.equal({
@@ -435,33 +453,20 @@ describe('relay', function () {
   });
 
   // these two tests are not determenistic on postgres currently
-  it('should support after queries on connections', function () {
+  it('should support after queries on connections', () => {
     var user = this.userA;
 
-    return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          tasks(first: 1) {
-            pageInfo {
-              hasNextPage,
-              startCursor
-            },
-            edges {
-              node {
-                name
-              }
-            }
-          }
-        }
-      }
-    `)
-    .then(function (result) {
-      return graphql(schema, `
+    return graphql({
+      schema,
+      source: `
         {
           user(id: ${user.id}) {
             name
-            tasks(first: 1, after: "${result.data.user.tasks.pageInfo.startCursor}") {
+            tasks(first: 1) {
+              pageInfo {
+                hasNextPage,
+                startCursor
+              },
               edges {
                 node {
                   name
@@ -470,30 +475,51 @@ describe('relay', function () {
             }
           }
         }
-      `);
+      `
     })
-    .then(function (result) {
+    .then((result) => {
+      return graphql({
+        schema,
+        source: `
+          {
+            user(id: ${user.id}) {
+              name
+              tasks(first: 1, after: "${result.data.user.tasks.pageInfo.startCursor}") {
+                edges {
+                  node {
+                    name
+                  }
+                }
+              }
+            }
+          }
+        `
+      });
+    }).then((result) => {
       expect(result.data.user.tasks.edges[0].node.name).to.equal(user.taskItems[1].name);
     });
   });
 
-  it('should resolve a plain result with a single connection', function () {
+  it('should resolve a plain result with a single connection', () => {
     var user = this.userB;
 
-    return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          tasks {
-            edges {
-              node {
-                name
+    return graphql({
+      schema,
+      source: `
+        {
+          user(id: ${user.id}) {
+            name
+            tasks {
+              edges {
+                node {
+                  name
+                }
               }
             }
           }
         }
-      }
-    `).then(function (result) {
+      `
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data).to.deep.equal({
@@ -518,23 +544,26 @@ describe('relay', function () {
     });
   });
 
-  it('should resolve an array of objects containing connections', function () {
+  it('should resolve an array of objects containing connections', () => {
     var users = this.users;
 
-    return graphql(schema, `
-      {
-        users {
-          name
-          tasks {
-            edges {
-              node {
-                name
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name
+            tasks {
+              edges {
+                node {
+                  name
+                }
               }
             }
           }
         }
-      }
-    `).then(function (result) {
+      `
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
@@ -545,20 +574,23 @@ describe('relay', function () {
     });
   });
 
-  it('should resolve nested connections', function () {
+  it('should resolve nested connections', () => {
     var sqlSpy = sinon.spy();
 
-    return graphql(schema, `
-      {
-        project(id: 1) {
-          users {
-            edges {
-              node {
-                name
-                tasks {
-                  edges {
-                    node {
-                      name
+    return graphql({
+      schema,
+      source: `
+        {
+          project(id: 1) {
+            users {
+              edges {
+                node {
+                  name
+                  tasks {
+                    edges {
+                      node {
+                        name
+                      }
                     }
                   }
                 }
@@ -566,8 +598,8 @@ describe('relay', function () {
             }
           }
         }
-      }
-    `, null).then(result => {
+      `,
+    }).then(result => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.project.users.edges).to.have.length(2);
@@ -585,46 +617,55 @@ describe('relay', function () {
     });
   });
 
-  it('should support fragments', function () {
-    return graphql(schema, `
-      {
-        project(id: 1) {
-          ...getNames
-        }
-      }
-      fragment getNames on Project {
-        name
-      }
-    `).then(result => {
-      if (result.errors) throw new Error(result.errors[0].stack);
-    });
-  });
-
-  it('should support inline fragments', function () {
-    return graphql(schema, `
-      {
-        project(id: 1) {
-          ... on Project {
-            name
+  it('should support fragments', () => {
+    return graphql({
+      schema,
+      source: `
+        {
+          project(id: 1) {
+            ...getNames
           }
         }
-      }
-    `).then(result => {
+        fragment getNames on Project {
+          name
+        }
+      `
+    }).then(result => {
       if (result.errors) throw new Error(result.errors[0].stack);
     });
   });
 
-  it('should not support fragments on the wrong type', function () {
-    return graphql(schema, `
-      {
-        project(id: 1) {
-          ...getNames
+  it('should support inline fragments', () => {
+    return graphql({
+      schema,
+      source: `
+        {
+          project(id: 1) {
+            ... on Project {
+              name
+            }
+          }
         }
-      }
-      fragment getNames on User {
-        name
-      }
-    `).then(result => {
+      `
+    }).then(result => {
+      if (result.errors) throw new Error(result.errors[0].stack);
+    });
+  });
+
+  it('should not support fragments on the wrong type', () => {
+    return graphql({
+      schema,
+      source: `
+        {
+          project(id: 1) {
+            ...getNames
+          }
+        }
+        fragment getNames on User {
+          name
+        }
+      `
+    }).then(result => {
       expect(result.errors).to.exist.and.have.length(1);
     });
   });

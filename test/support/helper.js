@@ -1,6 +1,5 @@
 import Sequelize from 'sequelize';
 
-export const Promise = Sequelize.Promise;
 export const sequelize = createSequelize();
 
 export function createSequelize(options = {}) {
@@ -52,6 +51,10 @@ export function beforeRemoveAllTables() {
       return removeAllTables(sequelize);
     }
   });
+}
+
+export function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 // Not nice too, MySQL does not supports same name for foreign keys

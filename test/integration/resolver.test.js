@@ -1,10 +1,10 @@
 'use strict';
 
-import { sequelize, Promise, beforeRemoveAllTables } from '../support/helper';
+import { delay, sequelize, beforeRemoveAllTables } from '../support/helper';
 
 import { expect } from 'chai';
 import sinon from 'sinon';
-import Sequelize from 'sequelize';
+import Sequelize, { Op } from 'sequelize';
 
 import resolver from '../../src/resolver';
 import JSONType from '../../src/types/jsonType';
@@ -38,7 +38,7 @@ describe('resolver', function () {
    * The schema consists of a User that has Tasks.
    * A Task belongs to a Project, which can have Labels.
    */
-  before(function () {
+  before(() => {
     this.sandbox = sinon.sandbox.create();
 
     sequelize.modelManager.models = [];
@@ -191,7 +191,8 @@ describe('resolver', function () {
           resolve: resolver(User.Tasks, {
             before: (options, args) => {
               options.where = options.where || {};
-              options.where.id = { $in: args.ids };
+              options.where.id = { [Op.in]: args.ids };
+
               return options;
             }
           })
@@ -242,12 +243,12 @@ describe('resolver', function () {
    * We'll have projectA & projectB with two random labels each,
    * and two users each with some tasks that belong to those projects.
    */
-  before(function () {
+  before(() => {
     var taskId = 0
       , projectId = 0;
 
-    return sequelize.sync({force: true}).bind(this).then(function () {
-      return Promise.join(
+    return sequelize.sync({force: true}).then(() => {
+      return Promise.all([
         Project.create({
           id: ++projectId,
           name: 'b' + Math.random().toString(),
@@ -272,11 +273,11 @@ describe('resolver', function () {
             Project.Labels
           ]
         })
-      ).bind(this).spread(function (projectA, projectB) {
+      ]).then(([projectA, projectB]) => {
         this.projectA = projectA;
         this.projectB = projectB;
-      }).bind(this).then(function () {
-        return Promise.join(
+      }).then(() => {
+        return Promise.all([
           User.create({
             id: 1,
             name: 'b' + Math.random().toString(),
@@ -320,34 +321,39 @@ describe('resolver', function () {
             ]
           }, {
             include: [User.Tasks]
-          })
-        ).bind(this).spread(function (userA, userB) {
+          }),
+        ]).then(([userA, userB]) => {
           this.userA = userA;
           this.userB = userB;
+
           this.users = [userA, userB];
         });
       });
     });
   });
 
-  beforeEach(function () {
+  beforeEach(() => {
     this.sandbox.spy(User, 'findOne');
   });
-  afterEach(function () {
+  afterEach(() => {
     this.sandbox.restore();
-  })
+  });
 
-  it('should resolve a plain result with a single model', function () {
+  it('should resolve a plain result with a single model', () => {
     var user = this.userB;
 
-    return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          myVirtual
+    return graphql({
+      schema: schema,
+      source: `
+        {
+          user(id: ${user.id}) {
+            name
+            myVirtual
+          }
         }
-      }
-    `).then(function (result) {
+      `,
+      contextValue: {},
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data).to.deep.equal({
@@ -359,17 +365,21 @@ describe('resolver', function () {
     });
   });
 
-  it('should map context to find options', function () {
+  it('should map context to find options', () => {
     var user = this.userB;
 
-    return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          myVirtual
+    return graphql({
+      schema,
+      source: `
+        {
+          user(id: ${user.id}) {
+            name
+            myVirtual
+          }
         }
-      }
-    `, null, {a: 1, b: 2}).then(function (result) {
+      `,
+      contextValue: {a: 1, b: 2}
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data).to.deep.equal({
@@ -384,17 +394,21 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a plain result with an aliased field', function () {
+  it('should resolve a plain result with an aliased field', () => {
     var user = this.userB;
 
-    return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          magic: myVirtual
+    return graphql({
+      schema,
+      source: `
+        {
+          user(id: ${user.id}) {
+            name
+            magic: myVirtual
+          }
         }
-      }
-    `).then(function (result) {
+      `,
+      contextValue: {},
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data).to.deep.equal({
@@ -406,22 +420,26 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a plain result with a single model and aliases', function () {
+  it('should resolve a plain result with a single model and aliases', () => {
     var userA = this.userA
       , userB = this.userB;
 
-    return graphql(schema, `
-      {
-        userA: user(id: ${userA.id}) {
-          name
-          myVirtual
+    return graphql({
+      schema,
+      source: `
+        {
+          userA: user(id: ${userA.id}) {
+            name
+            myVirtual
+          }
+          userB: user(id: ${userB.id}) {
+            name
+            myVirtual
+          }
         }
-        userB: user(id: ${userB.id}) {
-          name
-          myVirtual
-        }
-      }
-    `).then(function (result) {
+      `,
+      contextValue: {},
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data).to.deep.equal({
@@ -437,22 +455,26 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a array result with a model and aliased includes', function () {
-    return graphql(schema, `
-      {
-        users {
-          name
+  it('should resolve a array result with a model and aliased includes', () => {
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name
 
-          first: tasks(limit: 1) {
-            title
-          }
+            first: tasks(limit: 1) {
+              title
+            }
 
-          rest: tasks(offset: 1, limit: 99) {
-            title
+            rest: tasks(offset: 1, limit: 99) {
+              title
+            }
           }
         }
-      }
-    `).then(function (result) {
+      `,
+      contextValue: {},
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       result.data.users.forEach(function (user) {
@@ -462,19 +484,22 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a array result with a model and aliased includes and __typename', function () {
-    return graphql(schema, `
-      {
-        users {
-          name
+  it('should resolve a array result with a model and aliased includes and __typename', () => {
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name
 
-          first: tasks(limit: 1) {
-            title
-            __typename
+            first: tasks(limit: 1) {
+              title
+              __typename
+            }
           }
         }
-      }
-    `).then(function (result) {
+      `
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       result.data.users.forEach(function (user) {
@@ -483,16 +508,19 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve an array result with a single model', function () {
+  it('should resolve an array result with a single model', () => {
     var users = this.users;
 
-    return graphql(schema, `
-      {
-        users {
-          name
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name
+          }
         }
-      }
-    `).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length.above(0);
@@ -504,7 +532,7 @@ describe('resolver', function () {
     });
   });
 
-  it('should allow amending the find for a array result with a single model', function () {
+  it('should allow amending the find for a array result with a single model', () => {
     var user = this.userA
       , schema;
 
@@ -534,15 +562,19 @@ describe('resolver', function () {
       })
     });
 
-    return graphql(schema, `
-      {
-        users {
-          name
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name
+          }
         }
-      }
-    `, null, {
-      name: user.name
-    }).then(function (result) {
+      `,
+      contextValue: {
+        name: user.name
+      },
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(1);
@@ -550,7 +582,7 @@ describe('resolver', function () {
     });
   });
 
-  it('should allow parsing the find for a array result with a single model', function () {
+  it('should allow parsing the find for a array result with a single model', () => {
     var users = this.users
       , schema;
 
@@ -582,13 +614,16 @@ describe('resolver', function () {
       })
     });
 
-    return graphql(schema, `
-      {
-        users {
-          name
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name
+          }
         }
-      }
-    `).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(users.length);
@@ -598,7 +633,7 @@ describe('resolver', function () {
     });
   });
 
-  it('should work with a resolver through a proxy', function () {
+  it('should work with a resolver through a proxy', () => {
     var users = this.users
       , schema
       , userType
@@ -665,16 +700,19 @@ describe('resolver', function () {
       })
     });
 
-    return graphql(schema, `
-      {
-        users {
-          name,
-          tasks {
-            title
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name,
+            tasks {
+              title
+            }
           }
         }
-      }
-    `, null).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(users.length);
@@ -684,7 +722,7 @@ describe('resolver', function () {
     });
   });
 
-  it('should work with a passthrough resolver and a duplicated query', function () {
+  it('should work with a passthrough resolver and a duplicated query', () => {
     var users = this.users
       , schema
       , userType
@@ -759,21 +797,24 @@ describe('resolver', function () {
       })
     });
 
-    return graphql(schema, `
-      {
-        users {
-          name,
-          tasks {
-            nodes {
-              title
-            }
-            nodes {
-              id
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name,
+            tasks {
+              nodes {
+                title
+              }
+              nodes {
+                id
+              }
             }
           }
         }
-      }
-    `, null).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(users.length);
@@ -787,36 +828,43 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve an array result with a single model and limit', function () {
-    return graphql(schema, `
-      {
-        users(limit: 1) {
-          name
+  it('should resolve an array result with a single model and limit', () => {
+    return graphql({
+      schema,
+      source: `
+        {
+          users(limit: 1) {
+            name
+          }
         }
-      }
-    `).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(1);
     });
   });
 
-  it('should resolve a plain result with a single hasMany association', function () {
+  it('should resolve a plain result with a single hasMany association', () => {
     const user = this.userB;
 
-    return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          tasks {
-            title
-            taskVirtual
+    return graphql({
+      schema,
+      source: `
+        {
+          user(id: ${user.id}) {
+            name
+            tasks {
+              title
+              taskVirtual
+            }
           }
         }
-      }
-    `, null, {
-      yolo: 'swag'
-    }).then(function (result) {
+      `,
+      contextValue: {
+        yolo: 'swag'
+      },
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.user.name).to.equal(user.name);
@@ -830,38 +878,44 @@ describe('resolver', function () {
 
   });
 
-  it('should resolve a plain result with a single limited hasMany association', function () {
+  it('should resolve a plain result with a single limited hasMany association', () => {
     var user = this.userB;
 
-    return graphql(schema, `
-      {
-        user(id: ${user.id}) {
-          name
-          tasks(limit: 1) {
-            title
+    return graphql({
+      schema,
+      source: `
+        {
+          user(id: ${user.id}) {
+            name
+            tasks(limit: 1) {
+              title
+            }
           }
         }
-      }
-    `).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.user.tasks).to.have.length(1);
     });
   });
 
-  it('should resolve a array result with a single hasMany association', function () {
+  it('should resolve a array result with a single hasMany association', () => {
     var users = this.users;
 
-    return graphql(schema, `
-      {
-        users(order: "id") {
-          name
-          tasks(order: "id") {
-            title
+    return graphql({
+      schema,
+      source: `
+        {
+          users(order: "id") {
+            name
+            tasks(order: "id") {
+              title
+            }
           }
         }
-      }
-    `).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
@@ -880,19 +934,22 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a array result with a single limited hasMany association', function () {
+  it('should resolve a array result with a single limited hasMany association', () => {
     var users = this.users;
 
-    return graphql(schema, `
-      {
-        users {
-          name
-          tasks(limit: 1) {
-            title
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name
+            tasks(limit: 1) {
+              title
+            }
           }
         }
-      }
-    `).then(function (result) {
+      `
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
@@ -902,22 +959,25 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a array result with a single limited hasMany association with a nested belongsTo relation', function () {
+  it('should resolve a array result with a single limited hasMany association with a nested belongsTo relation', () => {
     var users = this.users
       , sqlSpy = sinon.spy();
 
-    return graphql(schema, `
-      {
-        users {
-          tasks(limit: 2) {
-            title
-            project {
-              name
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            tasks(limit: 2) {
+              title
+              project {
+                name
+              }
             }
           }
         }
-      }
-    `, null).then(function (result) {
+      `
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
@@ -930,22 +990,25 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a array result with a single hasMany association with a nested belongsTo relation', function () {
+  it('should resolve a array result with a single hasMany association with a nested belongsTo relation', () => {
     var users = this.users
       , sqlSpy = sinon.spy();
 
-    return graphql(schema, `
-      {
-        users {
-          tasks {
-            title
-            project {
-              name
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            tasks {
+              title
+              project {
+                name
+              }
             }
           }
         }
-      }
-    `, null).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
@@ -959,25 +1022,28 @@ describe('resolver', function () {
   });
 
   it('should resolve a array result with a single hasMany association' +
-     'with a nested belongsTo relation with a nested hasMany relation', function () {
+     'with a nested belongsTo relation with a nested hasMany relation', () => {
     var users = this.users
       , sqlSpy = sinon.spy();
 
-    return graphql(schema, `
-      {
-        users {
-          tasks {
-            title
-            project {
-              name
-              labels {
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            tasks {
+              title
+              project {
                 name
+                labels {
+                  name
+                }
               }
             }
           }
         }
-      }
-    `, null).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
@@ -995,18 +1061,21 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve a array result with a single limited hasMany association with a before filter', function () {
+  it('should resolve a array result with a single limited hasMany association with a before filter', () => {
     var users = this.users;
 
-    return graphql(schema, `
-      {
-        users {
-          tasks(first: 2) {
-            title
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            tasks(first: 2) {
+              title
+            }
           }
         }
-      }
-    `).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users.length).to.equal(users.length);
@@ -1016,7 +1085,7 @@ describe('resolver', function () {
     });
   });
 
-  it('should not call association getter if user manually included', function () {
+  it('should not call association getter if user manually included', () => {
     this.sandbox.spy(Task, 'findAll');
     this.sandbox.spy(User, 'findAll');
 
@@ -1041,15 +1110,18 @@ describe('resolver', function () {
       })
     });
 
-    return graphql(schema, `
-      {
-        users {
-          tasks {
-            title
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            tasks {
+              title
+            }
           }
         }
-      }
-    `).then(result => {
+      `,
+    }).then(result => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(Task.findAll.callCount).to.equal(0);
@@ -1071,7 +1143,7 @@ describe('resolver', function () {
     });
   });
 
-  it('should allow async before and after', function () {
+  it('should allow async before and after', () => {
     var users = this.users
       , schema;
 
@@ -1094,7 +1166,7 @@ describe('resolver', function () {
                 return Promise.resolve(options);
               },
               after: async function (result) {
-                await Promise.delay(100);
+                await delay(100);
                 return result.map(function () {
                   return {
                     name: 'Delayed!'
@@ -1107,13 +1179,16 @@ describe('resolver', function () {
       })
     });
 
-    return graphql(schema, `
-      {
-        users {
-          name
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name
+          }
         }
-      }
-    `).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users).to.have.length(users.length);
@@ -1123,34 +1198,41 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve args from array to before', function () {
+  it('should resolve args from array to before', () => {
     var user = this.userB;
 
-    return graphql(schema, `
-      {
-        user(id: ${user.get('id')}) {
-          tasksByIds(ids: [${user.tasks[0].get('id')}]) {
-            id
+    return graphql({
+      schema,
+      source: `
+        {
+          user(id: ${user.get('id')}) {
+            tasksByIds(ids: [${user.tasks[0].get('id')}]) {
+              id
+            }
           }
         }
-      }
-    `).then(function (result) {
+      `,
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.user.tasksByIds.length).to.equal(1);
     });
   });
 
-  it('should resolve query variables inside where parameter', function () {
-    return graphql(schema, `
-      query($where: SequelizeJSON) {
-        users(where: $where) {
-          id
+  it('should resolve query variables inside where parameter', () => {
+    return graphql({
+      schema,
+      source: `
+        query($where: SequelizeJSON) {
+          users(where: $where) {
+            id
+          }
         }
-      }
-    `, undefined, undefined, {
-      where: '{"name": {"like": "a%"}}',
-    }).then(function (result) {
+      `,
+      variableValues: {
+        where: '{"name": {"like": "a%"}}',
+      },
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users[0].id).to.equal(2);
@@ -1158,22 +1240,26 @@ describe('resolver', function () {
     });
   });
 
-  it('should resolve query variables inside where parameter', function () {
-    return graphql(schema, `
-      query($name: String) {
-        users(where: {name: {like: $name}}) {
-          id
+  it('should resolve query variables inside where parameter', () => {
+    return graphql({
+      schema,
+      source: `
+        query($name: String) {
+          users(where: {name: {like: $name}}) {
+            id
+          }
         }
-      }
-    `, undefined, undefined, {name: 'a%'}).then(function (result) {
+      `,
+      variableValues: {name: 'a%'}
+    }).then((result) => {
       if (result.errors) throw new Error(result.errors[0].stack);
 
       expect(result.data.users[0].id).to.equal(2);
       expect(result.data.users.length).to.equal(1);
-      });
+    });
   });
 
-  it('should allow list queries set as NonNullable', function () { 
+  it('should allow list queries set as NonNullable', () => { 
     var user = this.userA
       , schema;
 
@@ -1195,19 +1281,23 @@ describe('resolver', function () {
       })
     });
 
-    return graphql(schema, `
-      {
-        users {
-          name
+    return graphql({
+      schema,
+      source: `
+        {
+          users {
+            name
+          }
         }
-      }
-    `, null, {
-        name: user.name
-      }).then(function (result) {
-        if (result.errors) throw new Error(result.errors[0].stack);
+      `,
+      contextValue: {
+        name: user.name,
+      },
+    }).then((result) => {
+      if (result.errors) throw new Error(result.errors[0].stack);
 
-        expect(result.data.users).to.have.length(1);
-        expect(result.data.users[0].name).to.equal(user.name);
-      });
+      expect(result.data.users).to.have.length(1);
+      expect(result.data.users[0].name).to.equal(user.name);
+    });
   });
 });
